@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net8.0-windows7.0": {
+      "DalamudPackager": {
+        "type": "Direct",
+        "requested": "[2.1.13, )",
+        "resolved": "2.1.13",
+        "contentHash": "rMN1omGe8536f4xLMvx9NwfvpAc9YFFfeXJ1t4P4PE6Gu8WCIoFliR1sh07hM+bfODmesk/dvMbji7vNI+B/pQ=="
+      },
+      "IgnoresAccessChecksToGenerator": {
+        "type": "Direct",
+        "requested": "[0.7.0, )",
+        "resolved": "0.7.0",
+        "contentHash": "EJAf6FpUFmFjWWuKQ9swJe87KmE7mW32QDwjUWXMP4HKMJOjznm2Zol+zlMohG3j1jtXAgHG0CX2rvjAINxvfQ=="
+      },
+      "JavaScriptEngineSwitcher.Core": {
+        "type": "Direct",
+        "requested": "[3.24.1, )",
+        "resolved": "3.24.1",
+        "contentHash": "9r2ZMni/Tll48IUP1ckCpAYZNllkaiLg62/wfazh8nVRI2C2DNvldCBLGG2P77soDvmLDaE3tO7lpGhZP9YBDw==",
+        "dependencies": {
+          "AdvancedStringBuilder": "0.1.1"
+        }
+      },
+      "JavaScriptEngineSwitcher.Jint": {
+        "type": "Direct",
+        "requested": "[3.27.2, )",
+        "resolved": "3.27.2",
+        "contentHash": "ZXN4uVW91Gm3QGbZ6FHw/8a6Bpraxg0WBKIYjf+d4sHFda+uPqAzS8xZloe6My94shRMt2rrNXC0vzBRq7/exQ==",
+        "dependencies": {
+          "JavaScriptEngineSwitcher.Core": "3.24.1",
+          "Jint": "4.0.2"
+        }
+      },
+      "Acornima": {
+        "type": "Transitive",
+        "resolved": "1.1.0",
+        "contentHash": "MFK/GNp09PF8H6uSkAZght553TddOejD9P1InvKWlGw6ILhmZjI+Y2xiIjGoJ73sbkeZzxwnCWZioK5Wed/J2g=="
+      },
+      "AdvancedStringBuilder": {
+        "type": "Transitive",
+        "resolved": "0.1.1",
+        "contentHash": "32IrlspOA59ewotQ4tlKP27QhKxMKGB7oncqlwVHn/hAz+j/r3HvLr6/W9ni9Mnyktlcg6kt7QZS8rEgur1+4Q=="
+      },
+      "Jint": {
+        "type": "Transitive",
+        "resolved": "4.0.2",
+        "contentHash": "/4fSpBn8b+l6f1z5ZrxoUUG9D3Tn8dX3xNXCORL9BCb5FHjoxNSluOuRVy4q/uvCm/FGIQl0F2SkIdDk8tnO0Q==",
+        "dependencies": {
+          "Acornima": "1.1.0"
+        }
+      }
+    }
+  }
+}

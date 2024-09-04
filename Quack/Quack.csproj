@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="Dalamud.Plugin.Bootstrap.targets" />
+
+  <PropertyGroup>
+    <Description>Generate and run macro actions quickly using a spotlight inspired interface.</Description>
+    <PackageProjectUrl>https://github.com/anya-hichu/Quack</PackageProjectUrl>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IgnoresAccessChecksToGenerator" Version="0.7.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="JavaScriptEngineSwitcher.Core" Version="3.24.1" />
+    <PackageReference Include="JavaScriptEngineSwitcher.Jint" Version="3.27.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsAssemblyName Include="Dalamud" />
+  </ItemGroup>
+</Project>
