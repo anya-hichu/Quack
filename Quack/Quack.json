@@ -1,14 +1,17 @@
 {
-  "Author": "Anya Hichu",
-  "Name": "Quack",
-  "Punchline": "Run actions quackly.",
-  "Description": "Generate and run macro actions quickly using a spotlight inspired interface.",
-  "ApplicableVersion": "any",
-  "Tags": [
-    "search",
-    "macro",
-    "generator",
-    "quick",
-    "scripting"
-  ]
+    "Author": "Anya Hichu",
+    "Name": "Quack",
+    "Punchline": "Run actions quackly.",
+    "Description": "Generate and run macro actions quickly using a spotlight inspired interface.",
+    "ApplicableVersion": "any",
+    "Tags": [
+        "search",
+        "macro",
+        "generator",
+        "quick",
+        "scripting"
+    ],
+    "RepoUrl": "https://github.com/anya-hichu/Quack",
+    "IconUrl": "https://raw.githubusercontent.com/anya-hichu/Quack/master/images/icon.png",
+    "ImageUrls": []
 }
