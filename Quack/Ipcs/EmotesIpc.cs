@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
-using Dalamud.Plugin.Services;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets2;
 
@@ -10,27 +10,30 @@ namespace Quack.Ipcs;
 
 public class EmotesIpc: IDisposable
 {
+    public class EmoteData(string name, string category, string command)
+    {
+        public string name = name;
+        public string category = category;
+        public string command = command;
+    }
+
     public static readonly string LIST = "Quack.Emotes.GetList";
-    private ICallGateProvider<List<Dictionary<string, string>>> GetListProvider { get; init; }
+    private ICallGateProvider<EmoteData[]> GetListProvider { get; init; }
 
     public EmotesIpc(IDalamudPluginInterface pluginInterface, ExcelSheet<Emote>? excelSheetEmote) {
-        GetListProvider = pluginInterface.GetIpcProvider<List<Dictionary<string, string>>>(LIST);
+        GetListProvider = pluginInterface.GetIpcProvider<EmoteData[]>(LIST);
         GetListProvider.RegisterFunc(() =>
         {
-            List<Dictionary<string, string>> list = [];
-
-            foreach (var emote in excelSheetEmote!)
+            return excelSheetEmote!.SelectMany<Emote, EmoteData>(e =>
             {
-                if (emote.EmoteCategory.Value != null && emote.TextCommand.Value != null)
+                if (e.EmoteCategory.Value != null && e.TextCommand.Value != null)
                 {
-                    list.Add(new(){
-                        { "name", emote.Name },
-                        { "category", emote.EmoteCategory.Value!.Name },
-                        { "command", emote.TextCommand.Value!.Command.RawString }
-                    });
+                    return [new(e.Name, e.EmoteCategory.Value!.Name, e.TextCommand.Value!.Command.RawString)];
+                } else
+                {
+                    return [];
                 }
-            }
-            return list;
+            }).ToArray();
         });
     }
 

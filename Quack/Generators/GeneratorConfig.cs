@@ -1,13 +1,16 @@
+using Acornima.Ast;
 using Quack.Ipcs;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace Quack.Generators;
 
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
+    private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
         new("Customize",
             "CustomizePlus.Profile.GetList",
             string.Empty,
@@ -16,12 +19,12 @@ function main(listJson) {
     const list = JSON.parse(listJson);
     const macros = list.flatMap(p => {
         return [{
-            name: `Enable profile "${p.Item2}"`,
-            path: "profiles",
+            name: `Enable Profile "${p.Item2}"`,
+            path: "Customize/${p.Item2}/Enable",
             content: `/customize profile enable <me>,${p.Item2}`
         },{
-            name: `Disable profile "${p.Item2}"`,
-            path: "profiles",
+            name: `Disable Profile "${p.Item2}"`,
+            path: "Customize/${p.Item2}/Disable",
             content: `/customize profile disable <me>,${p.Item2}`
         }];
     });
@@ -37,7 +40,7 @@ function main(emotesJson) {
     const macros = emotes.map(e => {
         return {
             name: e.name,
-            path: `emotes/${e.category.toLowerCase()}`,
+            path: `Emotes/${e.category[0].toUpperCase()}${e.category.slice(1)}/${e.name}`,
             content: e.command
         };
     });
@@ -45,17 +48,21 @@ function main(emotesJson) {
 }
 """),
         new("Glamourer",
-            "Glamourer.GetDesignList.V2",
+            GlamourerIpc.DESIGN_LIST,
             string.Empty,
 """
 function main(designListJson) {
     const designList = JSON.parse(designListJson);
-    const macros = Object.entries(designList).map(([id, name]) => {
-        return {
-            name: `Apply design "${name}"`,
-            path: 'glamours',
-            content: `/glamour apply ${id} | <me>; true`
-        };
+    const macros = designList.flatMap(d => {
+        return [{
+            name: `Apply Design "${d.name}" with mods`,
+            path: `Glamours/${d.path}/Apply with mods`,
+            content: `/glamour apply ${d.id} | <me>; true`
+        }, {
+            name: `Apply Design "${d.name}"`,
+            path: `Glamours/${d.path}/Apply`,
+            content: `/glamour apply ${d.id} | <me>; false`
+        }];
     })
     return JSON.stringify(macros);
 }
@@ -68,12 +75,16 @@ function main(designListJson) {
 
 function main(titleDataJson) {
     const titleData = JSON.parse(titleDataJson);
-    const macros = titleData.map(d => {
-        return {
-            name: `Enable title "${d.Title}"`,
-            path: "honorifics",
+    const macros = titleData.formatMap(d => {
+        return [{
+            name: `Enable Honorific "${d.Title}"`,
+            path: `Honorifics/{d.Title}/Enable`,
             content: `/honorific title enable ${d.Title}`
-        };
+        }, {
+            name: `Disable Honorific "${d.Title}"`,
+            path: `Honorifics/{d.Title}/Disable`,
+            content: `/honorific title disable ${d.Title}`
+        }];
     });
     return JSON.stringify(macros);
 }
@@ -87,7 +98,7 @@ function main(rawMacrosJson) {
     const macros = rawMacros.flatMap(m => {
         return [{
             name: m.name,
-            path: `macros/${m.set}/${m.index}`,
+            path: `Macros/${['Individual', 'Shared'][m.set]}/${[m.index, m.name].filter(Boolean).join('/')}`,
             content: m.content
         }];
     });
@@ -95,27 +106,24 @@ function main(rawMacrosJson) {
 }
 """),
         new("Penumbra",
-            "Penumbra.GetModList",
+            PenumbraIpc.MOD_LIST,
             string.Empty,
 """
 function main(modListJson) {
     const modList = JSON.parse(modListJson);
-    const macros = [];
-    Object.entries(modList).forEach(([path, name]) => {
-        macros.push({
-            name: `Enable mod "${name}"`,
-            path: 'mods',
-            content: `/penumbra mod enable Self | ${name}`
-        });
-        macros.push({
-            name: `Disable mod "${name}"`,
-            path: 'mods',
-            content: `/penumbra mod disable Self | ${name}`
-        });
+    const macros = modList.flatMap(m => {
+        return [{
+            name: `Enable Mod "${m.name}"`,
+            path: `Mods/${m.path}/Enable`,
+            content: `/penumbra mod enable Self | ${m.dir}`
+        },{
+            name: `Disable Mod "${m.name}"`,
+            path: `Mods/${m.path}/Disable`,
+            content: `/penumbra mod disable Self | ${m.dir}`
+        }];
     })
     return JSON.stringify(macros);
 }
-
 """),
         new("Simple Tweaks",
             string.Empty,
@@ -133,8 +141,8 @@ const jobs = [
 function main() {
     const macros = jobs.map(j => {
         return {
-            name: `Equip job "${j}"`,
-            path: 'jobs',
+            name: `Equip Job "${j}"`,
+            path: `Jobs/${j}`,
             content: `/equipjob ${j}`
         };
     });
@@ -142,6 +150,10 @@ function main() {
 }
 """),
 ];
+    public static List<GeneratorConfig> GetDefaults()
+    {
+        return DEFAULTS.Select(c => c.Clone()).ToList();
+    }
 
     public string Name { get; set; } = string.Empty;
     public string IpcName { get; set; } = string.Empty;
@@ -156,5 +168,10 @@ function main() {
         IpcName = ipcName;
         IpcArgs = ipcArgs;
         Script = script;
+    }
+
+    public GeneratorConfig Clone()
+    {
+        return (GeneratorConfig)MemberwiseClone();
     }
 }

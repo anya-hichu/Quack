@@ -11,7 +11,6 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
 using Quack.Generators;
-using static FFXIVClientStructs.FFXIV.Client.Game.CurrencyManager;
 
 namespace Quack.Windows;
 
@@ -26,9 +25,6 @@ public class ConfigWindow : Window, IDisposable
     private List<HashSet<Macro>> SelectedGeneratedMacrosPerGeneratorIndex { get; init; } = [];
     private List<string> GeneratedMacrosFiltersPerGeneratorIndex { get; init; } = [];
 
-    // We give this window a constant ID using ###
-    // This allows for labels being dynamic, like "{FPS Counter}fps###XYZ counter window",
-    // and the window ID will always be "###XYZ counter window" for ImGui
     public ConfigWindow(IDalamudPluginInterface pluginInterface, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
         PluginInterface = pluginInterface;
@@ -58,7 +54,7 @@ public class ConfigWindow : Window, IDisposable
         }
 
         // Generators
-        if (ImGui.CollapsingHeader("Generators##generators", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Generators##generatorConfigs", ImGuiTreeNodeFlags.DefaultOpen))
         {
             if (GeneratorException != null)
             {
@@ -72,16 +68,21 @@ public class ConfigWindow : Window, IDisposable
                 }
             }
 
-            if (ImGui.Button("New"))
+            if (ImGui.Button("New##generatorConfigsNew"))
             {
                 NewGeneratorConfig();
             }
 
-            ImGui.SameLine(ImGui.GetWindowWidth() - 120);
-
-            if (ImGui.Button("Reset To Defaults##reset"))
+            ImGui.SameLine(ImGui.GetWindowWidth() - 200);
+            if (ImGui.Button("Recreate Defaults##generatorConfigsAppendDefaults"))
             {
-                ResetGeneratorConfigs();
+                RecreateDefaultGeneratorConfigs();
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Delete All##generatorConfigsDeleteAll"))
+            {
+                DeleteGeneratorConfigs();
             }
 
             var generatorConfigs = Config.GeneratorConfigs;
@@ -291,9 +292,15 @@ public class ConfigWindow : Window, IDisposable
         PushDefaultGeneratorMacrosValues();
     }
 
-    private void ResetGeneratorConfigs()
+    private void RecreateDefaultGeneratorConfigs()
     {
-        Config.GeneratorConfigs = new(GeneratorConfig.DEFAULTS);
+        Config.GeneratorConfigs.AddRange(GeneratorConfig.GetDefaults());
+        Config.Save();
+    }
+
+    private void DeleteGeneratorConfigs()
+    {
+        Config.GeneratorConfigs.Clear();
         Config.Save();
     }
 

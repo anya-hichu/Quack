@@ -2,7 +2,7 @@
 
 using Newtonsoft.Json;
 using System;
-using static FFXIVClientStructs.FFXIV.Client.LayoutEngine.LayoutManager;
+using System.Linq;
 
 namespace Quack.Generators;
 
@@ -20,6 +20,8 @@ public class Macro
 
     public bool Matches(string filter)
     {
-        return Name.Contains(filter, StringComparison.OrdinalIgnoreCase) || Path.Contains(filter, StringComparison.OrdinalIgnoreCase);
+        var tokens = filter.ToLowerInvariant().Split(" ");
+        return tokens.Any(t => Name.Contains(t, StringComparison.InvariantCultureIgnoreCase) || 
+                               Path.Contains(t, StringComparison.InvariantCultureIgnoreCase));
     }
 }

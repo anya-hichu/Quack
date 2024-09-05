@@ -8,17 +8,18 @@ using System.Linq;
 
 namespace Quack.Ipcs;
 
-// https://github.com/grittyfrog/MacroMate/blob/master/MacroMate/Extensions/Dalamud/Macros/VanillaMacroManager.cs
 public unsafe class MacrosIpc : IDisposable
 {
-    private enum RawMacroSet : uint
+    public class MacroData(int index, string name, uint set, string content)
     {
-        INDIVIDUAL = 0,
-        SHARED = 1
+        public int index = index;
+        public string name = name;
+        public uint set = set;
+        public string content = content;
     }
 
     public static readonly string LIST = "Quack.Macros.GetList";
-    private ICallGateProvider<List<Dictionary<string, string>>> GetListProvider { get; init; }
+    private ICallGateProvider<MacroData[]> GetListProvider { get; init; }
 
     private readonly RaptureMacroModule* raptureMacroModule;
 
@@ -26,31 +27,31 @@ public unsafe class MacrosIpc : IDisposable
     {
         raptureMacroModule = RaptureMacroModule.Instance();
 
-        GetListProvider = pluginInterface.GetIpcProvider<List<Dictionary<string, string>>>(LIST);
+        GetListProvider = pluginInterface.GetIpcProvider<MacroData[]>(LIST);
         GetListProvider.RegisterFunc(() =>
         {
-            var list = ListMacros(RawMacroSet.INDIVIDUAL);
-            list.AddRange(ListMacros(RawMacroSet.SHARED));
-            return list;
+            var list = ListMacros(0);
+            list.AddRange(ListMacros(1));
+            return list.ToArray();
         });
     }
 
-    private List<Dictionary<string, string>> ListMacros(RawMacroSet set)
+    private List<MacroData> ListMacros(uint set)
     {
-        var setName = Enum.GetName(set)!.ToLower();
-        return Enumerable.Range(0, 99).SelectMany<int, Dictionary<string, string>>(i =>
+        return Enumerable.Range(0, 99).SelectMany<int, MacroData>(i =>
         {
-            var rawMacro = raptureMacroModule->GetMacro((uint)set, (uint)i);
+            var rawMacro = raptureMacroModule->GetMacro(set, (uint)i);
             if (raptureMacroModule->GetLineCount(rawMacro) > 0)
             {
-                return [new(){
-                    { "index", i.ToString()},
-                    { "name", rawMacro->Name.ToString() },
-                    { "set", setName },
-                    { "content", string.Join("\n", rawMacro->Lines.ToArray()
-                                                                  .Select(l => $"{l}")
-                                                                  .Where(l => !l.IsNullOrWhitespace()) ) }
-                }];
+                return [
+                    new(i,
+                        rawMacro->Name.ToString(),
+                        set,
+                        string.Join("\n", rawMacro->Lines.ToArray()
+                                                         .Select(l => $"{l}")
+                                                         .Where(l => !l.IsNullOrWhitespace()) )
+                    )
+                ];
             } 
             else
             {

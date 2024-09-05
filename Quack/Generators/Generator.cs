@@ -32,7 +32,6 @@ public class Generator(IDalamudPluginInterface pluginInterface, GeneratorConfig 
 
         if (Service<CallGate>.Get().Gates.TryGetValue(GeneratorConfig.IpcName, out var channel)) 
         {
-            //Maybe resolve placeholders like current character name, world, etc
             var args = JsonConvert.DeserializeObject<object[]>(GeneratorConfig.IpcArgs);
             PluginLog.Debug($"Calling generator {GeneratorConfig.Name} IPC channel {channel.Name} with arguments: {args}");
             var returnValue = channel.InvokeFunc<object>(args);
@@ -51,34 +50,6 @@ public class Generator(IDalamudPluginInterface pluginInterface, GeneratorConfig 
         {
             throw new GeneratorException($"Could not find generator {GeneratorConfig.Name} IPC channel: {GeneratorConfig.IpcName}");
         }
-
-        //if (ipcData != null)
-        //{
-        //    var subscriber = PluginInterface.GetIpcSubscriber<string, string>(GeneratorConfig.Ipc);
-        //    if (GeneratorConfig.Args.IsNullOrWhitespace())
-        //    {
-        //        return [subscriber.InvokeFunc()];
-        //    }
-        //    else
-        //    {
-        //        var args = ;
-        //        if (args != null)
-        //        {
-        //            return [subscriber.GetType().GetMethod("InvokeFunc")!.Invoke(subscriber, args)!];
-        //        }
-        //        else
-        //        {
-
-        //        }
-        //    }
-        //} 
-        //else
-        //{
-
-        //}
-
-
-
     }
 
     private List<Macro> CallFunction(List<object> args)

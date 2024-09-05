@@ -31,7 +31,9 @@ public sealed class Plugin : IDalamudPlugin
     public Config Config { get; init; }
 
     private EmotesIpc EmotesIpc { get; init; }
+    private GlamourerIpc GlamourerIpc { get; init; }
     private MacrosIpc MacrosIpc { get; init; }
+    private PenumbraIpc PenumbraIpc { get; init; }
 
     public Plugin()
     {
@@ -43,7 +45,7 @@ public sealed class Plugin : IDalamudPlugin
         }));
         engineSwitcher.DefaultEngineName = JintJsEngine.EngineName;
 
-        Config = PluginInterface.GetPluginConfig() as Config ?? new Config(new(GeneratorConfig.DEFAULTS));
+        Config = PluginInterface.GetPluginConfig() as Config ?? new Config(GeneratorConfig.GetDefaults());
 
         ConfigWindow = new ConfigWindow(PluginInterface, Config, PluginLog);
         MainWindow = new MainWindow(Config, new(SigScanner), PluginLog);
@@ -61,7 +63,9 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
 
         EmotesIpc = new(PluginInterface, DataManager.GetExcelSheet<Emote>());
+        GlamourerIpc = new(PluginInterface);
         MacrosIpc = new(PluginInterface);
+        PenumbraIpc = new(PluginInterface);
     }
 
     public void Dispose()
@@ -74,7 +78,9 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandName);
 
         EmotesIpc.Dispose();
+        GlamourerIpc.Dispose();
         MacrosIpc.Dispose();
+        PenumbraIpc.Dispose();
     }
 
     private void OnCommand(string command, string args)
