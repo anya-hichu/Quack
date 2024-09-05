@@ -36,11 +36,11 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        var filteredMacros = FilteredMacros();
+        var listedMacros = Macro.FilterAndSort(Config.Macros, Filter).Take(Config.MaxSearchResults);
 
         var filter = Filter;
         ImGui.PushItemWidth(200);
-        if (ImGui.InputText($"Filter ({filteredMacros.Count()}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
+        if (ImGui.InputText($"Filter ({listedMacros.Count()}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
         {
             Filter = filter;
             PluginLog.Debug($"Search filter changed to {filter}");
@@ -78,9 +78,9 @@ public class MainWindow : Window, IDisposable
             ImGui.TableSetupColumn($"Actions##macroActions", ImGuiTableColumnFlags.None, 0.4f);
             ImGui.TableHeadersRow();
             
-            for (var i = 0; i < filteredMacros.Count(); i++)
+            for (var i = 0; i < listedMacros.Count(); i++)
             {
-                var macro = filteredMacros.ElementAt(i);
+                var macro = listedMacros.ElementAt(i);
                 if (ImGui.TableNextColumn())
                 {
                     ImGui.Text(macro.Name);
@@ -121,13 +121,6 @@ public class MainWindow : Window, IDisposable
         FileDialogManager.Draw();
     }
 
-    private IEnumerable<Macro> FilteredMacros()
-    {
-        return Config.Macros
-            .Where(m => m.Matches(Filter))
-            .OrderBy(m => m.Name)
-            .Take(Config.MaxSearchResults);
-    }
 
     private void ExportMacros()
     {

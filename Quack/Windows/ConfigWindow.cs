@@ -188,7 +188,7 @@ public class ConfigWindow : Window, IDisposable
                             }
 
                             ImGui.SameLine();
-                            var visibleGeneratedMacros = generatedMacros.Where(m => m.Matches(generatedMacrosFilter));
+                            var visibleGeneratedMacros = Macro.FilterAndSort(generatedMacros, generatedMacrosFilter);
                             if (visibleGeneratedMacros.All(selectedGeneratedMacros.Contains))
                             {
                                 if (ImGui.Button($"Deselect All Visible###generatorConfigs{i}GeneratedMacrosDeselectAllVisible"))
@@ -236,7 +236,7 @@ public class ConfigWindow : Window, IDisposable
                                 for (var j = 0; j < generatedMacros.Count; j++)
                                 {
                                     var generatedMacro = generatedMacros.ElementAt(j);
-                                    if (generatedMacro.Matches(generatedMacrosFilter))
+                                    if (visibleGeneratedMacros.Contains(generatedMacro))
                                     {
                                         if (ImGui.TableNextColumn())
                                         {
