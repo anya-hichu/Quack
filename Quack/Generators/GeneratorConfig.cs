@@ -19,11 +19,11 @@ function main(listJson) {
     const macros = list.flatMap(p => {
         return [{
             name: `Enable Profile "${p.Item2}"`,
-            path: "Customize/${p.Item2}/Enable",
+            path: `Customize/${p.Item2}/Enable`,
             content: `/customize profile enable <me>,${p.Item2}`
         },{
             name: `Disable Profile "${p.Item2}"`,
-            path: "Customize/${p.Item2}/Disable",
+            path: `Customize/${p.Item2}/Disable`,
             content: `/customize profile disable <me>,${p.Item2}`
         }];
     });
