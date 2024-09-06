@@ -5,45 +5,48 @@ using System.Linq;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
 using ImGuiNET;
 using Newtonsoft.Json;
-using Quack.Generators;
-using Quack.Utils;
+using Quack.Macros;
 
 namespace Quack.Windows;
 
 public class MainWindow : Window, IDisposable
 {
+    private Executor Executor { get; init; }
     private Config Config { get; init; }
-    private ServerChat ServerChat { get; init; }
     private IPluginLog PluginLog { get; init; }
 
     private FileDialogManager FileDialogManager { get; init; }
 
     private string Filter { get; set; } = string.Empty;
+    private IEnumerable<Macro> FilteredMacros { get; set; } = [];
 
-    public MainWindow(Config config, ServerChat serverChat, IPluginLog pluginLog) : base("Quack##mainWindow")
+    public MainWindow(Executor executor, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
+        Executor = executor;
         Config = config;
-        ServerChat = serverChat;
         PluginLog = pluginLog;
 
         FileDialogManager = new();
+        UpdateFilteredMacros();
+    }
+
+    public void UpdateFilteredMacros()
+    {
+        FilteredMacros = Search.Lookup(Config.Macros, Filter);
     }
 
     public void Dispose() { }
 
     public override void Draw()
     {
-        var listedMacros = Macro.FilterAndSort(Config.Macros, Filter).Take(Config.MaxSearchResults);
-
         var filter = Filter;
         ImGui.PushItemWidth(200);
-        if (ImGui.InputText($"Filter ({listedMacros.Count()}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
+        if (ImGui.InputText($"Filter ({FilteredMacros.Count()}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
         {
             Filter = filter;
-            PluginLog.Debug($"Search filter changed to {filter}");
+            UpdateFilteredMacros();
         }
 
         ImGui.SameLine();
@@ -52,7 +55,7 @@ public class MainWindow : Window, IDisposable
             Filter = string.Empty;
         }
 
-        ImGui.SameLine(ImGui.GetWindowWidth() - 180);
+        ImGui.SameLine(ImGui.GetWindowWidth() - 190);
         if (ImGui.Button("Export##macrosExport"))
         {
             ExportMacros();
@@ -71,16 +74,17 @@ public class MainWindow : Window, IDisposable
             Config.Save();
         }
         
-        if (ImGui.BeginTable("macros", 3, ImGuiTableFlags.RowBg))
+        if (ImGui.BeginTable("macros", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
         {
-            ImGui.TableSetupColumn($"Name##macroName", ImGuiTableColumnFlags.None, 0.3f);
-            ImGui.TableSetupColumn($"Path##macroPath", ImGuiTableColumnFlags.None, 0.3f);
-            ImGui.TableSetupColumn($"Actions##macroActions", ImGuiTableColumnFlags.None, 0.4f);
+            ImGui.TableSetupColumn($"Name##macroName", ImGuiTableColumnFlags.None, 3);
+            ImGui.TableSetupColumn($"Path##macroPath", ImGuiTableColumnFlags.None, 2);
+            ImGui.TableSetupColumn($"Tags##macroTags", ImGuiTableColumnFlags.None, 1);
+            ImGui.TableSetupColumn($"Actions##macroActions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
             
-            for (var i = 0; i < listedMacros.Count(); i++)
+            for (var i = 0; i < FilteredMacros.Take(Config.MaxSearchResults).Count(); i++)
             {
-                var macro = listedMacros.ElementAt(i);
+                var macro = FilteredMacros.ElementAt(i);
                 if (ImGui.TableNextColumn())
                 {
                     ImGui.Text(macro.Name);
@@ -93,15 +97,20 @@ public class MainWindow : Window, IDisposable
 
                 if (ImGui.TableNextColumn())
                 {
+                    ImGui.Text(string.Join(", ", macro.Tags));
+                }
+
+                if (ImGui.TableNextColumn())
+                {
                     if (ImGui.Button($"Execute###macros{i}Execute"))
                     {
-                        Execute(macro, false);
+                        Executor.RunAsync(macro);
                     }
 
                     ImGui.SameLine();
                     if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormatting"))
                     {
-                        Execute(macro, true);
+                        Executor.RunAsync(macro, Config.CommandFormat);
                     }
 
                     // TODO REMOVE AND HAVE PROPER CONFIG EDITOR FOR MACROS in dedicated tab with a folder like structure on right like penumbra
@@ -143,28 +152,9 @@ public class MainWindow : Window, IDisposable
                 using StreamReader reader = new(path);
                 var json = reader.ReadToEnd();
                 var importedMacros = JsonConvert.DeserializeObject<List<Macro>>(json)!;
-                Config.Macros.AddRange(importedMacros);
+                Config.Macros.UnionWith(importedMacros);
                 Config.Save();
             }
         });
-    }
-
-    private void Execute(Macro macro, bool formatted)
-    {
-        PluginLog.Debug($"Executing macro {macro.Name} ({macro.Path}) with content: {macro.Content}");
-        foreach(var command in macro.Content.Split("\n"))
-        {
-            if (!command.IsNullOrWhitespace())
-            {
-                if (formatted)
-                {
-                    ServerChat.SendMessage(string.Format(new PMFormatter(), Config.CommandFormat, command));
-                }
-                else
-                {
-                    ServerChat.SendMessage(command);
-                }
-            }
-        }
     }
 }

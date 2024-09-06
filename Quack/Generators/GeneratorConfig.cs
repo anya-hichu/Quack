@@ -1,4 +1,3 @@
-using Acornima.Ast;
 using Quack.Ipcs;
 using System;
 using System.Collections.Generic;
@@ -57,10 +56,12 @@ function main(designListJson) {
         return [{
             name: `Apply Design "${d.name}" with mods`,
             path: `Glamours/${d.path}/Apply with mods`,
+            tags: d.tags,
             content: `/glamour apply ${d.id} | <me>; true`
         }, {
             name: `Apply Design "${d.name}"`,
             path: `Glamours/${d.path}/Apply`,
+            tags: d.tags,
             content: `/glamour apply ${d.id} | <me>; false`
         }];
     })
@@ -115,10 +116,12 @@ function main(modListJson) {
         return [{
             name: `Enable Mod "${m.name}"`,
             path: `Mods/${m.path}/Enable`,
+            tags: m.localTags,
             content: `/penumbra mod enable Self | ${m.dir}`
         },{
             name: `Disable Mod "${m.name}"`,
             path: `Mods/${m.path}/Disable`,
+            tags: m.localTags,
             content: `/penumbra mod disable Self | ${m.dir}`
         }];
     })

@@ -11,6 +11,10 @@ using Lumina.Excel.GeneratedSheets2;
 using Quack.Ipcs;
 using Dalamud.Game;
 using Quack.Utils;
+using System;
+using Quack.Macros;
+using System.Linq;
+using Dalamud.Utility;
 
 namespace Quack;
 public sealed class Plugin : IDalamudPlugin
@@ -23,13 +27,14 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ISigScanner SigScanner { get; private set; } = null!;
     
     private const string CommandName = "/quack";
-    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main and config";
+    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config and exec";
 
     public readonly WindowSystem WindowSystem = new("Quack");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
-    public Config Config { get; init; }
 
+    private Config Config { get; init; }
+    private Executor Executor { get; init; }
     private EmotesIpc EmotesIpc { get; init; }
     private GlamourerIpc GlamourerIpc { get; init; }
     private MacrosIpc MacrosIpc { get; init; }
@@ -45,27 +50,28 @@ public sealed class Plugin : IDalamudPlugin
         }));
         engineSwitcher.DefaultEngineName = JintJsEngine.EngineName;
 
-        Config = PluginInterface.GetPluginConfig() as Config ?? new Config(GeneratorConfig.GetDefaults());
+        Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
 
-        ConfigWindow = new ConfigWindow(PluginInterface, Config, PluginLog);
-        MainWindow = new MainWindow(Config, new(SigScanner), PluginLog);
+        Executor = new(new(SigScanner), PluginLog);
+        MainWindow = new(Executor, Config, PluginLog);
+        ConfigWindow = new(PluginInterface, MainWindow, Config, PluginLog);
 
-        WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
+        WindowSystem.AddWindow(ConfigWindow);
 
-        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        CommandManager.AddHandler(CommandName, new(OnCommand)
         {
             HelpMessage = CommandHelpMessage
         });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
-        PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
+        PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
 
         EmotesIpc = new(PluginInterface, DataManager.GetExcelSheet<Emote>());
-        GlamourerIpc = new(PluginInterface);
+        GlamourerIpc = new(PluginInterface, PluginLog);
         MacrosIpc = new(PluginInterface);
-        PenumbraIpc = new(PluginInterface);
+        PenumbraIpc = new(PluginInterface, PluginLog);
     }
 
     public void Dispose()
@@ -85,8 +91,10 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
-        var subcommand = args.Split(" ", 2)[0];
+        var parts = args.Split(" ", 2).ToList();
+        var subcommand = parts[0];
 
+        //TODO: Provide task execution cmd with uuid or name
         if (subcommand == "main")
         {
             ToggleMainUI();
@@ -94,6 +102,49 @@ public sealed class Plugin : IDalamudPlugin
         else if (subcommand == "config")
         {
             ToggleConfigUI();
+        }
+        else if (subcommand == "exec")
+        {
+            if (parts.Count == 2)
+            {
+                var subparts = parts[1].Split(";");
+                Config.Macros.FindFirst(m => m.Name == subparts[0] || m.Path == subparts[0], out var macro);
+                if(macro != null)
+                {
+                    if (subparts.Length == 2)
+                    {
+                        var formatting = subparts[1].Trim();
+                        if (formatting == "true")
+                        {
+                            Executor.RunAsync(macro, Config.CommandFormat);
+                        }
+                        else if (formatting == "false")
+                        {
+                            Executor.RunAsync(macro);
+                        } 
+                        else if (!formatting.IsNullOrEmpty())
+                        {
+                            Executor.RunAsync(macro, formatting);
+                        } 
+                        else
+                        {
+                            Executor.RunAsync(macro);
+                        }
+                    } 
+                    else
+                    {
+                        Executor.RunAsync(macro);
+                    }
+                }
+                else
+                {
+                    ChatGui.Print($"No macro found with name or path: {parts[1]}");
+                }
+            }
+            else
+            {
+                ChatGui.Print($"Supported format: {CommandName} execute [Macro Name]; [With Formatting]");
+            }
         }
         else
         {
