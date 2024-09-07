@@ -25,14 +25,14 @@ public class ServerChat
     {
         if (scanner.TryScanText(Signatures.SendChat, out var processChatBoxPtr))
         {
-            this.ProcessChatBox = Marshal.GetDelegateForFunctionPointer<ProcessChatBoxDelegate>(processChatBoxPtr);
+            ProcessChatBox = Marshal.GetDelegateForFunctionPointer<ProcessChatBoxDelegate>(processChatBoxPtr);
         }
 
         unsafe
         {
             if (scanner.TryScanText(Signatures.SanitiseString, out var sanitisePtr))
             {
-                this.sanitiseString = (delegate* unmanaged<Utf8String*, int, IntPtr, void>)sanitisePtr;
+                sanitiseString = (delegate* unmanaged<Utf8String*, int, IntPtr, void>)sanitisePtr;
             }
         }
     }
@@ -45,14 +45,14 @@ public class ServerChat
     /// <b>This method is unsafe.</b> This method does no checking on your input and
     /// may send content to the server that the normal client could not. You must
     /// verify what you're sending and handle content and length to properly use
-    /// this.
+    /// 
     /// </para>
     /// </summary>
     /// <param name="message">Message to send</param>
     /// <exception cref="InvalidOperationException">If the signature for this function could not be found</exception>
     public unsafe void SendMessageUnsafe(byte[] message)
     {
-        if (this.ProcessChatBox == null)
+        if (ProcessChatBox == null)
         {
             throw new InvalidOperationException("Could not find signature for chat sending");
         }
@@ -63,7 +63,7 @@ public class ServerChat
         var mem1 = Marshal.AllocHGlobal(400);
         Marshal.StructureToPtr(payload, mem1, false);
 
-        this.ProcessChatBox(uiModule, mem1, IntPtr.Zero, 0);
+        ProcessChatBox(uiModule, mem1, IntPtr.Zero, 0);
 
         Marshal.FreeHGlobal(mem1);
     }
@@ -94,12 +94,12 @@ public class ServerChat
             throw new ArgumentException("message is longer than 500 bytes", nameof(message));
         }
 
-        if (message.Length != this.SanitiseText(message).Length)
+        if (message.Length != SanitiseText(message).Length)
         {
             throw new ArgumentException("message contained invalid characters", nameof(message));
         }
 
-        this.SendMessageUnsafe(bytes);
+        SendMessageUnsafe(bytes);
     }
 
     /// <summary>
@@ -117,14 +117,14 @@ public class ServerChat
     /// <exception cref="InvalidOperationException">If the signature for this function could not be found</exception>
     public unsafe string SanitiseText(string text)
     {
-        if (this.sanitiseString == null)
+        if (sanitiseString == null)
         {
             throw new InvalidOperationException("Could not find signature for chat sanitisation");
         }
 
         var uText = Utf8String.FromString(text);
 
-        this.sanitiseString(uText, 0x27F, IntPtr.Zero);
+        sanitiseString(uText, 0x27F, IntPtr.Zero);
         var sanitised = uText->ToString();
 
         uText->Dtor();
@@ -150,19 +150,19 @@ public class ServerChat
 
         internal ChatPayload(byte[] stringBytes)
         {
-            this.textPtr = Marshal.AllocHGlobal(stringBytes.Length + 30);
-            Marshal.Copy(stringBytes, 0, this.textPtr, stringBytes.Length);
-            Marshal.WriteByte(this.textPtr + stringBytes.Length, 0);
+            textPtr = Marshal.AllocHGlobal(stringBytes.Length + 30);
+            Marshal.Copy(stringBytes, 0, textPtr, stringBytes.Length);
+            Marshal.WriteByte(textPtr + stringBytes.Length, 0);
 
-            this.textLen = (ulong)(stringBytes.Length + 1);
+            textLen = (ulong)(stringBytes.Length + 1);
 
-            this.unk1 = 64;
-            this.unk2 = 0;
+            unk1 = 64;
+            unk2 = 0;
         }
 
         public void Dispose()
         {
-            Marshal.FreeHGlobal(this.textPtr);
+            Marshal.FreeHGlobal(textPtr);
         }
     }
 }

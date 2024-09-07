@@ -2,15 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dalamud;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
+using Newtonsoft.Json;
 using Quack.Generators;
 using Quack.Macros;
 using Quack.Utils;
@@ -18,29 +22,40 @@ using Quack.Windows.States;
 
 namespace Quack.Windows;
 
-public class ConfigWindow : Window, IDisposable
+public partial class ConfigWindow : Window, IDisposable
 {
+    private static string BLANK_NAME = "(Blank)";
+
+    [GeneratedRegexAttribute(@"\d+")]
+    private static partial Regex NumberGeneratedRegex();
+
     private IDalamudPluginInterface PluginInterface { get; init; }
-    private MainWindow MainWindow { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
-    private MacrosState MacrosState { get; set; }
+    private MacrosState MacrosState { get; set; } = null!;
 
     private Dictionary<GeneratorConfig, GeneratorConfigState> GeneratorConfigToState { get; set; }
     private GeneratorException? GeneratorException { get; set; } = null;
 
-    public ConfigWindow(IDalamudPluginInterface pluginInterface, MainWindow mainWindow, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
+    private FileDialogManager FileDialogManager { get; init; } = new();
+    private string? TmpConflictPath { get; set; }
+
+    public ConfigWindow(IDalamudPluginInterface pluginInterface, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
         PluginInterface = pluginInterface;
-        MainWindow = mainWindow;
         Config = config;
         PluginLog = pluginLog;
 
-        MacrosState = new(Config.Macros);
+        UpdateMacrosState();
         GeneratorConfigToState = Config.GeneratorConfigs.ToDictionary(c => c, c => new GeneratorConfigState());
+
+        Config.OnSave += UpdateMacrosState;
     }
 
-    public void Dispose() { }
+    public void Dispose() 
+    {
+        Config.OnSave -= UpdateMacrosState;
+    }
 
     public override void Draw()
     {
@@ -64,13 +79,14 @@ public class ConfigWindow : Window, IDisposable
             }
             ImGui.EndTabBar();
         }
+
+        FileDialogManager.Draw();
     }
 
     private void DrawGeneralTab()
     {
-        ImGui.NewLine();
         var commandFormat = Config.CommandFormat;
-        if (ImGui.InputText("Command format##commandFormat", ref commandFormat, ushort.MaxValue))
+        if (ImGui.InputText("Command Format##commandFormat", ref commandFormat, ushort.MaxValue))
         {
             Config.CommandFormat = commandFormat;
             Config.Save();
@@ -79,43 +95,237 @@ public class ConfigWindow : Window, IDisposable
 
         ImGui.NewLine();
 
-        var maxSearchResults = Config.MaxSearchResults;
-        if (ImGui.InputInt("Max Search Results##maxSearchResults", ref maxSearchResults))
+        var maxMatches = Config.MaxMatches;
+        if (ImGui.InputInt("Max Matches##maxMatches", ref maxMatches))
         {
-            Config.MaxSearchResults = maxSearchResults;
+            Config.MaxMatches = maxMatches;
             Config.Save();
         }
     }
 
+    public void UpdateMacrosState()
+    {
+        var selectedPath = MacrosState?.SelectedPath;
+        var filter = MacrosState != null? MacrosState.Filter : string.Empty;
+        var filteredMacros = Search.Lookup(Config.Macros, filter);
+        MacrosState = new(
+            MacrosState.GeneratePathNodes(filteredMacros), 
+            selectedPath, 
+            filter
+        );
+    }
 
     private void DrawMacrosTab()
     {
-        ImGui.Text("Macro editor is not functionnal yet");
-        DrawTreeNodes(MacrosState.Nodes);
+        ImGui.NewLine();
+        if (ImGui.Button("New##newMacro"))
+        {
+            NewMacro();
+        }
+
+        ImGui.SameLine(ImGui.GetWindowWidth() - 190);
+        if (ImGui.Button("Export##macrosExport"))
+        {
+            ExportMacros();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Import##macrosImport"))
+        {
+            ImportMacros();
+        }
+
+        ImGui.SameLine();
+        ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
+        if (ImGui.Button("Delete All##macrosDeleteAll"))
+        {
+            Config.Macros.Clear();
+            Config.Save();
+            
+        }
+        ImGui.PopStyleColor();
+
+        var leftChildWidth = ImGui.GetWindowWidth() * 0.3f;
+        var filter = MacrosState.Filter;
+        ImGui.PushItemWidth(leftChildWidth);
+        if (ImGui.InputText("##macrosFilter", ref filter, ushort.MaxValue))
+        {
+            MacrosState.Filter = filter;
+            UpdateMacrosState();
+        }
+        ImGui.PopItemWidth();
+
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.2f, 0.2f, 0.2f, 0.5f));
+        if (ImGui.BeginChild("paths", new(leftChildWidth, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 10)))
+        {
+            DrawPathNodes(MacrosState.PathNodes);
+            ImGui.EndChildFrame();
+        }
+        ImGui.PopStyleColor();
+
+        ImGui.SameLine();
+        if (ImGui.BeginChild("macro", new(ImGui.GetWindowWidth() * 0.7f, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 10)))
+        {
+            Config.Macros.FindFirst(m => m.Path == MacrosState.SelectedPath, out var macro);
+            if (macro != null)
+            {
+                var index = Config.Macros.IndexOf(macro);
+
+                var name = macro.Name;
+                if (ImGui.InputText($"Name###macro{index}Name", ref name, ushort.MaxValue))
+                {
+                    macro.Name = name;
+                    Config.Save();
+                }
+
+                ImGui.SameLine(ImGui.GetWindowWidth() - 80);
+                ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
+                if (ImGui.Button($"Delete###macro{index}Delete"))
+                {
+                    DeleteMacro(macro);
+                }
+                ImGui.PopStyleColor();
+
+                var pathConflictPopupId = $"###macro{index}PathConflictPopup";
+                if (ImGui.BeginPopup(pathConflictPopupId))
+                {
+                    ImGui.Text($"Found path conflict, confirm override?");
+
+                    ImGui.SetCursorPosX(15);
+                    ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
+                    if (ImGui.Button("Yes", new(100, 30)))
+                    {
+                        macro.Path = TmpConflictPath!;
+                        MacrosState.SelectedPath = TmpConflictPath;
+                        Config.Save();
+
+                        TmpConflictPath = null;
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.PopStyleColor();
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("No", new(100, 30)))
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+
+                    ImGui.EndPopup();
+                }
+
+                var path = TmpConflictPath != null ? TmpConflictPath : macro.Path;
+                if (ImGui.InputText($"Path###macro{index}Path", ref path, ushort.MaxValue))
+                {
+                    TmpConflictPath = null;
+                    if (Config.Macros.FindFirst(m => m.Path == path, out var conflictingMacro) && macro != conflictingMacro)
+                    {
+                        TmpConflictPath = path;
+                        ImGui.OpenPopup(pathConflictPopupId);
+                    } 
+                    else
+                    {
+                        macro.Path = path;
+                        MacrosState.SelectedPath = path;
+                        Config.Save();
+                    }
+                }
+
+                var tags = string.Join(',', macro.Tags);
+                if (ImGui.InputText($"Tags (comma separated)###macro{index}Tags", ref tags, ushort.MaxValue))
+                {
+                    macro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
+                    Config.Save();
+                }
+
+                var content = macro.Content;
+                if (ImGui.InputTextMultiline($"Content###macro{index}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY())))
+                {
+                    macro.Content = content;
+                    Config.Save();
+                }
+            }
+            else
+            {
+                ImGui.Text("No macro selected");
+            }
+
+            ImGui.EndChildFrame();
+        }
     }
 
-    private void DrawTreeNodes(HashSet<TreeNode<string>> nodes)
+    private void DrawPathNodes(HashSet<TreeNode<string>> nodes)
     {
-        foreach(var node in nodes.OrderBy(n => Path.GetFileName(n.Item)))
+        // Pad with zeros to improve sorting with numbers
+        var sortedNodes = nodes.OrderBy(n => NumberGeneratedRegex().Replace(n.Item, m => m.Value.PadLeft(10, '0')));
+        foreach (var node in sortedNodes)
         {
             var name = Path.GetFileName(node.Item);
             if (node.Children.Count > 0)
             {
-                if (ImGui.TreeNodeEx($"{name}###Macro{node.Item.GetHashCode()}Path"))
+                if (ImGui.TreeNodeEx($"{name}###macro{node.Item}TreeNode"))
                 {
-                    DrawTreeNodes(node.Children);
+                    DrawPathNodes(node.Children);
                     ImGui.TreePop();
                 }
             }
             else
             {
-                if (ImGui.TreeNodeEx($"{name}###Macro{node.Item.GetHashCode()}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet))
+                var flags = ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet;
+                if (node.Item == MacrosState.SelectedPath)
                 {
+                    flags |= ImGuiTreeNodeFlags.Selected;
+                }
+                
+                if (ImGui.TreeNodeEx($"{(name.IsNullOrWhitespace()? BLANK_NAME : name)}###macro{node.Item}TreeNodeLeft", flags))
+                {
+                    if (ImGui.IsItemClicked())
+                    {
+                        MacrosState.SelectedPath = node.Item;
+                    }
                     ImGui.TreePop();
                 }
             }
         }
+    }
+    private void NewMacro()
+    {
+        var newMacro = new Macro();
+        Config.Macros.Add(newMacro);
+        MacrosState.SelectedPath = newMacro.Path;
+        Config.Save();
+    }
 
+    private void ExportMacros()
+    {
+        FileDialogManager.SaveFileDialog("Export Macros", ".*", "macros.json", ".json", (valid, path) =>
+        {
+            if (valid)
+            {
+                using var file = File.CreateText(path);
+                new JsonSerializer().Serialize(file, Config.Macros);
+            }
+        });
+    }
+
+    private void ImportMacros()
+    {
+        FileDialogManager.OpenFileDialog("Import Macros", "{.json}", (valid, path) =>
+        {
+            if (valid)
+            {
+                using StreamReader reader = new(path);
+                var json = reader.ReadToEnd();
+                var importedMacros = JsonConvert.DeserializeObject<List<Macro>>(json)!;
+                Config.Macros.UnionWith(importedMacros);
+                Config.Save();
+            }
+        });
+    }
+
+    private void DeleteMacro(Macro macro)
+    {
+        Config.Macros.Remove(macro);
+        Config.Save();
     }
 
     private void DrawGeneratorsTab()
@@ -137,7 +347,19 @@ public class ConfigWindow : Window, IDisposable
             NewGeneratorConfig();
         }
 
-        ImGui.SameLine(ImGui.GetWindowWidth() - 200);
+        ImGui.SameLine(ImGui.GetWindowWidth() - 310);
+        if (ImGui.Button("Export##generatorConfigsExport"))
+        {
+            ExportGeneratorConfigs();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Import##generatorConfigsExport"))
+        {
+            ImportGeneratorConfigs();
+        }
+
+        ImGui.SameLine();
         if (ImGui.Button("Recreate Defaults##generatorConfigsAppendDefaults"))
         {
             RecreateDefaultGeneratorConfigs();
@@ -158,7 +380,7 @@ public class ConfigWindow : Window, IDisposable
             var hash = generatorConfig.GetHashCode();
             if (ImGui.BeginTabBar("generatorConfigs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
             {
-                if (ImGui.BeginTabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? "(Blank)" : generatorConfig.Name)}###generatorConfigs{hash}"))
+                if (ImGui.BeginTabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}###generatorConfigs{hash}"))
                 {
                     ImGui.NewLine();
                     DrawDefinitionHeader(generatorConfig, funcChannels);
@@ -170,6 +392,35 @@ public class ConfigWindow : Window, IDisposable
             }
 
         }
+    }
+
+    private void ExportGeneratorConfigs()
+    {
+        FileDialogManager.SaveFileDialog("Export Generators", ".*", "generators.json", ".json", (valid, path) =>
+        {
+            if (valid)
+            {
+                using var file = File.CreateText(path);
+                new JsonSerializer().Serialize(file, Config.GeneratorConfigs);
+            }
+        });
+    }
+
+    private void ImportGeneratorConfigs()
+    {
+        FileDialogManager.OpenFileDialog("Import Generators", "{.json}", (valid, path) =>
+        {
+            if (valid)
+            {
+                using StreamReader reader = new(path);
+                var json = reader.ReadToEnd();
+                var importedGeneratorConfigs = JsonConvert.DeserializeObject<List<GeneratorConfig>>(json)!;
+                Config.GeneratorConfigs.AddRange(importedGeneratorConfigs);
+                Config.Save();
+
+                importedGeneratorConfigs.ForEach(g => GeneratorConfigToState.Add(g, new()));
+            }
+        });
     }
 
     private void DrawDefinitionHeader(GeneratorConfig generatorConfig, IEnumerable<CallGateChannel> funcChannels)
@@ -263,7 +514,7 @@ public class ConfigWindow : Window, IDisposable
                 var generatedMacrosFilter = state.GeneratedMacrosFilter;
 
                 var conflictingMacros = Config.Macros.Intersect(generatedMacros, new MacroComparer());
-                var conflictResolutionPopupId = $"generatorConfigs{hash}GeneratedMacrosConfictsPopup";
+                var conflictResolutionPopupId = $"###generatorConfigs{hash}GeneratedMacrosConflictsPopup";
                 if (conflictingMacros.Any())
                 {
                     if (ImGui.BeginPopup(conflictResolutionPopupId))
@@ -401,7 +652,6 @@ public class ConfigWindow : Window, IDisposable
     {
         GeneratorConfig generatorConfig = new();
         Config.GeneratorConfigs.Add(generatorConfig);
-        Config.Save();
 
         GeneratorConfigToState.Add(generatorConfig, new());
     }
@@ -411,7 +661,6 @@ public class ConfigWindow : Window, IDisposable
         var defaultGeneratorConfigs = GeneratorConfig.GetDefaults();
         Config.GeneratorConfigs.AddRange(defaultGeneratorConfigs);
         defaultGeneratorConfigs.ForEach(c => GeneratorConfigToState.Add(c, new()));
-        Config.Save();
     }
 
     private void DeleteGeneratorConfigs()
@@ -419,7 +668,6 @@ public class ConfigWindow : Window, IDisposable
         GeneratorConfigToState.Clear();
 
         Config.GeneratorConfigs.Clear();
-        Config.Save();
     }
 
     private void DeleteGeneratorConfig(GeneratorConfig generatorConfig)
@@ -427,7 +675,6 @@ public class ConfigWindow : Window, IDisposable
         GeneratorConfigToState.Remove(generatorConfig);
 
         Config.GeneratorConfigs.Remove(generatorConfig);
-        Config.Save();
     }
 
     private void GenerateMacros(GeneratorConfig generatorConfig)
@@ -461,8 +708,5 @@ public class ConfigWindow : Window, IDisposable
         state.GeneratedMacros.ExceptWith(selectedGeneratedMacros);
         state.FilteredGeneratedMacros.ExceptWith(selectedGeneratedMacros);
         selectedGeneratedMacros.Clear();
-
-        MacrosState = new(Config.Macros);
-        MainWindow.UpdateFilteredMacros();
     }
 }

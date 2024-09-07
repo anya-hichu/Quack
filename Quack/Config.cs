@@ -11,12 +11,14 @@ public class Config : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
 
-    public int MaxSearchResults { get; set; } = 50;
+    public int MaxMatches { get; set; } = 10;
     public string CommandFormat { get; set; } = "/echo {0}";
 
     public List<GeneratorConfig> GeneratorConfigs { get; set; } = [];
 
     public HashSet<Macro> Macros { get; set; } = new(0, new MacroComparer());
+
+    public event Action? OnSave;
 
     public Config() { }
 
@@ -27,6 +29,10 @@ public class Config : IPluginConfiguration
 
     public void Save()
     {
+        // Force removal of conflicting macro paths on save
+        Macros = new(Macros, new MacroComparer());
+
         Plugin.PluginInterface.SavePluginConfig(this);
+        OnSave?.Invoke();
     }
 }

@@ -17,10 +17,8 @@ public class MainWindow : Window, IDisposable
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
 
-    private FileDialogManager FileDialogManager { get; init; }
-
     private string Filter { get; set; } = string.Empty;
-    private IEnumerable<Macro> FilteredMacros { get; set; } = [];
+    private List<Macro> FilteredMacros { get; set; } = [];
 
     public MainWindow(Executor executor, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
@@ -28,16 +26,20 @@ public class MainWindow : Window, IDisposable
         Config = config;
         PluginLog = pluginLog;
 
-        FileDialogManager = new();
         UpdateFilteredMacros();
+
+        Config.OnSave += UpdateFilteredMacros;
     }
 
     public void UpdateFilteredMacros()
     {
-        FilteredMacros = Search.Lookup(Config.Macros, Filter);
+        FilteredMacros = Search.Lookup(Config.Macros, Filter).Take(Config.MaxMatches).ToList();
     }
 
-    public void Dispose() { }
+    public void Dispose() 
+    {
+        Config.OnSave -= UpdateFilteredMacros;
+    }
 
     public override void Draw()
     {
@@ -53,25 +55,7 @@ public class MainWindow : Window, IDisposable
         if (ImGui.Button("X##filterClear"))
         {
             Filter = string.Empty;
-        }
-
-        ImGui.SameLine(ImGui.GetWindowWidth() - 190);
-        if (ImGui.Button("Export##macrosExport"))
-        {
-            ExportMacros();
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Import##macrosImport"))
-        {
-            ImportMacros();
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Delete All##macrosDeleteAll"))
-        {
-            Config.Macros.Clear();
-            Config.Save();
+            UpdateFilteredMacros();
         }
         
         if (ImGui.BeginTable("macros", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
@@ -81,8 +65,9 @@ public class MainWindow : Window, IDisposable
             ImGui.TableSetupColumn($"Tags##macroTags", ImGuiTableColumnFlags.None, 1);
             ImGui.TableSetupColumn($"Actions##macroActions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
-            
-            for (var i = 0; i < FilteredMacros.Take(Config.MaxSearchResults).Count(); i++)
+
+
+            for (var i = 0; i < FilteredMacros.Count(); i++)
             {
                 var macro = FilteredMacros.ElementAt(i);
                 if (ImGui.TableNextColumn())
@@ -126,35 +111,5 @@ public class MainWindow : Window, IDisposable
             }
             ImGui.EndTable();
         }
-
-        FileDialogManager.Draw();
-    }
-
-
-    private void ExportMacros()
-    {
-        FileDialogManager.SaveFileDialog("Export Macros", ".*", "macros.json", ".json", (valid, path) =>
-        {
-            if (valid)
-            {
-                using var file = File.CreateText(path);
-                new JsonSerializer().Serialize(file, Config.Macros);
-            }
-        });
-    }
-
-    private void ImportMacros()
-    {
-        FileDialogManager.OpenFileDialog("Import Macros", "{.json}", (valid, path) =>
-        {
-            if (valid)
-            {
-                using StreamReader reader = new(path);
-                var json = reader.ReadToEnd();
-                var importedMacros = JsonConvert.DeserializeObject<List<Macro>>(json)!;
-                Config.Macros.UnionWith(importedMacros);
-                Config.Save();
-            }
-        });
     }
 }

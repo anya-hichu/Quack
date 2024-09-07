@@ -4,32 +4,34 @@ using System.Collections.Generic;
 using System.Linq;
 namespace Quack.Windows.States;
 
-public class MacrosState
+public class MacrosState(HashSet<TreeNode<string>> pathNodes, string? selectedPath, string filter)
 {
-    public HashSet<TreeNode<string>> Nodes { get; init; } = new(0, new TreeNodeComparer<string>());
-    public TreeNode<string> SelectedNode { get; init; } = null!;
+    public HashSet<TreeNode<string>> PathNodes { get; init; } = pathNodes;
+    public string? SelectedPath { get; set; } = selectedPath;
+    public string Filter { get; set; } = filter;
 
-    public MacrosState(IEnumerable<Macro> macros)
+    public static HashSet<TreeNode<string>> GeneratePathNodes(IEnumerable<Macro> macros)
     {
-
+        var pathNodes = new HashSet<TreeNode<string>>(0, new TreeNodeComparer<string>());
         foreach (var macro in macros)
         {
-            var currentSet = Nodes;
+            var current = pathNodes;
             var sep = '/';
             var parts = macro.Path.Split(sep);
             for (var take = 1; take <= parts.Length; take++)
             {
                 var node = new TreeNode<string>(string.Join(sep, parts.Take(take)));
-                if (currentSet.Add(node))
+                if (current.Add(node))
                 {
-                    currentSet = node.Children;
+                    current = node.Children;
                 }
                 else
                 {
-                    currentSet.TryGetValue(node, out var existingNode);
-                    currentSet = existingNode!.Children;
+                    current.TryGetValue(node, out var existingNode);
+                    current = existingNode!.Children;
                 }
             }
         }
+        return pathNodes;
     }
 }

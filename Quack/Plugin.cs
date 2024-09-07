@@ -10,8 +10,7 @@ using Quack.Generators;
 using Lumina.Excel.GeneratedSheets2;
 using Quack.Ipcs;
 using Dalamud.Game;
-using Quack.Utils;
-using System;
+using Action = System.Action;
 using Quack.Macros;
 using System.Linq;
 using Dalamud.Utility;
@@ -19,6 +18,8 @@ using Dalamud.Utility;
 namespace Quack;
 public sealed class Plugin : IDalamudPlugin
 {
+    public delegate void OnConfigMacrosUpdate();
+
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
@@ -39,6 +40,7 @@ public sealed class Plugin : IDalamudPlugin
     private GlamourerIpc GlamourerIpc { get; init; }
     private MacrosIpc MacrosIpc { get; init; }
     private PenumbraIpc PenumbraIpc { get; init; }
+    
 
     public Plugin()
     {
@@ -51,10 +53,11 @@ public sealed class Plugin : IDalamudPlugin
         engineSwitcher.DefaultEngineName = JintJsEngine.EngineName;
 
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
+        Config.Macros = new(Config.Macros, new MacroComparer());
 
         Executor = new(new(SigScanner), PluginLog);
         MainWindow = new(Executor, Config, PluginLog);
-        ConfigWindow = new(PluginInterface, MainWindow, Config, PluginLog);
+        ConfigWindow = new(PluginInterface, Config, PluginLog);
 
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(ConfigWindow);
