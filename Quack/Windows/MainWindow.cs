@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
-using Newtonsoft.Json;
 using Quack.Macros;
 
 namespace Quack.Windows;
@@ -44,12 +41,13 @@ public class MainWindow : Window, IDisposable
     public override void Draw()
     {
         var filter = Filter;
-        ImGui.PushItemWidth(200);
+        ImGui.PushItemWidth(ImGui.GetWindowWidth() - 200);
         if (ImGui.InputText($"Filter ({FilteredMacros.Count()}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
         {
             Filter = filter;
             UpdateFilteredMacros();
         }
+        ImGui.PopItemWidth();
 
         ImGui.SameLine();
         if (ImGui.Button("X##filterClear"))

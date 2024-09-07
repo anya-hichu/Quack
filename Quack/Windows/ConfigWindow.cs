@@ -85,6 +85,8 @@ public partial class ConfigWindow : Window, IDisposable
 
     private void DrawGeneralTab()
     {
+        ImGui.NewLine();
+
         var commandFormat = Config.CommandFormat;
         if (ImGui.InputText("Command Format##commandFormat", ref commandFormat, ushort.MaxValue))
         {
