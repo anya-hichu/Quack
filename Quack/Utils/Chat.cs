@@ -1,18 +1,25 @@
+// Source: https://git.anna.lgbt/anna/XivCommon/src/branch/main/XivCommon/Functions/Chat.cs
+
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using Dalamud.Game;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Client.System.String;
+using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
 namespace Quack.Utils;
 
-public class ServerChat
+/// <summary>
+/// A class containing chat functionality
+/// </summary>
+public class Chat
 {
     private static class Signatures
     {
         internal const string SendChat = "48 89 5C 24 ?? 57 48 83 EC 20 48 8B FA 48 8B D9 45 84 C9";
-        internal const string SanitiseString = "E8 ?? ?? ?? ?? EB ?? 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8D AE";
+        internal const string SanitiseString = "E8 ?? ?? ?? ?? EB 0A 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8D AE";
     }
 
     private delegate void ProcessChatBoxDelegate(IntPtr uiModule, IntPtr message, IntPtr unused, byte a4);
@@ -21,7 +28,7 @@ public class ServerChat
 
     private readonly unsafe delegate* unmanaged<Utf8String*, int, IntPtr, void> sanitiseString = null!;
 
-    public ServerChat(Dalamud.Game.ISigScanner scanner)
+    internal Chat(ISigScanner scanner)
     {
         if (scanner.TryScanText(Signatures.SendChat, out var processChatBoxPtr))
         {
@@ -134,6 +141,7 @@ public class ServerChat
     }
 
     [StructLayout(LayoutKind.Explicit)]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     private readonly struct ChatPayload : IDisposable
     {
         [FieldOffset(0)]

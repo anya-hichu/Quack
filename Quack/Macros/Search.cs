@@ -8,10 +8,10 @@ public class Search
     private static readonly StringComparison MATCH_FLAGS = StringComparison.InvariantCultureIgnoreCase;
     public static List<Macro> Lookup(IEnumerable<Macro> macros, string filter)
     {
-        return macros
+        return new(macros
             .Where(m => CountTokenMatches(m, filter) > 0)
             .OrderBy(m => -CountTokenMatches(m, filter))
-            .ThenBy(x => x.Name).ToList();
+            .ThenBy(x => x.Name));
     }
 
     private static int CountTokenMatches(Macro macro, string filter)

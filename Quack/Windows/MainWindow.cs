@@ -87,21 +87,13 @@ public class MainWindow : Window, IDisposable
                 {
                     if (ImGui.Button($"Execute###macros{i}Execute"))
                     {
-                        Executor.RunAsync(macro);
+                        Executor.EnqueueMessagesAsync(macro);
                     }
 
                     ImGui.SameLine();
                     if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormatting"))
                     {
-                        Executor.RunAsync(macro, Config.CommandFormat);
-                    }
-
-                    // TODO REMOVE AND HAVE PROPER CONFIG EDITOR FOR MACROS in dedicated tab with a folder like structure on right like penumbra
-                    ImGui.SameLine();
-                    if (ImGui.Button($"Delete###macros{i}Delete"))
-                    {
-                        Config.Macros.Remove(macro);
-                        Config.Save();
+                        Executor.EnqueueMessagesAsync(macro, Config.CommandFormat);
                     }
                 }
 

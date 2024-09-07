@@ -1,4 +1,3 @@
-using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
@@ -10,7 +9,6 @@ using Quack.Generators;
 using Lumina.Excel.GeneratedSheets2;
 using Quack.Ipcs;
 using Dalamud.Game;
-using Action = System.Action;
 using Quack.Macros;
 using System.Linq;
 using Dalamud.Utility;
@@ -26,7 +24,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
     [PluginService] internal static IPluginLog PluginLog { get; private set; } = null!;
     [PluginService] internal static ISigScanner SigScanner { get; private set; } = null!;
-    
+    [PluginService] internal static IFramework Framework { get; private set; } = null!;
+
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config and exec";
 
@@ -55,7 +54,7 @@ public sealed class Plugin : IDalamudPlugin
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
         Config.Macros = new(Config.Macros, new MacroComparer());
 
-        Executor = new(new(SigScanner), PluginLog);
+        Executor = new(Framework, new(SigScanner), PluginLog);
         MainWindow = new(Executor, Config, PluginLog);
         ConfigWindow = new(PluginInterface, Config, PluginLog);
 
@@ -97,7 +96,6 @@ public sealed class Plugin : IDalamudPlugin
         var parts = args.Split(" ", 2).ToList();
         var subcommand = parts[0];
 
-        //TODO: Provide task execution cmd with uuid or name
         if (subcommand == "main")
         {
             ToggleMainUI();
@@ -119,24 +117,24 @@ public sealed class Plugin : IDalamudPlugin
                         var formatting = subparts[1].Trim();
                         if (formatting == "true")
                         {
-                            Executor.RunAsync(macro, Config.CommandFormat);
+                            Executor.EnqueueMessagesAsync(macro, Config.CommandFormat);
                         }
                         else if (formatting == "false")
                         {
-                            Executor.RunAsync(macro);
+                            Executor.EnqueueMessagesAsync(macro);
                         } 
                         else if (!formatting.IsNullOrEmpty())
                         {
-                            Executor.RunAsync(macro, formatting);
+                            Executor.EnqueueMessagesAsync(macro, formatting);
                         } 
                         else
                         {
-                            Executor.RunAsync(macro);
+                            Executor.EnqueueMessagesAsync(macro);
                         }
                     } 
                     else
                     {
-                        Executor.RunAsync(macro);
+                        Executor.EnqueueMessagesAsync(macro);
                     }
                 }
                 else
