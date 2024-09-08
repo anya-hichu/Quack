@@ -9,22 +9,22 @@ using Newtonsoft.Json.Linq;
 using Quack.Macros;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Quack.Generators;
 
-public class Generator(IDalamudPluginInterface pluginInterface, GeneratorConfig generatorConfig, IPluginLog pluginLog)
+public class Generator(GeneratorConfig generatorConfig, IPluginLog pluginLog)
 {
-    private IDalamudPluginInterface PluginInterface { get; init; } = pluginInterface;
     private GeneratorConfig GeneratorConfig { get; init; } = generatorConfig;
     private IPluginLog PluginLog { get; init; } = pluginLog; 
 
-    public List<Macro> Execute()
+    public HashSet<Macro> Execute()
     {
         var args = CallIpc();
-        return CallFunction(args);
+        return CallFunction(args).ToHashSet(new MacroComparer());
     }
 
-    private List<object> CallIpc()
+    private object[] CallIpc()
     {
         if (GeneratorConfig.IpcName.IsNullOrWhitespace())
         {
@@ -53,7 +53,7 @@ public class Generator(IDalamudPluginInterface pluginInterface, GeneratorConfig 
         }
     }
 
-    private List<Macro> CallFunction(List<object> args)
+    private Macro[] CallFunction(object[] args)
     {
         var engine = JsEngineSwitcher.Current.CreateDefaultEngine();
         try
@@ -63,11 +63,11 @@ public class Generator(IDalamudPluginInterface pluginInterface, GeneratorConfig 
                 PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script: {GeneratorConfig.Script}");
                 engine.Execute(GeneratorConfig.Script);
                 PluginLog.Debug($"Calling generator {GeneratorConfig.Name} main function with: {string.Join(", ", args)}");
-                var maybeJson = engine.CallFunction<string>("main", args.ToArray());
-                var generatedEntries = JsonConvert.DeserializeObject<List<Macro>>(maybeJson);
+                var maybeJson = engine.CallFunction<string>("main", args);
+                var generatedEntries = JsonConvert.DeserializeObject<Macro[]>(maybeJson);
                 if (generatedEntries != null)
                 {
-                    PluginLog.Debug($"Successfully generated {generatedEntries.Count} macros using {GeneratorConfig.Name} generator");
+                    PluginLog.Debug($"Successfully generated {generatedEntries.Length} macros using {GeneratorConfig.Name} generator");
                     return generatedEntries;
                 }
                 else

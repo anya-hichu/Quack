@@ -56,7 +56,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Executor = new(Framework, new(SigScanner), PluginLog);
         MainWindow = new(Executor, Config, PluginLog);
-        ConfigWindow = new(PluginInterface, Config, PluginLog);
+        ConfigWindow = new(Executor, Config, PluginLog);
 
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(ConfigWindow);
@@ -117,24 +117,24 @@ public sealed class Plugin : IDalamudPlugin
                         var formatting = subparts[1].Trim();
                         if (formatting == "true")
                         {
-                            Executor.EnqueueMessagesAsync(macro, Config.CommandFormat);
+                            Executor.ExecuteTask(macro, Config.CommandFormat);
                         }
                         else if (formatting == "false")
                         {
-                            Executor.EnqueueMessagesAsync(macro);
+                            Executor.ExecuteTask(macro);
                         } 
                         else if (!formatting.IsNullOrEmpty())
                         {
-                            Executor.EnqueueMessagesAsync(macro, formatting);
+                            Executor.ExecuteTask(macro, formatting);
                         } 
                         else
                         {
-                            Executor.EnqueueMessagesAsync(macro);
+                            Executor.ExecuteTask(macro);
                         }
                     } 
                     else
                     {
-                        Executor.EnqueueMessagesAsync(macro);
+                        Executor.ExecuteTask(macro);
                     }
                 }
                 else

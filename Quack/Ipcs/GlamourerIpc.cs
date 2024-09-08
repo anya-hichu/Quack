@@ -34,6 +34,8 @@ public class GlamourerIpc : IDisposable
     public static readonly string DESIGN_LIST = "Quack.Glamourer.GetDesignList";
 
     private IPluginLog PluginLog { get; init; }
+
+    private string PluginConfigsDirectory { get; init; }
     private string SortOrderConfigPath {  get; init; }
     private string DesignConfigPathTemplate { get; init; }
 
@@ -47,11 +49,13 @@ public class GlamourerIpc : IDisposable
         BaseGetDesignListSubscriber = pluginInterface.GetIpcSubscriber<Dictionary<string, string>>("Glamourer.GetDesignList.V2");
         GetDesignListProvider = pluginInterface.GetIpcProvider<DesignData[]>(DESIGN_LIST);
 
+        PluginConfigsDirectory = Path.GetFullPath(Path.Combine(pluginInterface.GetPluginConfigDirectory(), ".."));
+
         // %appdata%\xivlauncher\pluginConfigs\Glamourer\sort_order.json
-        SortOrderConfigPath = Path.GetFullPath(Path.Combine(pluginInterface.GetPluginConfigDirectory(), "..\\Glamourer\\sort_order.json"));
+        SortOrderConfigPath = Path.Combine(PluginConfigsDirectory, "Glamourer\\sort_order.json");
 
         // %appdata%\xivlauncher\pluginConfigs\Glamourer\designs\{id}.json
-        DesignConfigPathTemplate = Path.GetFullPath(Path.Combine(pluginInterface.GetPluginConfigDirectory(), "..\\Glamourer\\designs\\{0}.json"));
+        DesignConfigPathTemplate = Path.Combine(PluginConfigsDirectory, "Glamourer\\designs\\{0}.json");
 
         GetDesignListProvider.RegisterFunc(GetDesignList);
     }
@@ -70,6 +74,7 @@ public class GlamourerIpc : IDisposable
             using StreamReader sortOrderConfigFile = new(SortOrderConfigPath);
             var sortOrderConfigJson = sortOrderConfigFile.ReadToEnd();
             var sortOrderConfig = JsonConvert.DeserializeObject<SortOrderConfig>(sortOrderConfigJson)!;
+            PluginLog.Debug($"Retrieved {sortOrderConfig.Data.Count} glamourer path infos from {Path.GetRelativePath(PluginConfigsDirectory, SortOrderConfigPath)}");
 
             return designList.Select(d =>
             {
@@ -79,6 +84,8 @@ public class GlamourerIpc : IDisposable
                     using StreamReader designConfigFile = new(designConfigPath);
                     var designConfigJson = designConfigFile.ReadToEnd();
                     var designConfig = JsonConvert.DeserializeObject<DesignConfig>(designConfigJson)!;
+
+                    PluginLog.Debug($"Retrieved {designConfig.Tags.Length} glamourer tags from {Path.GetRelativePath(PluginConfigsDirectory, designConfigPath)}");
 
                     return new DesignData(d.Key,
                                           d.Value,

@@ -14,9 +14,9 @@ public class GeneratorConfig
             "CustomizePlus.Profile.GetList",
             string.Empty,
 """
-function main(listJson) {
-    const list = JSON.parse(listJson);
-    const macros = list.flatMap(p => {
+function main(profilesJson) {
+    const profiles = JSON.parse(profilesJson);
+    const macros = profiles.flatMap(p => {
         return [{
             name: `Enable Profile "${p.Item2}"`,
             path: `Customize/${p.Item2}/Enable`,
@@ -30,6 +30,41 @@ function main(listJson) {
     return JSON.stringify(macros);
 }
 """),
+        new("Custom Emotes",
+            PenumbraIpc.MOD_LIST,
+            string.Empty,
+"""
+// Requires "DeterministicPose" plugin to be installed for pose support
+
+const commandTagPattern = /(?<command>\/\S+)( (?<poseIndex>\d))?( \((?<comment>.+)\))?/;
+
+function main(modsJson) {
+    const mods = JSON.parse(modsJson);
+    const macros = mods.flatMap(m => {
+        return m.localTags.flatMap(commandTag => {
+            const match = commandTagPattern.exec(commandTag);
+            if (match) {
+                const { command, poseIndex, comment } = match.groups;
+                const nameSuffix = comment ? ` (${comment})` : '';
+                const commandSuffix = poseIndex ? `<wait.1>\n/dpose ${poseIndex}` : '';
+
+                return [{
+                    name: `Custom Emote "${m.name}"${nameSuffix}`,
+                    path: `Mods/${m.path}/Execute`,
+                    tags: m.localTags,
+                    content: `/penumbra bulktag disable Self | ${command}
+/penumbra mod enable Self | ${m.dir}
+/penumbra redraw <me> <wait.1>
+${command}${commandSuffix}`
+                }];
+            } else {
+                return [];
+            }
+        });
+    });
+    return JSON.stringify(macros);
+}
+"""),
         new("Emotes",
             EmotesIpc.LIST,
             string.Empty,
@@ -39,6 +74,7 @@ function main(emotesJson) {
     const macros = emotes.map(e => {
         return {
             name: e.name,
+            tags: [e.command],
             path: `Emotes/${e.category[0].toUpperCase()}${e.category.slice(1)}/${e.name}`,
             content: e.command
         };
@@ -50,20 +86,17 @@ function main(emotesJson) {
             GlamourerIpc.DESIGN_LIST,
             string.Empty,
 """
-function main(designListJson) {
-    const designList = JSON.parse(designListJson);
-    const macros = designList.flatMap(d => {
-        return [{
-            name: `Apply Design "${d.name}" with mods`,
-            path: `Glamours/${d.path}/Apply with mods`,
-            tags: d.tags,
-            content: `/glamour apply ${d.id} | <me>; true`
-        }, {
+function main(designsJson) {
+    const designs = JSON.parse(designsJson);
+    const macros = designs.map(d => {
+        return {
             name: `Apply Design "${d.name}"`,
             path: `Glamours/${d.path}/Apply`,
             tags: d.tags,
-            content: `/glamour apply ${d.id} | <me>; false`
-        }];
+            content: `/penumbra bulktag disable Self | all
+/glamour apply Base | <me>;true
+/glamour apply ${d.id} | <me>; true`
+        }
     })
     return JSON.stringify(macros);
 }
@@ -74,17 +107,17 @@ function main(designListJson) {
 """
 // Second parameter value (WorldId) can be found as key in %appdata%\xivlauncher\pluginConfigs\Honorific.json
 
-function main(titleDataJson) {
-    const titleData = JSON.parse(titleDataJson);
-    const macros = titleData.formatMap(d => {
+function main(titlesJson) {
+    const titles = JSON.parse(titlesJson);
+    const macros = titles.formatMap(t => {
         return [{
-            name: `Enable Honorific "${d.Title}"`,
-            path: `Honorifics/{d.Title}/Enable`,
-            content: `/honorific title enable ${d.Title}`
+            name: `Enable Honorific "${t.Title}"`,
+            path: `Honorifics/{t.Title}/Enable`,
+            content: `/honorific title enable ${t.Title}`
         }, {
-            name: `Disable Honorific "${d.Title}"`,
-            path: `Honorifics/{d.Title}/Disable`,
-            content: `/honorific title disable ${d.Title}`
+            name: `Disable Honorific "${t.Title}"`,
+            path: `Honorifics/{t.Title}/Disable`,
+            content: `/honorific title disable ${t.Title}`
         }];
     });
     return JSON.stringify(macros);
@@ -97,9 +130,11 @@ function main(titleDataJson) {
 function main(rawMacrosJson) {
     const rawMacros = JSON.parse(rawMacrosJson);
     const macros = rawMacros.flatMap(m => {
+        var setName = ['Individual', 'Shared'][m.set];
         return [{
             name: m.name,
-            path: `Macros/${['Individual', 'Shared'][m.set]}/${[m.index, m.name].filter(Boolean).join('/')}`,
+            tags: [setName],
+            path: `Macros/${setName}/${m.index}/${m.name}`,
             content: m.content
         }];
     });
@@ -110,9 +145,9 @@ function main(rawMacrosJson) {
             PenumbraIpc.MOD_LIST,
             string.Empty,
 """
-function main(modListJson) {
-    const modList = JSON.parse(modListJson);
-    const macros = modList.flatMap(m => {
+function main(modsJson) {
+    const mods = JSON.parse(modsJson);
+    const macros = mods.flatMap(m => {
         return [{
             name: `Enable Mod "${m.name}"`,
             path: `Mods/${m.path}/Enable`,
@@ -151,7 +186,7 @@ function main() {
     });
     return JSON.stringify(macros);
 }
-"""),
+""")
 ];
     public static List<GeneratorConfig> GetDefaults()
     {

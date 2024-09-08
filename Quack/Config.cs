@@ -11,7 +11,7 @@ public class Config : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
 
-    public int MaxMatches { get; set; } = 10;
+    public int MaxMatches { get; set; } = 15;
     public string CommandFormat { get; set; } = "/echo {0}";
 
     public List<GeneratorConfig> GeneratorConfigs { get; set; } = [];

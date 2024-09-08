@@ -9,7 +9,6 @@ using Dalamud;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
@@ -19,6 +18,7 @@ using Quack.Generators;
 using Quack.Macros;
 using Quack.Utils;
 using Quack.Windows.States;
+using static Dalamud.LoadingDialog;
 
 namespace Quack.Windows;
 
@@ -29,7 +29,7 @@ public partial class ConfigWindow : Window, IDisposable
     [GeneratedRegexAttribute(@"\d+")]
     private static partial Regex NumberGeneratedRegex();
 
-    private IDalamudPluginInterface PluginInterface { get; init; }
+    private Executor Executor { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
     private MacrosState MacrosState { get; set; } = null!;
@@ -40,9 +40,9 @@ public partial class ConfigWindow : Window, IDisposable
     private FileDialogManager FileDialogManager { get; init; } = new();
     private string? TmpConflictPath { get; set; }
 
-    public ConfigWindow(IDalamudPluginInterface pluginInterface, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
+    public ConfigWindow(Executor executor, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
-        PluginInterface = pluginInterface;
+        Executor = executor;
         Config = config;
         PluginLog = pluginLog;
 
@@ -137,13 +137,37 @@ public partial class ConfigWindow : Window, IDisposable
             ImportMacros();
         }
 
+        var deleteAllMacrosPopup = "deleteAllMacrosPopup";
+        if (ImGui.BeginPopup(deleteAllMacrosPopup))
+        {
+            ImGui.Text($"Confirm deleting {Config.Macros.Count} macros?");
+
+            ImGui.SetCursorPosX(15);
+            ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
+            if (ImGui.Button("Yes", new(100, 30)))
+            {
+                Config.Macros.Clear();
+                Config.Save();
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.PopStyleColor();
+
+            ImGui.SameLine();
+            if (ImGui.Button("No", new(100, 30)))
+            {
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndPopup();
+        }
+
         ImGui.SameLine();
         ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
         if (ImGui.Button("Delete All##macrosDeleteAll"))
         {
-            Config.Macros.Clear();
-            Config.Save();
-            
+            if (Config.Macros.Count > 0)
+            {
+                ImGui.OpenPopup(deleteAllMacrosPopup);
+            }
         }
         ImGui.PopStyleColor();
 
@@ -171,10 +195,10 @@ public partial class ConfigWindow : Window, IDisposable
             Config.Macros.FindFirst(m => m.Path == MacrosState.SelectedPath, out var macro);
             if (macro != null)
             {
-                var index = Config.Macros.IndexOf(macro);
+                var i = Config.Macros.IndexOf(macro);
 
                 var name = macro.Name;
-                if (ImGui.InputText($"Name###macro{index}Name", ref name, ushort.MaxValue))
+                if (ImGui.InputText($"Name###macros{i}Name", ref name, ushort.MaxValue))
                 {
                     macro.Name = name;
                     Config.Save();
@@ -182,16 +206,16 @@ public partial class ConfigWindow : Window, IDisposable
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 80);
                 ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
-                if (ImGui.Button($"Delete###macro{index}Delete"))
+                if (ImGui.Button($"Delete###macros{i}Delete"))
                 {
                     DeleteMacro(macro);
                 }
                 ImGui.PopStyleColor();
 
-                var pathConflictPopupId = $"###macro{index}PathConflictPopup";
+                var pathConflictPopupId = $"###macros{i}PathConflictPopup";
                 if (ImGui.BeginPopup(pathConflictPopupId))
                 {
-                    ImGui.Text($"Found path conflict, confirm override?");
+                    ImGui.Text($"Confirm macro override?");
 
                     ImGui.SetCursorPosX(15);
                     ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
@@ -216,7 +240,7 @@ public partial class ConfigWindow : Window, IDisposable
                 }
 
                 var path = TmpConflictPath != null ? TmpConflictPath : macro.Path;
-                if (ImGui.InputText($"Path###macro{index}Path", ref path, ushort.MaxValue))
+                if (ImGui.InputText($"Path###macros{i}Path", ref path, ushort.MaxValue))
                 {
                     TmpConflictPath = null;
                     if (Config.Macros.FindFirst(m => m.Path == path, out var conflictingMacro) && macro != conflictingMacro)
@@ -233,17 +257,43 @@ public partial class ConfigWindow : Window, IDisposable
                 }
 
                 var tags = string.Join(',', macro.Tags);
-                if (ImGui.InputText($"Tags (comma separated)###macro{index}Tags", ref tags, ushort.MaxValue))
+                if (ImGui.InputText($"Tags (comma separated)###macros{i}Tags", ref tags, ushort.MaxValue))
                 {
                     macro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
                     Config.Save();
                 }
 
                 var content = macro.Content;
-                if (ImGui.InputTextMultiline($"Content###macro{index}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY())))
+                if (ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 40)))
                 {
                     macro.Content = content;
                     Config.Save();
+                }
+
+                if (Executor.HasRunningTasks())
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudOrange);
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
+                    if (ImGui.Button($"Cancel###macrosCancelAll"))
+                    {
+                        Executor.CancelTasks();
+                    }
+                    ImGui.PopStyleColor();
+                    ImGui.PopStyleColor();
+
+                    ImGui.SameLine();
+                }
+
+                ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 322);
+                if (ImGui.Button($"Execute###macros{i}Execute"))
+                {
+                    Executor.ExecuteTask(macro);
+                }
+
+                ImGui.SameLine();
+                if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
+                {
+                    Executor.ExecuteTask(macro, Config.CommandFormat);
                 }
             }
             else
@@ -367,11 +417,36 @@ public partial class ConfigWindow : Window, IDisposable
             RecreateDefaultGeneratorConfigs();
         }
 
+        var deleteAllGeneratorConfigsPopup = "deleteAllGeneratorConfigsPopup";
+        if (ImGui.BeginPopup(deleteAllGeneratorConfigsPopup))
+        {
+            ImGui.Text($"Confirm deleting {Config.GeneratorConfigs.Count} generators?");
+
+            ImGui.SetCursorPosX(15);
+            ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
+            if (ImGui.Button("Yes", new(100, 30)))
+            {
+                DeleteGeneratorConfigs();
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.PopStyleColor();
+
+            ImGui.SameLine();
+            if (ImGui.Button("No", new(100, 30)))
+            {
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndPopup();
+        }
+
         ImGui.SameLine();
         ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
         if (ImGui.Button("Delete All##generatorConfigsDeleteAll"))
         {
-            DeleteGeneratorConfigs();
+            if (Config.GeneratorConfigs.Count > 0)
+            {
+                ImGui.OpenPopup(deleteAllGeneratorConfigsPopup);
+            }
         }
         ImGui.PopStyleColor();
 
@@ -521,13 +596,14 @@ public partial class ConfigWindow : Window, IDisposable
                 {
                     if (ImGui.BeginPopup(conflictResolutionPopupId))
                     {
-                        ImGui.Text($"Found {conflictingMacros.Count()} path conflicts, confirm override?");
+                        ImGui.Text($"Override {conflictingMacros.Count()} macros?");
 
                         ImGui.SetCursorPosX(15);
                         ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                         if (ImGui.Button("Yes", new(100, 30)))
                         {
                             SaveSelectedGeneratedMacros(state);
+                            ImGui.CloseCurrentPopup();
                         }
                         ImGui.PopStyleColor();
 
@@ -654,29 +730,30 @@ public partial class ConfigWindow : Window, IDisposable
     {
         GeneratorConfig generatorConfig = new();
         Config.GeneratorConfigs.Add(generatorConfig);
-
         GeneratorConfigToState.Add(generatorConfig, new());
+        Config.Save();
     }
 
     private void RecreateDefaultGeneratorConfigs()
     {
         var defaultGeneratorConfigs = GeneratorConfig.GetDefaults();
         Config.GeneratorConfigs.AddRange(defaultGeneratorConfigs);
+        Config.Save();
         defaultGeneratorConfigs.ForEach(c => GeneratorConfigToState.Add(c, new()));
     }
 
     private void DeleteGeneratorConfigs()
     {
         GeneratorConfigToState.Clear();
-
         Config.GeneratorConfigs.Clear();
+        Config.Save();
     }
 
     private void DeleteGeneratorConfig(GeneratorConfig generatorConfig)
     {
         GeneratorConfigToState.Remove(generatorConfig);
-
         Config.GeneratorConfigs.Remove(generatorConfig);
+        Config.Save();
     }
 
     private void GenerateMacros(GeneratorConfig generatorConfig)
@@ -685,11 +762,11 @@ public partial class ConfigWindow : Window, IDisposable
         {
             try
             {
-                var generatedMacros = new Generator(PluginInterface, generatorConfig, PluginLog).Execute();
+                var generatedMacros = new Generator(generatorConfig, PluginLog).Execute();
 
                 var state = GeneratorConfigToState[generatorConfig];
-                state.GeneratedMacros.UnionWith(generatedMacros);
-                state.SelectedGeneratedMacros.UnionWith(generatedMacros);
+                state.GeneratedMacros = generatedMacros;
+                state.SelectedGeneratedMacros = generatedMacros.ToHashSet(new MacroComparer());
                 state.FilteredGeneratedMacros = Search.Lookup(generatedMacros, state.GeneratedMacrosFilter).ToHashSet(new MacroComparer());
                 GeneratorException = null;
             }

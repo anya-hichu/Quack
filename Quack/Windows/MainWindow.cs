@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
@@ -41,7 +43,7 @@ public class MainWindow : Window, IDisposable
     public override void Draw()
     {
         var filter = Filter;
-        ImGui.PushItemWidth(ImGui.GetWindowWidth() - 200);
+        ImGui.PushItemWidth(ImGui.GetWindowWidth() - 220);
         if (ImGui.InputText($"Filter ({FilteredMacros.Count()}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
         {
             Filter = filter;
@@ -55,7 +57,20 @@ public class MainWindow : Window, IDisposable
             Filter = string.Empty;
             UpdateFilteredMacros();
         }
-        
+
+        if (Executor.HasRunningTasks())
+        {
+            ImGui.SameLine();
+            ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudOrange);
+            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
+            if (ImGui.Button($"Cancel All###macrosCancelAll"))
+            {
+                Executor.CancelTasks();
+            }
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+        }
+
         if (ImGui.BeginTable("macros", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
         {
             ImGui.TableSetupColumn($"Name##macroName", ImGuiTableColumnFlags.None, 3);
@@ -87,13 +102,13 @@ public class MainWindow : Window, IDisposable
                 {
                     if (ImGui.Button($"Execute###macros{i}Execute"))
                     {
-                        Executor.EnqueueMessagesAsync(macro);
+                        Executor.ExecuteTask(macro);
                     }
 
                     ImGui.SameLine();
-                    if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormatting"))
+                    if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
                     {
-                        Executor.EnqueueMessagesAsync(macro, Config.CommandFormat);
+                        Executor.ExecuteTask(macro, Config.CommandFormat);
                     }
                 }
 
