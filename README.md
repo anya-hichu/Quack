@@ -13,3 +13,4 @@ TODO
 
 - `/quack main`
 - `/quack config`
+- `/quack exec <macro name or path>; <formatting>`
