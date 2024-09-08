@@ -109,14 +109,14 @@ function main(designsJson) {
 
 function main(titlesJson) {
     const titles = JSON.parse(titlesJson);
-    const macros = titles.formatMap(t => {
+    const macros = titles.flatMap(t => {
         return [{
             name: `Enable Honorific "${t.Title}"`,
-            path: `Honorifics/{t.Title}/Enable`,
+            path: `Honorifics/${t.Title}/Enable`,
             content: `/honorific title enable ${t.Title}`
         }, {
             name: `Disable Honorific "${t.Title}"`,
-            path: `Honorifics/{t.Title}/Disable`,
+            path: `Honorifics/${t.Title}/Disable`,
             content: `/honorific title disable ${t.Title}`
         }];
     });

@@ -144,7 +144,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             else
             {
-                ChatGui.Print($"Supported format: {CommandName} execute [Macro Name]; [With Formatting]");
+                ChatGui.Print($"Supported format: {CommandName} execute <macro name or path>; <formatting>");
             }
         }
         else
