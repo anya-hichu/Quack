@@ -18,7 +18,6 @@ using Quack.Generators;
 using Quack.Macros;
 using Quack.Utils;
 using Quack.Windows.States;
-using static Dalamud.LoadingDialog;
 
 namespace Quack.Windows;
 
@@ -125,10 +124,16 @@ public partial class ConfigWindow : Window, IDisposable
             NewMacro();
         }
 
-        ImGui.SameLine(ImGui.GetWindowWidth() - 190);
-        if (ImGui.Button("Export##macrosExport"))
+        ImGui.SameLine(ImGui.GetWindowWidth() - 305);
+        if (ImGui.Button("Export Filtered##filteredMacrosExport"))
         {
-            ExportMacros();
+            ExportMacros(Search.Lookup(Config.Macros, MacrosState.Filter));
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Export All##macrosExport"))
+        {
+            ExportMacros(Config.Macros);
         }
 
         ImGui.SameLine();
@@ -204,11 +209,33 @@ public partial class ConfigWindow : Window, IDisposable
                     Config.Save();
                 }
 
+                var deleteMacroPopup = $"macros{i}DeletePopup";
+                if (ImGui.BeginPopup(deleteMacroPopup))
+                {
+                    ImGui.Text($"Confirm deleting {macro.Name} macro?");
+
+                    ImGui.SetCursorPosX(15);
+                    ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
+                    if (ImGui.Button($"Yes###{deleteMacroPopup}Yes", new(100, 30)))
+                    {
+                        DeleteMacro(macro);
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.PopStyleColor();
+
+                    ImGui.SameLine();
+                    if (ImGui.Button($"Yes###{deleteMacroPopup}No", new(100, 30)))
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.EndPopup();
+                }
+
                 ImGui.SameLine(ImGui.GetWindowWidth() - 80);
                 ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                 if (ImGui.Button($"Delete###macros{i}Delete"))
                 {
-                    DeleteMacro(macro);
+                    ImGui.OpenPopup(deleteMacroPopup);
                 }
                 ImGui.PopStyleColor();
 
@@ -314,7 +341,25 @@ public partial class ConfigWindow : Window, IDisposable
             var name = Path.GetFileName(node.Item);
             if (node.Children.Count > 0)
             {
-                if (ImGui.TreeNodeEx($"{name}###macro{node.Item}TreeNode"))
+                var opened = ImGui.TreeNodeEx($"{name}###macro{node.Item}TreeNode");
+
+                var popupId = $"Export###macro{node.Item}TreeNodePopup";
+                if (ImGui.BeginPopupContextItem(popupId))
+                {
+                    var macros = Config.Macros.Where(m => m.Path.StartsWith(node.Item));
+                    if (ImGui.MenuItem($"Export###{popupId}Export"))
+                    {
+                        ExportMacros(macros);
+                    }
+
+                    if (ImGui.MenuItem($"Delete###{popupId}Delete"))
+                    {
+                        DeleteMacros(macros);
+                    }
+                    ImGui.EndPopup();
+                }
+
+                if (opened)
                 {
                     DrawPathNodes(node.Children);
                     ImGui.TreePop();
@@ -327,8 +372,29 @@ public partial class ConfigWindow : Window, IDisposable
                 {
                     flags |= ImGuiTreeNodeFlags.Selected;
                 }
-                
-                if (ImGui.TreeNodeEx($"{(name.IsNullOrWhitespace()? BLANK_NAME : name)}###macro{node.Item}TreeNodeLeft", flags))
+
+                var opened = ImGui.TreeNodeEx($"{(name.IsNullOrWhitespace() ? BLANK_NAME : name)}###macro{node.Item}TreeLeaf", flags);
+
+                var popupId = $"macro{node.Item}TreeLeafPopup";
+                if (ImGui.BeginPopupContextItem($"Export###{popupId}"))
+                {
+                    Config.Macros.FindFirst(m => m.Path == node.Item, out var macro);
+                    if (macro != null)
+                    {
+                        if (ImGui.MenuItem($"Export###{popupId}Export"))
+                        {
+                            ExportMacros([macro]);
+                        }
+
+                        if (ImGui.MenuItem($"Delete###{popupId}Delete"))
+                        {
+                            DeleteMacro(macro);
+                        }
+                    }
+                    ImGui.EndPopup();
+                }
+
+                if (opened)
                 {
                     if (ImGui.IsItemClicked())
                     {
@@ -347,14 +413,14 @@ public partial class ConfigWindow : Window, IDisposable
         Config.Save();
     }
 
-    private void ExportMacros()
+    private void ExportMacros(IEnumerable<Macro> macros)
     {
         FileDialogManager.SaveFileDialog("Export Macros", ".*", "macros.json", ".json", (valid, path) =>
         {
             if (valid)
             {
                 using var file = File.CreateText(path);
-                new JsonSerializer().Serialize(file, Config.Macros);
+                new JsonSerializer().Serialize(file, macros);
             }
         });
     }
@@ -368,7 +434,7 @@ public partial class ConfigWindow : Window, IDisposable
                 using StreamReader reader = new(path);
                 var json = reader.ReadToEnd();
                 var importedMacros = JsonConvert.DeserializeObject<List<Macro>>(json)!;
-                Config.Macros.UnionWith(importedMacros);
+                Config.Macros = importedMacros.Union(Config.Macros).ToHashSet(new MacroComparer());
                 Config.Save();
             }
         });
@@ -377,6 +443,15 @@ public partial class ConfigWindow : Window, IDisposable
     private void DeleteMacro(Macro macro)
     {
         Config.Macros.Remove(macro);
+        Config.Save();
+    }
+
+    private void DeleteMacros(IEnumerable<Macro> macros)
+    {
+        foreach(var macro in macros)
+        {
+            Config.Macros.Remove(macro);
+        }
         Config.Save();
     }
 
@@ -424,7 +499,7 @@ public partial class ConfigWindow : Window, IDisposable
 
             ImGui.SetCursorPosX(15);
             ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
-            if (ImGui.Button("Yes", new(100, 30)))
+            if (ImGui.Button($"Yes##{deleteAllGeneratorConfigsPopup}Yes", new(100, 30)))
             {
                 DeleteGeneratorConfigs();
                 ImGui.CloseCurrentPopup();
@@ -432,7 +507,7 @@ public partial class ConfigWindow : Window, IDisposable
             ImGui.PopStyleColor();
 
             ImGui.SameLine();
-            if (ImGui.Button("No", new(100, 30)))
+            if (ImGui.Button($"No##{deleteAllGeneratorConfigsPopup}No", new(100, 30)))
             {
                 ImGui.CloseCurrentPopup();
             }

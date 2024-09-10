@@ -34,7 +34,10 @@ function main(profilesJson) {
             PenumbraIpc.MOD_LIST,
             string.Empty,
 """
-// Requires "DeterministicPose" plugin to be installed for pose support
+// Requires "DeterministicPose" plugin to be installed for cpose index support
+
+// Possible to add custom emote commands using "Simple Tweaks" command alias for example:
+// /loaf => /quack exec Mods/Poses/Return To Catte Maxwell/Execute
 
 const commandTagPattern = /(?<command>\/\S+)( (?<poseIndex>\d))?( \((?<comment>.+)\))?/;
 

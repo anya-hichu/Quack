@@ -64,7 +64,6 @@ public class PenumbraIpc : IDisposable
         GetModListProvider.UnregisterFunc();
     }
 
-
     private ModData[] GetModList()
     {
         var modList = BaseGetModListSubscriber.InvokeFunc();
@@ -86,7 +85,10 @@ public class PenumbraIpc : IDisposable
                     var modDataConfig = JsonConvert.DeserializeObject<ModDataConfig>(modDataConfigJson)!;
                     PluginLog.Debug($"Retrieved {modDataConfig.LocalTags.Length} penumbra local tags from {Path.GetRelativePath(PluginConfigsDirectory, modDataConfigPath)}");
 
-                    return new ModData(d.Key, d.Value, sortOrderConfig.Data.GetValueOrDefault(d.Key, string.Empty), modDataConfig.LocalTags);
+                    return new ModData(d.Key, 
+                                       d.Value, 
+                                       sortOrderConfig.Data.GetValueOrDefault(d.Key, d.Value),  // Root items don't have a path
+                                       modDataConfig.LocalTags);
                 }
                 else
                 {
