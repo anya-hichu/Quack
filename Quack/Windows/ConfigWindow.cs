@@ -146,7 +146,6 @@ public partial class ConfigWindow : Window, IDisposable
 
     private void DrawMacrosTab()
     {
-        ImGui.NewLine();
         if (ImGui.Button("New##newMacro"))
         {
             NewMacro();
@@ -240,7 +239,7 @@ public partial class ConfigWindow : Window, IDisposable
                 var deleteMacroPopup = $"macros{i}DeletePopup";
                 if (ImGui.BeginPopup(deleteMacroPopup))
                 {
-                    ImGui.Text($"Confirm deleting {macro.Name} macro?");
+                    ImGui.Text($"Confirm deleting {(macro.Name.IsNullOrWhitespace()? BLANK_NAME : macro.Name)} macro?");
 
                     ImGui.SetCursorPosX(15);
                     ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
@@ -252,7 +251,7 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.PopStyleColor();
 
                     ImGui.SameLine();
-                    if (ImGui.Button($"Yes###{deleteMacroPopup}No", new(100, 30)))
+                    if (ImGui.Button($"No###{deleteMacroPopup}No", new(100, 30)))
                     {
                         ImGui.CloseCurrentPopup();
                     }
@@ -667,7 +666,7 @@ public partial class ConfigWindow : Window, IDisposable
             }
 
             var script = generatorConfig.Script;
-            if (ImGui.InputTextMultiline($"Script###generatorConfigs{hash}Script", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, ImGui.GetTextLineHeight() * 13)))
+            if (ImGui.InputTextMultiline($"Script (js)###generatorConfigs{hash}Script", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, ImGui.GetTextLineHeight() * 13)))
             {
                 generatorConfig.Script = script;
                 Config.Save();

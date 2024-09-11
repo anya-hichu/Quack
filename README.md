@@ -7,7 +7,18 @@ Installable using my custom repository (https://github.com/anya-hichu/DalamudPlu
 
 ## Screenshots
 
-TODO
+### Main (search)
+![main](images/image1.png)
+
+### Config
+#### General
+![general config](images/image2.png)
+
+#### Macros
+![macros config](images/image3.png)
+
+#### Generators
+![generators config](images/image4.png)
 
 ## Commands
 
