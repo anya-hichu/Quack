@@ -43,6 +43,12 @@ public partial class ConfigWindow : Window, IDisposable
 
     public ConfigWindow(Executor executor, IKeyState keyState, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
+        SizeConstraints = new WindowSizeConstraints
+        {
+            MinimumSize = new Vector2(820, 520),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+        };
+
         Executor = executor;
         KeyState = keyState;
         Config = config;
@@ -638,9 +644,6 @@ public partial class ConfigWindow : Window, IDisposable
                     var channel = ipcOrdered.ElementAt(ipcIndexForCombo - 1);
                     var genericTypes = channel.Func!.GetType().GenericTypeArguments;
 
-                    ImGui.SameLine();
-                    ImGui.Spacing();
-                    ImGui.SameLine();
                     ImGui.Text($"Detected Signature: Out={genericTypes.Last().Name}");
 
                     if (genericTypes.Length > 1)

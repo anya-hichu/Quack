@@ -20,6 +20,12 @@ public class MainWindow : Window, IDisposable
 
     public MainWindow(Executor executor, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
+        SizeConstraints = new WindowSizeConstraints
+        {
+            MinimumSize = new Vector2(300, 200),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+        };
+
         Executor = executor;
         Config = config;
         PluginLog = pluginLog;
