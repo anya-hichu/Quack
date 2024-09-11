@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Dalamud;
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Windowing;
@@ -29,6 +30,7 @@ public partial class ConfigWindow : Window, IDisposable
     private static partial Regex NumberGeneratedRegex();
 
     private Executor Executor { get; init; }
+    private IKeyState KeyState { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
     private MacrosState MacrosState { get; set; } = null!;
@@ -39,9 +41,10 @@ public partial class ConfigWindow : Window, IDisposable
     private FileDialogManager FileDialogManager { get; init; } = new();
     private string? TmpConflictPath { get; set; }
 
-    public ConfigWindow(Executor executor, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
+    public ConfigWindow(Executor executor, IKeyState keyState, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
         Executor = executor;
+        KeyState = keyState;
         Config = config;
         PluginLog = pluginLog;
 
@@ -84,23 +87,48 @@ public partial class ConfigWindow : Window, IDisposable
 
     private void DrawGeneralTab()
     {
-        ImGui.NewLine();
-
-        var commandFormat = Config.CommandFormat;
-        if (ImGui.InputText("Command Format##commandFormat", ref commandFormat, ushort.MaxValue))
+        if(ImGui.CollapsingHeader("Search##searchHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            Config.CommandFormat = commandFormat;
-            Config.Save();
+            ImGui.NewLine();
+            var validVirtualKeys = KeyState.GetValidVirtualKeys().Prepend(VirtualKey.NO_KEY);
+
+            var keyBind = Config.KeyBind;
+            var keyBindIndex = validVirtualKeys.IndexOf(keyBind);
+            if (ImGui.Combo($"Key Bind###keyBind", ref keyBindIndex, validVirtualKeys.Select(k => k.GetFancyName()).ToArray(), validVirtualKeys.Count()))
+            {
+                Config.KeyBind = validVirtualKeys.ElementAt(keyBindIndex);
+                Config.Save();
+            }
+
+            var modifierVirtualKeys = validVirtualKeys.Where(k => Config.MODIFIER_KEYS.Contains(k));
+            var keybindExtraModifier = Config.KeyBindExtraModifier;
+            var keybindExtraModifierIndex = modifierVirtualKeys.IndexOf(keybindExtraModifier);
+            if (ImGui.Combo($"Key Bind Extra Modifier###keyBindExtraModifier", ref keybindExtraModifierIndex, modifierVirtualKeys.Select(k => k.GetFancyName()).ToArray(), modifierVirtualKeys.Count()))
+            {
+                Config.KeyBindExtraModifier = modifierVirtualKeys.ElementAt(keybindExtraModifierIndex);
+                Config.Save();
+            }
+
+            ImGui.NewLine();
+            var maxMatches = Config.MaxMatches;
+            if (ImGui.InputInt("Max Matches##maxMatches", ref maxMatches))
+            {
+                Config.MaxMatches = maxMatches;
+                Config.Save();
+            }
         }
-        ImGui.Text("(PM format supported via {0:P} placeholder)");
 
         ImGui.NewLine();
-
-        var maxMatches = Config.MaxMatches;
-        if (ImGui.InputInt("Max Matches##maxMatches", ref maxMatches))
+        if (ImGui.CollapsingHeader("Formatter##formatterHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            Config.MaxMatches = maxMatches;
-            Config.Save();
+            ImGui.NewLine();
+            var commandFormat = Config.CommandFormat;
+            if (ImGui.InputText("Command Format##commandFormat", ref commandFormat, ushort.MaxValue))
+            {
+                Config.CommandFormat = commandFormat;
+                Config.Save();
+            }
+            ImGui.Text("(PM format supported via {0:P} placeholder)");
         }
     }
 

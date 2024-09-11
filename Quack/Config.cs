@@ -1,4 +1,5 @@
 using Dalamud.Configuration;
+using Dalamud.Game.ClientState.Keys;
 using Quack.Generators;
 using Quack.Macros;
 using System;
@@ -9,7 +10,12 @@ namespace Quack;
 [Serializable]
 public class Config : IPluginConfiguration
 {
+    public static readonly VirtualKey[] MODIFIER_KEYS = [VirtualKey.NO_KEY, VirtualKey.CONTROL, VirtualKey.SHIFT, VirtualKey.MENU];
+
     public int Version { get; set; } = 0;
+
+    public VirtualKey KeyBind { get; set; } = VirtualKey.INSERT;
+    public VirtualKey KeyBindExtraModifier { get; set; } = VirtualKey.NO_KEY;
 
     public int MaxMatches { get; set; } = 50;
     public string CommandFormat { get; set; } = "/echo {0}";
@@ -29,7 +35,7 @@ public class Config : IPluginConfiguration
 
     public void Save()
     {
-        // Force removal of conflicting macro paths on save
+        // Force removal of conflicting macro before save
         Macros = new(Macros, new MacroComparer());
 
         Plugin.PluginInterface.SavePluginConfig(this);

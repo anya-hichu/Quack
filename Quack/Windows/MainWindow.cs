@@ -15,7 +15,6 @@ public class MainWindow : Window, IDisposable
     private Executor Executor { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
-
     private string Filter { get; set; } = string.Empty;
     private List<Macro> FilteredMacros { get; set; } = [];
 
@@ -44,7 +43,7 @@ public class MainWindow : Window, IDisposable
     {
         var filter = Filter;
         ImGui.PushItemWidth(ImGui.GetWindowWidth() - 220);
-        if (ImGui.InputText($"Filter ({FilteredMacros.Count()}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
+        if (ImGui.InputText($"Filter ({FilteredMacros.Count}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
         {
             Filter = filter;
             UpdateFilteredMacros();

@@ -37,7 +37,7 @@ function main(profilesJson) {
 // Requires "DeterministicPose" plugin to be installed for cpose index support
 
 // Possible to add custom emote commands using "Simple Tweaks" command alias for example:
-// /loaf => /quack exec Mods/Poses/Return To Catte Maxwell/Execute
+// /loaf => /quack exec Mods/Poses/Return To Catte Maxwell/Execute/atease
 
 const commandTagPattern = /(?<command>\/\S+)( (?<poseIndex>\d))?( \((?<comment>.+)\))?/;
 
@@ -48,13 +48,14 @@ function main(modsJson) {
             const match = commandTagPattern.exec(commandTag);
             if (match) {
                 const { command, poseIndex, comment } = match.groups;
-                const nameSuffix = comment ? ` (${comment})` : '';
+                const nameSuffix = comment ? `(${comment})` : '';
                 const commandSuffix = poseIndex ? `<wait.1>\n/dpose ${poseIndex}` : '';
+                const tags = m.localTags.filter(t => !t.startsWith('/')).concat([command]);
 
                 return [{
-                    name: `Custom Emote "${m.name}"${nameSuffix}`,
-                    path: `Mods/${m.path}/Execute`,
-                    tags: m.localTags,
+                    name: `Custom Emote "${m.name}" [${command}] ${nameSuffix}`,
+                    path: `Mods/${m.path}/Execute${command}`,
+                    tags: tags,
                     content: `/penumbra bulktag disable Self | ${command}
 /penumbra mod enable Self | ${m.dir}
 /penumbra redraw <me> <wait.1>

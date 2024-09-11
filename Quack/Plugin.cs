@@ -12,12 +12,12 @@ using Dalamud.Game;
 using Quack.Macros;
 using System.Linq;
 using Dalamud.Utility;
+using Dalamud.Interface;
+using Quack.Listeners;
 
 namespace Quack;
 public sealed class Plugin : IDalamudPlugin
 {
-    public delegate void OnConfigMacrosUpdate();
-
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
@@ -25,6 +25,8 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPluginLog PluginLog { get; private set; } = null!;
     [PluginService] internal static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
+    [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
+
 
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config and exec";
@@ -39,10 +41,14 @@ public sealed class Plugin : IDalamudPlugin
     private GlamourerIpc GlamourerIpc { get; init; }
     private MacrosIpc MacrosIpc { get; init; }
     private PenumbraIpc PenumbraIpc { get; init; }
+
+    private KeyBindListener KeyBindListener { get; init; }
     
 
     public Plugin()
     {
+        KeyState.GetValidVirtualKeys();
+
         var engineSwitcher = JsEngineSwitcher.Current;
         engineSwitcher.EngineFactories.Add(new JintJsEngineFactory(new()
         {
@@ -55,8 +61,15 @@ public sealed class Plugin : IDalamudPlugin
         Config.Macros = new(Config.Macros, new MacroComparer());
 
         Executor = new(Framework, new(SigScanner), PluginLog);
-        MainWindow = new(Executor, Config, PluginLog);
-        ConfigWindow = new(Executor, Config, PluginLog);
+
+        MainWindow = new(Executor, Config, PluginLog)
+        {
+            TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
+        };
+        ConfigWindow = new(Executor, KeyState, Config, PluginLog)
+        {
+            TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.ListAlt, ToggleMainUI)]
+        };
 
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(ConfigWindow);
@@ -74,6 +87,8 @@ public sealed class Plugin : IDalamudPlugin
         GlamourerIpc = new(PluginInterface, PluginLog);
         MacrosIpc = new(PluginInterface);
         PenumbraIpc = new(PluginInterface, PluginLog);
+
+        KeyBindListener = new(Framework, Config, ToggleMainUI);
     }
 
     public void Dispose()
@@ -89,6 +104,8 @@ public sealed class Plugin : IDalamudPlugin
         GlamourerIpc.Dispose();
         MacrosIpc.Dispose();
         PenumbraIpc.Dispose();
+
+        KeyBindListener.Dispose();
     }
 
     private void OnCommand(string command, string args)
@@ -155,6 +172,14 @@ public sealed class Plugin : IDalamudPlugin
 
     private void DrawUI() => WindowSystem.Draw();
 
-    public void ToggleConfigUI() => ConfigWindow.Toggle();
-    public void ToggleMainUI() => MainWindow.Toggle();
+    private void ToggleConfigUI() => ConfigWindow.Toggle();
+    private void ToggleMainUI() => MainWindow.Toggle();
+
+    private static Window.TitleBarButton BuildTitleBarButton(FontAwesomeIcon icon, System.Action callback)
+    {
+        Window.TitleBarButton button = new();
+        button.Icon = icon;
+        button.Click = (_) => callback();
+        return button;
+    }
 }
