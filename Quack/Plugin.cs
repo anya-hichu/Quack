@@ -36,13 +36,13 @@ public sealed class Plugin : IDalamudPlugin
     private MainWindow MainWindow { get; init; }
 
     private Config Config { get; init; }
-    private Executor Executor { get; init; }
+    private MacroExecutor MacroExecutor { get; init; }
     private EmotesIpc EmotesIpc { get; init; }
     private GlamourerIpc GlamourerIpc { get; init; }
     private MacrosIpc MacrosIpc { get; init; }
     private PenumbraIpc PenumbraIpc { get; init; }
-
     private KeyBindListener KeyBindListener { get; init; }
+    private MacroCommands MacroCommands { get; init; }
     
 
     public Plugin()
@@ -58,15 +58,15 @@ public sealed class Plugin : IDalamudPlugin
         engineSwitcher.DefaultEngineName = JintJsEngine.EngineName;
 
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
-        Config.Macros = new(Config.Macros, new MacroComparer());
+        Config.Macros = new(Config.Macros, MacroComparer.INSTANCE);
 
-        Executor = new(Framework, new(SigScanner), PluginLog);
+        MacroExecutor = new(Framework, new(SigScanner), PluginLog);
 
-        MainWindow = new(Executor, Config, PluginLog)
+        MainWindow = new(MacroExecutor, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
         };
-        ConfigWindow = new(Executor, KeyState, Config, PluginLog)
+        ConfigWindow = new(MacroExecutor, KeyState, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.ListAlt, ToggleMainUI)]
         };
@@ -89,6 +89,7 @@ public sealed class Plugin : IDalamudPlugin
         PenumbraIpc = new(PluginInterface, PluginLog);
 
         KeyBindListener = new(Framework, Config, ToggleMainUI);
+        MacroCommands = new(CommandManager, Config, MacroExecutor);
     }
 
     public void Dispose()
@@ -106,6 +107,7 @@ public sealed class Plugin : IDalamudPlugin
         PenumbraIpc.Dispose();
 
         KeyBindListener.Dispose();
+        MacroCommands.Dispose();
     }
 
     private void OnCommand(string command, string args)
@@ -134,24 +136,24 @@ public sealed class Plugin : IDalamudPlugin
                         var formatting = subparts[1].Trim();
                         if (formatting == "true")
                         {
-                            Executor.ExecuteTask(macro, Config.CommandFormat);
+                            MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
                         }
                         else if (formatting == "false")
                         {
-                            Executor.ExecuteTask(macro);
+                            MacroExecutor.ExecuteTask(macro);
                         } 
                         else if (!formatting.IsNullOrEmpty())
                         {
-                            Executor.ExecuteTask(macro, formatting);
+                            MacroExecutor.ExecuteTask(macro, formatting);
                         } 
                         else
                         {
-                            Executor.ExecuteTask(macro);
+                            MacroExecutor.ExecuteTask(macro);
                         }
                     } 
                     else
                     {
-                        Executor.ExecuteTask(macro);
+                        MacroExecutor.ExecuteTask(macro);
                     }
                 }
                 else

@@ -17,4 +17,7 @@ public class Macro
 
     [JsonProperty("content")]
     public string Content { get; set; } = string.Empty;
+
+    [JsonProperty("command")]
+    public string Command { get; set; } = string.Empty;
 }

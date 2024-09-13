@@ -22,7 +22,7 @@ public class Config : IPluginConfiguration
 
     public List<GeneratorConfig> GeneratorConfigs { get; set; } = [];
 
-    public HashSet<Macro> Macros { get; set; } = new(0, new MacroComparer());
+    public HashSet<Macro> Macros { get; set; } = new(0, MacroComparer.INSTANCE);
 
     public event Action? OnSave;
 
@@ -36,7 +36,7 @@ public class Config : IPluginConfiguration
     public void Save()
     {
         // Force removal of conflicting macro before save
-        Macros = new(Macros, new MacroComparer());
+        Macros = new(Macros, MacroComparer.INSTANCE);
 
         Plugin.PluginInterface.SavePluginConfig(this);
         OnSave?.Invoke();

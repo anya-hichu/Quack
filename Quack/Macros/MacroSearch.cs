@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 
 namespace Quack.Macros;
-public class Search
+public class MacroSearch
 {
     private static readonly StringComparison MATCH_FLAGS = StringComparison.InvariantCultureIgnoreCase;
     public static List<Macro> Lookup(IEnumerable<Macro> macros, string filter)

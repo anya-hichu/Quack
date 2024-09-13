@@ -35,9 +35,7 @@ function main(profilesJson) {
             string.Empty,
 """
 // Requires "DeterministicPose" plugin to be installed for cpose index support
-
-// Use "Simple Tweaks" command aliases to be able to use the generated custom emotes as commands
-// Example: /loaf => /quack exec Mods/Poses/Return To Catte Maxwell/Execute/atease
+// Custom command can be configured in the macros tab
 
 const commandTagPattern = /(?<command>\/\S+)( (?<poseIndex>\d))?( \((?<comment>.+)\))?/;
 

@@ -12,13 +12,13 @@ namespace Quack.Windows;
 
 public class MainWindow : Window, IDisposable
 {
-    private Executor Executor { get; init; }
+    private MacroExecutor MacroExecutor { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
     private string Filter { get; set; } = string.Empty;
     private List<Macro> FilteredMacros { get; set; } = [];
 
-    public MainWindow(Executor executor, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
+    public MainWindow(MacroExecutor macroExecutor, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -26,7 +26,7 @@ public class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
-        Executor = executor;
+        MacroExecutor = macroExecutor;
         Config = config;
         PluginLog = pluginLog;
 
@@ -37,7 +37,7 @@ public class MainWindow : Window, IDisposable
 
     public void UpdateFilteredMacros()
     {
-        FilteredMacros = Search.Lookup(Config.Macros, Filter).Take(Config.MaxMatches).ToList();
+        FilteredMacros = MacroSearch.Lookup(Config.Macros, Filter).Take(Config.MaxMatches).ToList();
     }
 
     public void Dispose() 
@@ -63,14 +63,14 @@ public class MainWindow : Window, IDisposable
             UpdateFilteredMacros();
         }
 
-        if (Executor.HasRunningTasks())
+        if (MacroExecutor.HasRunningTasks())
         {
             ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudOrange);
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
             if (ImGui.Button($"Cancel All###macrosCancelAll"))
             {
-                Executor.CancelTasks();
+                MacroExecutor.CancelTasks();
             }
             ImGui.PopStyleColor();
             ImGui.PopStyleColor();
@@ -107,13 +107,13 @@ public class MainWindow : Window, IDisposable
                 {
                     if (ImGui.Button($"Execute###macros{i}Execute"))
                     {
-                        Executor.ExecuteTask(macro);
+                        MacroExecutor.ExecuteTask(macro);
                     }
 
                     ImGui.SameLine();
                     if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
                     {
-                        Executor.ExecuteTask(macro, Config.CommandFormat);
+                        MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
                     }
                 }
 

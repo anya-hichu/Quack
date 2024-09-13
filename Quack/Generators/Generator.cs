@@ -21,7 +21,7 @@ public class Generator(GeneratorConfig generatorConfig, IPluginLog pluginLog)
     public HashSet<Macro> Execute()
     {
         var args = CallIpc();
-        return CallFunction(args).ToHashSet(new MacroComparer());
+        return CallFunction(args).ToHashSet(MacroComparer.INSTANCE);
     }
 
     private object[] CallIpc()

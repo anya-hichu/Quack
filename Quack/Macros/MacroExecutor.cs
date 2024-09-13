@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Quack.Macros;
 
-public partial class Executor : IDisposable
+public partial class MacroExecutor : IDisposable
 {
     [GeneratedRegexAttribute(@"<wait\.(\d+)>")]
     private static partial Regex WaitTimeGeneratedRegex();
@@ -20,7 +20,7 @@ public partial class Executor : IDisposable
     private List<CancellationTokenSource> CancellationTokenSources { get; init; } = [];
     private Queue<string> PendingMessages { get; init; } = new();
 
-    public Executor(IFramework framework, Chat chat, IPluginLog pluginLog)
+    public MacroExecutor(IFramework framework, Chat chat, IPluginLog pluginLog)
     {
         Framework = framework;
         Chat = chat;

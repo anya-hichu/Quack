@@ -4,6 +4,11 @@ namespace Quack.Macros;
 
 public class MacroComparer: IEqualityComparer<Macro>
 {
+    public static readonly MacroComparer INSTANCE = new();
+    private MacroComparer() 
+    { 
+    }
+
     public bool Equals(Macro? lfs, Macro? rhs)
     {
         if (lfs != null && rhs != null)
