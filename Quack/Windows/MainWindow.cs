@@ -37,7 +37,7 @@ public class MainWindow : Window, IDisposable
 
     public void UpdateFilteredMacros()
     {
-        FilteredMacros = MacroSearch.Lookup(Config.Macros, Filter).Take(Config.MaxMatches).ToList();
+        FilteredMacros = MacroSearch.Lookup(Config.Macros, Filter).ToList();
     }
 
     public void Dispose() 
@@ -84,42 +84,53 @@ public class MainWindow : Window, IDisposable
             ImGui.TableSetupColumn($"Actions##macroActions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
 
-
-            for (var i = 0; i < FilteredMacros.Count(); i++)
+            var clipper = newListClipper();
+            clipper.Begin(FilteredMacros.Count(), ImGui.GetTextLineHeightWithSpacing());
+            while(clipper.Step())
             {
-                var macro = FilteredMacros.ElementAt(i);
-                if (ImGui.TableNextColumn())
+                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
-                    ImGui.Text(macro.Name);
-                }
-
-                if (ImGui.TableNextColumn())
-                {
-                    ImGui.Text(macro.Path);
-                }
-
-                if (ImGui.TableNextColumn())
-                {
-                    ImGui.Text(string.Join(", ", macro.Tags));
-                }
-
-                if (ImGui.TableNextColumn())
-                {
-                    if (ImGui.Button($"Execute###macros{i}Execute"))
+                    var macro = FilteredMacros.ElementAt(i);
+                    if (ImGui.TableNextColumn())
                     {
-                        MacroExecutor.ExecuteTask(macro);
+                        ImGui.Text(macro.Name);
                     }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
+                    if (ImGui.TableNextColumn())
                     {
-                        MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
+                        ImGui.Text(macro.Path);
                     }
-                }
 
-                ImGui.TableNextRow();
+                    if (ImGui.TableNextColumn())
+                    {
+                        ImGui.Text(string.Join(", ", macro.Tags));
+                    }
+
+                    if (ImGui.TableNextColumn())
+                    {
+                        if (ImGui.Button($"Execute###macros{i}Execute"))
+                        {
+                            MacroExecutor.ExecuteTask(macro);
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
+                        {
+                            MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
+                        }
+                    }
+
+                    ImGui.TableNextRow();
+                }
             }
+            clipper.Destroy();
+
             ImGui.EndTable();
         }
+    }
+
+    private unsafe static ImGuiListClipperPtr newListClipper()
+    {
+        return new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
     }
 }

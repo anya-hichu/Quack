@@ -20,4 +20,7 @@ public class Macro
 
     [JsonProperty("command")]
     public string Command { get; set; } = string.Empty;
+
+    [JsonProperty("loop")]
+    public bool Loop { get; set; } = false;
 }

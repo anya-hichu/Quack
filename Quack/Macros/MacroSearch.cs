@@ -19,6 +19,7 @@ public class MacroSearch
         var tokens = filter.ToLowerInvariant().Split(" ");
         return tokens.Count(t => macro.Name.Contains(t, MATCH_FLAGS) ||
                                macro.Path.Contains(t, MATCH_FLAGS) ||
+                               macro.Command.Contains(t, MATCH_FLAGS) ||
                                macro.Tags.Any(tag => tag.Contains(t, MATCH_FLAGS)));
     }
 }

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Dalamud;
 using Dalamud.Game.ClientState.Keys;
@@ -14,6 +16,7 @@ using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
+using JavaScriptEngineSwitcher.Core;
 using Newtonsoft.Json;
 using Quack.Generators;
 using Quack.Macros;
@@ -41,11 +44,13 @@ public partial class ConfigWindow : Window, IDisposable
     private FileDialogManager FileDialogManager { get; init; } = new();
     private string? TmpConflictPath { get; set; }
 
+    private IJsEngine? CurrentJsEngine { get; set; }
+
     public ConfigWindow(MacroExecutor macroExecutor, IKeyState keyState, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(820, 520),
+            MinimumSize = new Vector2(820, 400),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
@@ -114,14 +119,6 @@ public partial class ConfigWindow : Window, IDisposable
                 Config.KeyBindExtraModifier = modifierVirtualKeys.ElementAt(keybindExtraModifierIndex);
                 Config.Save();
             }
-
-            ImGui.NewLine();
-            var maxMatches = Config.MaxMatches;
-            if (ImGui.InputInt("Max Matches##maxMatches", ref maxMatches))
-            {
-                Config.MaxMatches = maxMatches;
-                Config.Save();
-            }
         }
 
         ImGui.NewLine();
@@ -155,6 +152,21 @@ public partial class ConfigWindow : Window, IDisposable
         if (ImGui.Button("New##newMacro"))
         {
             NewMacro();
+        }
+
+        ImGui.SameLine(ImGui.GetWindowWidth() - 375);
+        if (MacroExecutor.HasRunningTasks())
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudOrange);
+            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
+            if (ImGui.Button($"Cancel All###macrosCancelAll"))
+            {
+                MacroExecutor.CancelTasks();
+            }
+            ImGui.PopStyleColor();
+            ImGui.PopStyleColor();
+
+            ImGui.SameLine();
         }
 
         ImGui.SameLine(ImGui.GetWindowWidth() - 305);
@@ -326,32 +338,36 @@ public partial class ConfigWindow : Window, IDisposable
                 var command = macro.Command;
                 if (ImGui.InputText($"Command###macros{i}Command", ref command, ushort.MaxValue))
                 {
-                    macro.Command = command;
+                    macro.Command = MaybeFixCommand(command);
                     Config.Save();
                 }
 
+                if (!command.IsNullOrWhitespace())
+                {
+                    var conflictingMacros = Config.Macros.Where(m => m != macro && m.Command == command);
+                    if (conflictingMacros.Any())
+                    {
+                        ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+                        ImGui.Text($"Command conflicts with {string.Join(", ", conflictingMacros.Select(m => m.Name))}");
+                        ImGui.PopStyleColor();
+                    }
+                }
+
                 var content = macro.Content;
-                if (ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 40)))
+                if (ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 30)))
                 {
                     macro.Content = content;
                     Config.Save();
                 }
 
-                if (MacroExecutor.HasRunningTasks())
+                var loop = macro.Loop;
+                if (ImGui.Checkbox($"Loop###macros{i}Content", ref loop))
                 {
-                    ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudOrange);
-                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
-                    if (ImGui.Button($"Cancel###macrosCancelAll"))
-                    {
-                        MacroExecutor.CancelTasks();
-                    }
-                    ImGui.PopStyleColor();
-                    ImGui.PopStyleColor();
-
-                    ImGui.SameLine();
+                    macro.Loop = loop;
+                    Config.Save();
                 }
 
-                ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 322);
+                ImGui.SameLine(ImGui.GetWindowWidth() - 322);
                 if (ImGui.Button($"Execute###macros{i}Execute"))
                 {
                     MacroExecutor.ExecuteTask(macro);
@@ -369,6 +385,22 @@ public partial class ConfigWindow : Window, IDisposable
             }
 
             ImGui.EndChildFrame();
+        }
+    }
+
+    [GeneratedRegexAttribute(@"[^a-z0-9]")]
+    private static partial Regex NonValidCommandCharactersGeneratedRegex();
+    private string MaybeFixCommand(string command)
+    {
+        if (command.Length > 0)
+        {
+            var commandName = command[0] == '/' ? command.Substring(1) : command;
+            var sanitizedCommandName = NonValidCommandCharactersGeneratedRegex().Replace(commandName, string.Empty);
+            return $"/{sanitizedCommandName}";
+        } 
+        else
+        {
+            return command;
         }
     }
 
@@ -620,8 +652,10 @@ public partial class ConfigWindow : Window, IDisposable
         var hash = generatorConfig.GetHashCode();
         if (ImGui.CollapsingHeader($"Definition##generatorConfigs{hash}Definition", ImGuiTreeNodeFlags.DefaultOpen))
         {
+            ImGui.NewLine();
             var name = generatorConfig.Name;
-            if (ImGui.InputText($"name###generatorConfigs{hash}Name", ref name, ushort.MaxValue))
+            ImGui.SetCursorPosX(20);
+            if (ImGui.InputText($"Name###generatorConfigs{hash}Name", ref name, ushort.MaxValue))
             {
                 generatorConfig.Name = name;
                 Config.Save();
@@ -636,58 +670,125 @@ public partial class ConfigWindow : Window, IDisposable
             ImGui.PopStyleColor();
 
             var ipcOrdered = funcChannels.OrderBy(g => g.Name);
-            var ipcNamesForCombo = ipcOrdered.Select(g => g.Name).Prepend(string.Empty);
-            var ipcIndexForCombo = ipcNamesForCombo.IndexOf(generatorConfig.IpcName);
-            if (ImGui.Combo($"IPC Name###generatorConfigs{hash}IpcName", ref ipcIndexForCombo, ipcNamesForCombo.ToArray(), ipcNamesForCombo.Count()))
+
+            ImGui.NewLine();
+            ImGui.SetCursorPosX(20);
+            if(ImGui.CollapsingHeader($"IPCs###generatorConfigs{hash}IpcConfigs"))
             {
-                generatorConfig.IpcName = ipcNamesForCombo.ElementAt(ipcIndexForCombo);
-                Config.Save();
-            }
-
-            if (!generatorConfig.IpcName.IsNullOrWhitespace())
-            {
-                if (ipcIndexForCombo > 0)
+                ImGui.NewLine();
+                ImGui.SetCursorPosX(40);
+                if (ImGui.Button($"+###generatorConfigs{hash}IpcConfigsNew"))
                 {
-                    var channel = ipcOrdered.ElementAt(ipcIndexForCombo - 1);
-                    var genericTypes = channel.Func!.GetType().GenericTypeArguments;
-
-                    ImGui.Text($"Detected Signature: Out={genericTypes.Last().Name}");
-
-                    if (genericTypes.Length > 1)
-                    {
-                        ImGui.SameLine();
-                        ImGui.Text($"In=[{string.Join(", ", genericTypes.Take(genericTypes.Length - 1).Select(a => a.Name))}]");
-                    }
-
-                    var ipcArgs = generatorConfig.IpcArgs;
-                    if (ImGui.InputText($"IPC Args###generatorConfigs{hash}IpcArgs", ref ipcArgs, ushort.MaxValue))
-                    {
-                        generatorConfig.IpcArgs = ipcArgs;
-                        Config.Save();
-                    }
+                    generatorConfig.IpcConfigs.Add(new());
+                    Config.Save();
                 }
-                else
+
+                ImGui.SameLine(60);
+                if (ImGui.BeginTabBar($"generatorConfigs{hash}IpcConfigsTabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.FittingPolicyScroll))
                 {
-                    ImGui.SameLine();
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-                    ImGui.Text("Could not retrieve signature");
-                    ImGui.PopStyleColor();
+                    for (var i = 0; i < generatorConfig.IpcConfigs.Count; i++)
+                    {
+                        var ipcConfig = generatorConfig.IpcConfigs[i];
+
+                        if (ImGui.BeginTabItem($"#{i}###generatorConfigs{hash}IpcConfigs{i}"))
+                        {
+                            var ipcNamesForCombo = ipcOrdered.Select(g => g.Name).Prepend(string.Empty);
+                            var ipcIndexForCombo = ipcNamesForCombo.IndexOf(ipcConfig.Name);
+                            ImGui.SetCursorPosX(40);
+                            ImGui.PushItemWidth(500);
+                            if (ImGui.Combo($"Name###generatorConfigs{hash}IpcConfigs{i}Name", ref ipcIndexForCombo, ipcNamesForCombo.ToArray(), ipcNamesForCombo.Count()))
+                            {
+                                ipcConfig.Name = ipcNamesForCombo.ElementAt(ipcIndexForCombo);
+                                Config.Save();
+                            }
+                            ImGui.PopItemWidth();
+
+                            ImGui.SameLine(600);
+                            ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
+                            if (ImGui.Button($"Delete###generatorConfigs{hash}IpcConfigs{i}Delete"))
+                            {
+                                generatorConfig.IpcConfigs.RemoveAt(i);
+                                Config.Save();
+                            }
+                            ImGui.PopStyleColor();
+
+                            if (!ipcConfig.Name.IsNullOrWhitespace())
+                            {
+                                ImGui.SetCursorPosX(40);
+                                if (ipcIndexForCombo > 0)
+                                {
+                                    var channel = ipcOrdered.ElementAt(ipcIndexForCombo - 1);
+                                    var genericTypes = channel.Func!.GetType().GenericTypeArguments;
+
+
+                                    ImGui.Text($"Detected Signature: Out={genericTypes.Last().Name}");
+
+                                    if (genericTypes.Length > 1)
+                                    {
+                                        ImGui.SameLine();
+                                        ImGui.Text($"In=[{string.Join(", ", genericTypes.Take(genericTypes.Length - 1).Select(a => a.Name))}]");
+
+                                        var ipcArgs = ipcConfig.Args;
+                                        ImGui.SetCursorPosX(40);
+                                        ImGui.PushItemWidth(500);
+                                        if (ImGui.InputText($"Args###generatorConfigs{hash}IpcConfigs{i}Args", ref ipcArgs, ushort.MaxValue))
+                                        {
+                                            ipcConfig.Args = ipcArgs;
+                                            Config.Save();
+                                        }
+                                        ImGui.PopItemWidth();
+                                    }
+                                }
+                                else
+                                {
+                                    ImGui.SameLine();
+                                    ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
+                                    ImGui.Text("Could not retrieve signature");
+                                    ImGui.PopStyleColor();
+                                }
+                            }
+
+                            ImGui.EndTabItem();
+                        }
+                    }
+                    ImGui.EndTabBar();
                 }
-            }
+            } 
+
+            ImGui.NewLine();
+            ImGui.SetCursorPosX(20);
+            var scriptInputHeight = GeneratorConfigToState[generatorConfig].GeneratedMacros.Any() ? ImGui.GetTextLineHeight() * 13 : ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 35;
 
             var script = generatorConfig.Script;
-            if (ImGui.InputTextMultiline($"Script (js)###generatorConfigs{hash}Script", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, ImGui.GetTextLineHeight() * 13)))
+            if (ImGui.InputTextMultiline($"Script (js)###generatorConfigs{hash}Script", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, scriptInputHeight)))
             {
                 generatorConfig.Script = script;
                 Config.Save();
             }
 
-            if (ImGui.Button($"Execute###generatorConfigs{hash}GenerateMacros"))
+            ImGui.SetCursorPosX(20);
+            if (CurrentJsEngine == null)
             {
-                GenerateMacros(generatorConfig);
+                if (ImGui.Button($"Execute###generatorConfigs{hash}GenerateMacros"))
+                {
+                    GenerateMacros(generatorConfig);
+                }
+            }
+            else
+            {
+                ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudOrange);
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
+                if (ImGui.Button($"Cancel Execution###generatorConfigs{hash}GenerateMacrosCancel"))
+                {
+                    CurrentJsEngine.Interrupt();
+                }
+                ImGui.PopStyleColor();
+                ImGui.PopStyleColor();
             }
         }
     }
+
+
 
     private void DrawOutputHeader(GeneratorConfig generatorConfig)
     {
@@ -790,48 +891,56 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.TableSetupColumn($"Content###generatorConfigs{hash}GeneratedMacrosContent", ImGuiTableColumnFlags.None, 0.5f);
                     ImGui.TableHeadersRow();
 
-                    for (var subindex = 0; subindex < generatedMacros.Count(); subindex++)
+                    var clipper = newListClipper();
+                    clipper.Begin(generatedMacros.Count(), ImGui.GetTextLineHeightWithSpacing());
+
+                    while(clipper.Step())
                     {
-                        var generatedMacro = generatedMacros.ElementAt(subindex);
-                        if (filteredGeneratedMacros.Contains(generatedMacro))
+                        for (var subindex = clipper.DisplayStart; subindex < clipper.DisplayEnd; subindex++)
                         {
-                            if (ImGui.TableNextColumn())
+                            var generatedMacro = generatedMacros.ElementAt(subindex);
+                            if (filteredGeneratedMacros.Contains(generatedMacro))
                             {
-                                var selected = selectedGeneratedMacros.Contains(generatedMacro);
-                                if (ImGui.Checkbox($"###generatorConfigs{subindex}GeneratedEntries{subindex}Selected", ref selected))
+                                if (ImGui.TableNextColumn())
                                 {
-                                    if (selected)
+                                    var selected = selectedGeneratedMacros.Contains(generatedMacro);
+                                    if (ImGui.Checkbox($"###generatorConfigs{subindex}GeneratedEntries{subindex}Selected", ref selected))
                                     {
-                                        selectedGeneratedMacros.Add(generatedMacro);
-                                    }
-                                    else
-                                    {
-                                        selectedGeneratedMacros.Remove(generatedMacro);
+                                        if (selected)
+                                        {
+                                            selectedGeneratedMacros.Add(generatedMacro);
+                                        }
+                                        else
+                                        {
+                                            selectedGeneratedMacros.Remove(generatedMacro);
+                                        }
                                     }
                                 }
-                            }
 
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(generatedMacro.Name);
-                            }
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(generatedMacro.Name);
+                                }
 
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(generatedMacro.Path);
-                            }
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(generatedMacro.Path);
+                                }
 
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(string.Join(", ", generatedMacro.Tags));
-                            }
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(string.Join(", ", generatedMacro.Tags));
+                                }
 
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(generatedMacro.Content);
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(generatedMacro.Content);
+                                }
                             }
                         }
                     }
+                    clipper.Destroy();
+
                     ImGui.EndTable();
                 }
             }
@@ -874,7 +983,8 @@ public partial class ConfigWindow : Window, IDisposable
         {
             try
             {
-                var generatedMacros = new Generator(generatorConfig, PluginLog).Execute();
+                CurrentJsEngine = JsEngineSwitcher.Current.CreateDefaultEngine();
+                var generatedMacros = new Generator(generatorConfig, CurrentJsEngine, PluginLog).Execute();
 
                 var state = GeneratorConfigToState[generatorConfig];
                 state.GeneratedMacros = generatedMacros;
@@ -884,10 +994,21 @@ public partial class ConfigWindow : Window, IDisposable
             }
             catch (GeneratorException e)
             {
-                GeneratorException = e;
+                if (e.InnerException is JsInterruptedException)
+                {
+                    PluginLog.Debug("Generator execution has been interrupted");
+                } 
+                else
+                {
+                    GeneratorException = e;
+                }
+            }
+            finally
+            {
+                CurrentJsEngine = null;
             }
         });
-
+        
     }
 
     private void SaveSelectedGeneratedMacros(GeneratorConfigState state)
@@ -899,5 +1020,10 @@ public partial class ConfigWindow : Window, IDisposable
         state.GeneratedMacros.ExceptWith(selectedGeneratedMacros);
         state.FilteredGeneratedMacros.ExceptWith(selectedGeneratedMacros);
         selectedGeneratedMacros.Clear();
+    }
+
+    private unsafe static ImGuiListClipperPtr newListClipper()
+    {
+        return new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
     }
 }

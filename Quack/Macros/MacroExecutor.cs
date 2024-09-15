@@ -33,6 +33,8 @@ public partial class MacroExecutor : IDisposable
     public void Dispose()
     {
         Framework.Update -= OnUpdate;
+
+        CancelTasks();
     }
 
     public void OnUpdate(IFramework framework)
@@ -47,13 +49,13 @@ public partial class MacroExecutor : IDisposable
     {
         var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
-
-        CancellationTokenSources.Add(cancellationTokenSource);
         Task.Run(() =>
         {
             try
             {
-                PluginLog.Debug($"Executing macro {macro.Name} ({macro.Path}) with content: {macro.Content}");
+                PluginLog.Debug($"Task #{Task.CurrentId} executing macro {macro.Name} ({macro.Path})");
+                CancellationTokenSources.Add(cancellationTokenSource);
+
                 foreach (var command in macro.Content.Split("\n"))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -61,22 +63,32 @@ public partial class MacroExecutor : IDisposable
                     if (!command.IsNullOrWhitespace())
                     {
                         var commandWithoutWait = WaitTimeGeneratedRegex().Replace(command, string.Empty);
-                        var message = string.Format(new PMFormatter(), format, commandWithoutWait);
-
-                        PendingMessages.Enqueue(message);
+                        if (!commandWithoutWait.IsNullOrWhitespace())
+                        {
+                            var message = string.Format(new PMFormatter(), format, commandWithoutWait);
+                            PendingMessages.Enqueue(message);
+                        }
+                            
                         var waitTimeMatch = WaitTimeGeneratedRegex().Match(command);
                         if (waitTimeMatch != null && waitTimeMatch.Success)
                         {
                             var waitTimeValue = waitTimeMatch.Groups[1].Value;
-                            PluginLog.Debug($"Pausing execution inside macro {macro.Name} ({macro.Path}) for {waitTimeValue} sec(s) to respect {waitTimeMatch.Value}");
+                            PluginLog.Debug($"Pausing execution #{Task.CurrentId} inside macro {macro.Name} ({macro.Path}) for {waitTimeValue} sec(s) to respect {waitTimeMatch.Value}");
                             Thread.Sleep(int.Parse(waitTimeValue) * 1000);
                         }
                     }
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (macro.Loop)
+                {
+                    ExecuteTask(macro, format);
+                }
             }
             catch(OperationCanceledException)
             {
-                PluginLog.Debug($"Canceled macro {macro.Name} ({macro.Path}) execution");
+                PluginLog.Debug($"Canceled execution #{Task.CurrentId} for macro {macro.Name} ({macro.Path})");
             }
             finally
             {

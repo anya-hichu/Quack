@@ -59,6 +59,7 @@ public sealed class Plugin : IDalamudPlugin
 
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
         Config.Macros = new(Config.Macros, MacroComparer.INSTANCE);
+        Config.MigrateIfNeeded();
 
         MacroExecutor = new(Framework, new(SigScanner), PluginLog);
 
@@ -127,7 +128,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             if (parts.Count == 2)
             {
-                var subparts = parts[1].Split(";");
+                var subparts = parts[1].Split("|", 2);
                 Config.Macros.FindFirst(m => m.Name == subparts[0] || m.Path == subparts[0], out var macro);
                 if(macro != null)
                 {
@@ -163,7 +164,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             else
             {
-                ChatGui.Print($"Supported format: {CommandName} execute <macro name or path>; <formatting>");
+                ChatGui.Print($"Supported format: {CommandName} execute [Macro Name or Macro Path] | [formatting (false/true/format) default: false]");
             }
         }
         else

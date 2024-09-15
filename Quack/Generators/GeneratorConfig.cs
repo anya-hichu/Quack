@@ -10,20 +10,21 @@ namespace Quack.Generators;
 public class GeneratorConfig
 {
     private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
-        new("Customize",
-            "CustomizePlus.Profile.GetList",
-            string.Empty,
+        new("Customize Profiles",
+            [new("CustomizePlus.Profile.GetList")],
 """
 function main(profilesJson) {
     const profiles = JSON.parse(profilesJson);
     const macros = profiles.flatMap(p => {
         return [{
             name: `Enable Profile "${p.Item2}"`,
-            path: `Customize/${p.Item2}/Enable`,
+            path: `profiles/${p.Item2}/Enable`,
+            tags: ['customize', 'profile', 'enable'],
             content: `/customize profile enable <me>,${p.Item2}`
         },{
             name: `Disable Profile "${p.Item2}"`,
-            path: `Customize/${p.Item2}/Disable`,
+            path: `profiles/${p.Item2}/Disable`,
+            tags: ['customize', 'profile', 'disable'],
             content: `/customize profile disable <me>,${p.Item2}`
         }];
     });
@@ -31,62 +32,129 @@ function main(profilesJson) {
 }
 """),
         new("Custom Emotes",
-            PenumbraIpc.MOD_LIST,
-            string.Empty,
+            [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS), new(EmotesIpc.LIST)],
 """
-// Requires "DeterministicPose" plugin to be installed for cpose index support
-// Custom command can be configured in the macros tab
+// Requires "DeterministicPose" and "ModSettingCommands" plugins to be installed
 
-const commandTagPattern = /(?<command>\/\S+)( (?<poseIndex>\d))?( \((?<comment>.+)\))?/;
+function main(modsJson, emotesJson) {
+    var mods = JSON.parse(modsJson);
+    var emotes = JSON.parse(emotesJson);
 
-function main(modsJson) {
-    const mods = JSON.parse(modsJson);
-    const macros = mods.flatMap(m => {
-        return m.localTags.flatMap(commandTag => {
-            const match = commandTagPattern.exec(commandTag);
-            if (match) {
-                const { command, poseIndex, comment } = match.groups;
-                const nameSuffix = comment ? `(${comment})` : '';
-                const commandSuffix = poseIndex ? `<wait.1>\n/dpose ${poseIndex}` : '';
-                const tags = m.localTags.filter(t => !t.startsWith('/')).concat([command]);
+    var macros = mods.flatMap(mod => {
+        var modGamePaths = Object.keys(mod.settings.files || {})
 
-                return [{
-                    name: `Custom Emote "${m.name}" [${command}] ${nameSuffix}`,
-                    path: `Mods/${m.path}/Execute${command}`,
-                    tags: tags,
-                    content: `/penumbra bulktag disable Self | ${command}
-/penumbra mod enable Self | ${m.dir}
-/penumbra redraw <me> <wait.1>
-${command}${commandSuffix}`
-                }];
+        var optionMacros = mod.settings.groupSettings.flatMap(setting => {
+            return setting.options.flatMap(option => {
+                var optionGamePaths = Object.keys(option.files || {})
+                var optionCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, optionGamePaths);
+
+                return optionCommandsWithPoseIndex.map(([command, poseIndex]) => {
+                    var contentLines = [
+                        `/penumbra bulktag disable Self | ${command}`,
+                        `/modset Self "${mod.dir}" "${mod.name}" "${setting.name}" = "${option.name}"`,
+                        `/penumbra mod enable Self | ${mod.dir}`,
+                        '/penumbra redraw <me> <wait.1>'
+                    ];
+
+                    var commandPath = command;
+                    if (poseIndex > -1) {
+                        contentLines.push(`${command} <wait.1>`, `/dpose ${poseIndex}`);
+                        commandPath = `${commandPath} (${poseIndex})`;
+                    } else {
+                        contentLines.push(command);
+                    }
+
+                    return {
+                        name: `Custom Emote "${option.name}" [${commandPath}]`,
+                        path: `Mods/${normalize(mod.path)}/Settings/${escape(setting.name)}/Options/${escape(option.name)}/Emotes${commandPath}`,
+                        tags: ['emote', 'option', command],
+                        content: contentLines.join("\n")
+                    };
+                });
+            });
+        })
+
+        if (optionMacros.length > 0) {
+            return optionMacros;
+        } else {
+            var modCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, modGamePaths);
+
+            var commandsWithPoseIndex;
+            if (modCommandsWithPoseIndex.length > 0) {
+                  commandsWithPoseIndex = modCommandsWithPoseIndex;
             } else {
-                return [];
+                  var tagCommandsWithPoseIndex = mod.localTags.flatMap(t => t.startsWith('/') ? [[t, -1]] : []);
+                  commandsWithPoseIndex = tagCommandsWithPoseIndex;
             }
-        });
+
+            return commandsWithPoseIndex.map(([command, poseIndex]) => {
+                var contentLines = [
+                    `/penumbra bulktag disable Self | ${command}`,
+                    `/penumbra mod enable Self | ${mod.dir}`,
+                    '/penumbra redraw <me> <wait.1>'
+                ];
+
+                var commandPath = command;
+                if (poseIndex > -1) {
+                    contentLines.push(`${command} <wait.1>`, `/dpose ${poseIndex}`);
+                    commandPath = `${commandPath} (${poseIndex})`;
+                } else {
+                    contentLines.push(command);
+                }
+
+                return {
+                    name: `Custom Emote "${mod.name}" [${commandPath}]`,
+                    path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
+                    tags: ['emote', command],
+                    content: contentLines.join("\n")
+                };
+            });      
+        }
     });
     return JSON.stringify(macros);
 }
+
+function lookupCommandsWithPoseIndex(emotes, gamePaths) {
+    return emotes.flatMap(emote => {
+        var keys = emote.actionTimelineKeys.concat(emote.poseKeys);
+        return keys.flatMap(key => {
+            return gamePaths.flatMap(gamePath => {
+                if (gamePath.endsWith(`${key}.pap`)) {
+                    return [[emote.command, emote.poseKeys.indexOf(key)]]
+                } else {
+                    return [];
+                }
+            });
+        });
+    });
+}
+
+function escape(segment) {
+    return segment.replaceAll('/', '|');
+}
+
+function normalize(path) {
+    return path.replaceAll('\\', '|');
+}
 """),
         new("Emotes",
-            EmotesIpc.LIST,
-            string.Empty,
+            [new(EmotesIpc.LIST)],
 """
 function main(emotesJson) {
     const emotes = JSON.parse(emotesJson);
     const macros = emotes.map(e => {
         return {
             name: e.name,
-            tags: [e.command],
             path: `Emotes/${e.category[0].toUpperCase()}${e.category.slice(1)}/${e.name}`,
+            tags: ['emote', e.category.toLowerCase(), e.command],
             content: e.command
         };
     });
     return JSON.stringify(macros);
 }
 """),
-        new("Glamourer",
-            GlamourerIpc.DESIGN_LIST,
-            string.Empty,
+        new("Glamours",
+            [new(GlamourerIpc.DESIGN_LIST)],
 """
 function main(designsJson) {
     const designs = JSON.parse(designsJson);
@@ -94,7 +162,7 @@ function main(designsJson) {
         return {
             name: `Apply Design "${d.name}"`,
             path: `Glamours/${d.path}/Apply`,
-            tags: d.tags,
+            tags: d.tags.concat(['glamour', 'design', 'apply']),
             content: `/penumbra bulktag disable Self | all
 /glamour apply Base | <me>;true
 /glamour apply ${d.id} | <me>; true`
@@ -103,9 +171,8 @@ function main(designsJson) {
     return JSON.stringify(macros);
 }
 """),
-        new("Honorific",
-            "Honorific.GetCharacterTitleList",
-            """["Character Name", WorldId]""",
+        new("Honorifics",
+            [new("Honorific.GetCharacterTitleList", """["Character Name", WorldId]""")],
 """
 // Second parameter value (WorldId) can be found as key in %appdata%\xivlauncher\pluginConfigs\Honorific.json
 
@@ -115,59 +182,20 @@ function main(titlesJson) {
         return [{
             name: `Enable Honorific "${t.Title}"`,
             path: `Honorifics/${t.Title}/Enable`,
+            tags: ['honorific', 'title', 'enable'],
             content: `/honorific title enable ${t.Title}`
         }, {
             name: `Disable Honorific "${t.Title}"`,
             path: `Honorifics/${t.Title}/Disable`,
+            tags: ['honorific', 'title', 'disable'],
             content: `/honorific title disable ${t.Title}`
         }];
     });
     return JSON.stringify(macros);
 }
 """),
-        new("Macros",
-            "Quack.Macros.GetList",
-            string.Empty,
-"""
-function main(rawMacrosJson) {
-    const rawMacros = JSON.parse(rawMacrosJson);
-    const macros = rawMacros.flatMap(m => {
-        var setName = ['Individual', 'Shared'][m.set];
-        return [{
-            name: m.name,
-            tags: [setName],
-            path: `Macros/${setName}/${m.index}/${m.name}`,
-            content: m.content
-        }];
-    });
-    return JSON.stringify(macros);
-}
-"""),
-        new("Penumbra",
-            PenumbraIpc.MOD_LIST,
-            string.Empty,
-"""
-function main(modsJson) {
-    const mods = JSON.parse(modsJson);
-    const macros = mods.flatMap(m => {
-        return [{
-            name: `Enable Mod "${m.name}"`,
-            path: `Mods/${m.path}/Enable`,
-            tags: m.localTags,
-            content: `/penumbra mod enable Self | ${m.dir}`
-        },{
-            name: `Disable Mod "${m.name}"`,
-            path: `Mods/${m.path}/Disable`,
-            tags: m.localTags,
-            content: `/penumbra mod disable Self | ${m.dir}`
-        }];
-    })
-    return JSON.stringify(macros);
-}
-"""),
-        new("Simple Tweaks",
-            string.Empty,
-            string.Empty,
+        new("Jobs",
+            [],
 """
 // Requires Simple Tweak > Command > Equip Job Command to be enabled
 
@@ -188,6 +216,86 @@ function main() {
     });
     return JSON.stringify(macros);
 }
+"""),
+        new("Macros",
+            [new("Quack.Macros.GetList")],
+"""
+function main(rawMacrosJson) {
+    const rawMacros = JSON.parse(rawMacrosJson);
+    const macros = rawMacros.flatMap(m => {
+        var setName = ['Individual', 'Shared'][m.set];
+        return [{
+            name: m.name,
+            tags: ['macro', setName.toLowerCase()],
+            path: `Macros/${setName}/${m.index}/${m.name}`,
+            content: m.content
+        }];
+    });
+    return JSON.stringify(macros);
+}
+"""),
+        new("Mods",
+            [new(PenumbraIpc.MOD_LIST)],
+"""
+function main(modsJson) {
+    const mods = JSON.parse(modsJson);
+    const macros = mods.flatMap(m => {
+        return [{
+            name: `Enable Mod "${m.name}"`,
+            path: `Mods/${normalize(m.path)}/Enable`,
+            tags: m.localTags.concat(['mod', 'enable']),
+            content: `/penumbra mod enable Self | ${m.dir}`
+        },{
+            name: `Disable Mod "${m.name}"`,
+            path: `Mods/${normalize(m.path)}/Disable`,
+            tags: m.localTags.concat(['mod', 'disable']),
+            content: `/penumbra mod disable Self | ${m.dir}`
+        }];
+    })
+    return JSON.stringify(macros);
+}
+
+function normalize(path) {
+    return path.replaceAll('\\', '|');
+}
+"""),
+        new("Mod Options",
+            [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS)],
+"""
+function main(modsJson) {
+    const mods = JSON.parse(modsJson);
+
+    const macros = mods.flatMap(m => {
+        return m.settings.groupSettings.flatMap(s => {
+            const groupMacros = [{
+                name: `Clear Option Group "${s.name}"`,
+                path: `Mods/${m.path}/Settings/${escape(s.name)}/Clear`,
+                tags: ['options', 'clear'],
+                content: `/modset Self "${m.dir}" "${m.name}" "${s.name}" =`
+            }];
+            const optionMacros = s.options.map(o => {
+                return {
+                    name: `Enable Option "${o.name}"`,
+                    path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}`,
+                    tags: ['option', 'enable'],
+                    content: `/modset Self "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
+                };
+            });
+
+            return groupMacros.concat(optionMacros);
+        })
+    });
+
+    return JSON.stringify(macros);
+}
+
+function escape(segment) {
+    return segment.replaceAll('/', '|');
+}
+
+function normalize(path) {
+    return path.replaceAll('\\', '|');
+}
 """)
 ];
     public static List<GeneratorConfig> GetDefaults()
@@ -196,17 +304,23 @@ function main() {
     }
 
     public string Name { get; set; } = string.Empty;
+
+    public List<GeneratorIpcConfig> IpcConfigs { get; set; } = [];
+
+    [ObsoleteAttribute("IpcName deprecated to support multiple ipcs")]
     public string IpcName { get; set; } = string.Empty;
+
+    [ObsoleteAttribute("IpcArgs deprecated to support multiple ipcs")]
     public string IpcArgs { get; set; } = string.Empty;
+
     public string Script { get; set; } = string.Empty;
 
     public GeneratorConfig() { }
 
-    public GeneratorConfig(string name, string ipcName, string ipcArgs, string script)
+    public GeneratorConfig(string name, List<GeneratorIpcConfig> ipcConfigs, string script)
     {
         Name = name;
-        IpcName = ipcName;
-        IpcArgs = ipcArgs;
+        IpcConfigs = ipcConfigs;
         Script = script;
     }
 

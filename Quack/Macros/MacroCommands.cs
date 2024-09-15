@@ -8,7 +8,7 @@ using System.Linq;
 namespace Quack.Macros;
 public class MacroCommands: IDisposable
 {
-    private Dictionary<Macro, string> MacroToRegisteredCommand { get; init; } = new(0, MacroComparer.INSTANCE);
+    private HashSet<string> RegisteredCommands { get; init; } = [];
 
     private ICommandManager CommandManager { get; init; }
     private Config Config { get; init; }
@@ -27,29 +27,25 @@ public class MacroCommands: IDisposable
 
     public void Dispose()
     {
-        MacroToRegisteredCommand.Keys.ToList().ForEach(RemoveMacroHandler);
+        foreach (var command in RegisteredCommands)
+        {
+            RemoveHandler(command);
+        }
     }
 
     private void UpdateMacroHandlers()
     {
         var macroWithCommands = GetMacroWithCommands();
-        foreach (var deletedMacro in MacroToRegisteredCommand.Keys.Except(macroWithCommands, MacroComparer.INSTANCE))
+        var deletedCommands = RegisteredCommands.Except(macroWithCommands.Select(m => m.Command));
+
+        foreach (var deletedCommand in deletedCommands)
         {
-            RemoveMacroHandler(deletedMacro);
+            RemoveHandler(deletedCommand);
         }
 
         foreach (var macro in macroWithCommands)
         {
-            if (MacroToRegisteredCommand.TryGetValue(macro, out var command))
-            {
-                if(macro.Command != command)
-                {
-                    CommandManager.RemoveHandler(command);
-                    MacroToRegisteredCommand.Remove(macro);
-                    AddMacroHandler(macro);
-                }
-            }
-            else
+            if (!RegisteredCommands.Contains(macro.Command))
             {
                 AddMacroHandler(macro);
             }
@@ -59,24 +55,28 @@ public class MacroCommands: IDisposable
     private void AddMacroHandler(Macro macro)
     {
         CommandManager.AddHandler(macro.Command, BuildCommandInfo(macro));
-        MacroToRegisteredCommand.Add(macro, macro.Command);
+        RegisteredCommands.Add(macro.Command);
     }
 
     private void RemoveMacroHandler(Macro macro)
     {
-        if(MacroToRegisteredCommand.TryGetValue(macro, out var command))
-        {
-            CommandManager.RemoveHandler(command);
-            MacroToRegisteredCommand.Remove(macro);
-        }
+        RemoveHandler(macro.Command);
+    }
+
+    private void RemoveHandler(string command)
+    {
+        CommandManager.RemoveHandler(command);
+        RegisteredCommands.Remove(command);
     }
 
     private CommandInfo BuildCommandInfo(Macro macro)
     {
-        return new((string command, string args) =>
+
+        return new((command, args) => MacroExecutor.ExecuteTask(macro))
         {
-            MacroExecutor.ExecuteTask(macro);
-        });
+            HelpMessage = $"Execute macro {macro.Name} ({macro.Path}) using {macro.Command}",
+            ShowInHelp = false
+        };
     }
 
     private List<Macro> GetMacroWithCommands()

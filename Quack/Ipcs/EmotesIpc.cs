@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
+using Dalamud.Utility;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets2;
 
@@ -9,11 +11,20 @@ namespace Quack.Ipcs;
 
 public class EmotesIpc: IDisposable
 {
-    public class EmoteData(string name, string category, string command)
+    // TODO: Find a way to not hardcode the pose keys
+    private static readonly Dictionary<string, string[]> POSE_KEYS_BY_TEXT_COMMAND = new() {
+        { "/sit", ["emote/s_pose00_loop", "emote/s_pose01_loop", "emote/s_pose02_loop", "emote/s_pose03_loop", "emote/s_pose04_loop" ] },
+        { "/groundsit", ["emote/j_pose00_loop", "emote/j_pose01_loop", "emote/j_pose02_loop", "emote/j_pose03_loop"] },
+        { "/doze", ["emote/l_pose00_loop", "emote/l_pose01_loop", "emote/l_pose02_loop"] }
+    };
+
+    public class EmoteData(string name, string category, string command, string[] actionTimelineKeys, string[] poseKeys)
     {
         public string name = name;
         public string category = category;
         public string command = command;
+        public string[] actionTimelineKeys = actionTimelineKeys;
+        public string[] poseKeys = poseKeys;
     }
 
     public static readonly string LIST = "Quack.Emotes.GetList";
@@ -27,7 +38,15 @@ public class EmotesIpc: IDisposable
             {
                 if (e.EmoteCategory.Value != null && e.TextCommand.Value != null)
                 {
-                    return [new(e.Name, e.EmoteCategory.Value!.Name, e.TextCommand.Value!.Command.RawString)];
+                    var actionTimelineKeys = e.ActionTimeline.SelectMany<LazyRow<ActionTimeline>, string>(a =>
+                    {
+                        var key = a.Value?.Key?.RawString;
+                        return key.IsNullOrEmpty() ? [] : [key];
+                    }).ToArray();
+                    var textCommand = e.TextCommand.Value!.Command.RawString;
+                    var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(textCommand, []);
+
+                    return [new(e.Name, e.EmoteCategory.Value!.Name, textCommand, actionTimelineKeys, poseKeys)];
                 } else
                 {
                     return [];
