@@ -182,24 +182,32 @@ function main(designsJson) {
         new("Honorifics",
             [new("Honorific.GetCharacterTitleList", """["Character Name", WorldId]""")],
 """
-// Second parameter value (WorldId) can be found as key in %appdata%\xivlauncher\pluginConfigs\Honorific.json
+// Second IPC argument value (WorldId) can be found as key in %appdata%\xivlauncher\pluginConfigs\Honorific.json
 
 function main(titlesJson) {
     const titles = JSON.parse(titlesJson);
-    const macros = titles.flatMap(t => {
-        return [{
+
+    const disablehonorificsMacro = {
+        name: `Disable Honorifics`,
+        path: 'Honorifics/Disable',
+        tags: ['honorifics', 'titles', 'disable'],
+        command: '/disablehonorifics',
+        content: titles.map(t => `/honorific title disable ${t.Title}`).join("\n")
+    };
+
+    const titleMacros = titles.map(t => {
+        const contentLines = [
+            disablehonorificsMacro.command,
+            `/honorific title enable ${t.Title}`
+        ];
+        return {
             name: `Enable Honorific "${t.Title}"`,
             path: `Honorifics/${t.Title}/Enable`,
             tags: ['honorific', 'title', 'enable'],
-            content: `/honorific title enable ${t.Title}`
-        }, {
-            name: `Disable Honorific "${t.Title}"`,
-            path: `Honorifics/${t.Title}/Disable`,
-            tags: ['honorific', 'title', 'disable'],
-            content: `/honorific title disable ${t.Title}`
-        }];
+            content: contentLines.join("\n")
+        };
     });
-    return JSON.stringify(macros);
+    return JSON.stringify(titleMacros.concat([disablehonorificsMacro]));
 }
 """),
         new("Jobs",
@@ -218,7 +226,8 @@ function main() {
     const macros = jobs.map(j => {
         return {
             name: `Equip Job "${j}"`,
-            path: `Jobs/${j}`,
+            path: `Jobs/${j}/Equip`,
+            tags: ['job', j.toLowerCase(), 'equip'],
             content: `/equipjob ${j}`
         };
     });

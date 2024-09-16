@@ -741,9 +741,8 @@ public partial class ConfigWindow : Window, IDisposable
                                 }
                                 else
                                 {
-                                    ImGui.SameLine();
                                     ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
-                                    ImGui.Text("Could not retrieve signature");
+                                    ImGui.Text($"Could not retrieve signature for {ipcConfig.Name}");
                                     ImGui.PopStyleColor();
                                 }
                             }
@@ -884,17 +883,18 @@ public partial class ConfigWindow : Window, IDisposable
                 }
                 ImGui.PopStyleColor();
 
-                if (ImGui.BeginTable($"generatorConfigs{hash}GeneratedMacros", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
+                if (ImGui.BeginTable($"generatorConfigs{hash}GeneratedMacros", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
                 {
                     ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.None, 0.05f);
                     ImGui.TableSetupColumn($"Name###generatorConfigs{hash}GeneratedMacrosName", ImGuiTableColumnFlags.None, 0.2f);
                     ImGui.TableSetupColumn($"Path###generatorConfigs{hash}GeneratedMacrosPath", ImGuiTableColumnFlags.None, 0.2f);
-                    ImGui.TableSetupColumn($"Tags###generatorConfigs{hash}GeneratedMacrosTags", ImGuiTableColumnFlags.None, 0.2f);
+                    ImGui.TableSetupColumn($"Tags###generatorConfigs{hash}GeneratedMacrosTags", ImGuiTableColumnFlags.None, 0.1f);
+                    ImGui.TableSetupColumn($"Command###generatorConfigs{hash}GeneratedMacrosCommand", ImGuiTableColumnFlags.None, 0.1f);
                     ImGui.TableSetupColumn($"Content###generatorConfigs{hash}GeneratedMacrosContent", ImGuiTableColumnFlags.None, 0.5f);
                     ImGui.TableHeadersRow();
 
                     var clipper = newListClipper();
-                    clipper.Begin(filteredGeneratedMacros.Count(), 27);
+                    clipper.Begin(filteredGeneratedMacros.Count, 27);
 
                     while(clipper.Step())
                     {
@@ -934,7 +934,24 @@ public partial class ConfigWindow : Window, IDisposable
 
                             if (ImGui.TableNextColumn())
                             {
-                                ImGui.Text(generatedMacro.Content);
+                                ImGui.Text(generatedMacro.Command);
+                            }
+
+                            if (ImGui.TableNextColumn())
+                            {
+                                var contentLines = generatedMacro.Content.Split("\n");
+                                if (contentLines.Length > 1)
+                                {
+                                    ImGui.Text($"{contentLines[0]}...");
+                                    if (ImGui.IsItemHovered())
+                                    {
+                                        ImGui.SetTooltip(generatedMacro.Content);
+                                    }
+                                }
+                                else
+                                {
+                                    ImGui.Text(generatedMacro.Content);
+                                }         
                             }
                         }
                     }

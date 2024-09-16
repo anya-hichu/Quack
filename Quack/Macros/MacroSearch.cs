@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using Dalamud.Utility;
-using System.ComponentModel.DataAnnotations;
 
 namespace Quack.Macros;
 public class MacroSearch
