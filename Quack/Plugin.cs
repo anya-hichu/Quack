@@ -129,7 +129,9 @@ public sealed class Plugin : IDalamudPlugin
             if (parts.Count == 2)
             {
                 var subparts = parts[1].Split("|", 2);
-                Config.Macros.FindFirst(m => m.Name == subparts[0] || m.Path == subparts[0], out var macro);
+                var nameOrPath = subparts[0].Trim();
+
+                Config.Macros.FindFirst(m => m.Name == nameOrPath || m.Path == nameOrPath, out var macro);
                 if(macro != null)
                 {
                     if (subparts.Length == 2)
@@ -159,7 +161,7 @@ public sealed class Plugin : IDalamudPlugin
                 }
                 else
                 {
-                    ChatGui.Print($"No macro found with name or path: {parts[1]}");
+                    ChatGui.Print($"No macro found with name or path: {nameOrPath}");
                 }
             }
             else
