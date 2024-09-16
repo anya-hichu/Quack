@@ -35,8 +35,9 @@ function main(profilesJson) {
             [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS), new(EmotesIpc.LIST)],
 """
 // Requires "DeterministicPose" and "ModSettingCommands" plugins to be installed
+
 const idlePseudoEmote = {
-    command: '',
+    command: '/idle',
     actionTimelineKeys: [],
     poseKeys: ['emote/pose00_loop', 'emote/pose01_loop', 'emote/pose02_loop', 'emote/pose03_loop', 'emote/pose04_loop', 'emote/pose05_loop', 'emote/pose06_loop']
 };
