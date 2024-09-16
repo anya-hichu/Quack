@@ -14,7 +14,6 @@ using System.Linq;
 using Dalamud.Utility;
 using Dalamud.Interface;
 using Quack.Listeners;
-using static FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureMacroModule;
 
 namespace Quack;
 public sealed class Plugin : IDalamudPlugin
@@ -47,11 +46,8 @@ public sealed class Plugin : IDalamudPlugin
     private KeyBindListener KeyBindListener { get; init; }
     private MacroCommands MacroCommands { get; init; }
     
-
     public Plugin()
     {
-        KeyState.GetValidVirtualKeys();
-
         var engineSwitcher = JsEngineSwitcher.Current;
         engineSwitcher.EngineFactories.Add(new JintJsEngineFactory(new()
         {
@@ -188,7 +184,6 @@ public sealed class Plugin : IDalamudPlugin
     }
 
     private void DrawUI() => WindowSystem.Draw();
-
     private void ToggleConfigUI() => ConfigWindow.Toggle();
     private void ToggleMainUI() => MainWindow.Toggle();
 
