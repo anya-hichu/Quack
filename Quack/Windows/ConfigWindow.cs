@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Dalamud;
 using Dalamud.Game.ClientState.Keys;
@@ -100,7 +98,6 @@ public partial class ConfigWindow : Window, IDisposable
     {
         if(ImGui.CollapsingHeader("Search##searchHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.NewLine();
             var validVirtualKeys = KeyState.GetValidVirtualKeys().Prepend(VirtualKey.NO_KEY);
 
             var keyBind = Config.KeyBind;
@@ -122,16 +119,29 @@ public partial class ConfigWindow : Window, IDisposable
         }
 
         ImGui.NewLine();
-        if (ImGui.CollapsingHeader("Formatter##formatterHeader", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader("Generator##generatorHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.NewLine();
-            var commandFormat = Config.CommandFormat;
-            if (ImGui.InputText("Command Format##commandFormat", ref commandFormat, ushort.MaxValue))
+            var generatorEngineName = Config.GeneratorEngineName;
+            var generatorEngineNames = JsEngineSwitcher.Current.EngineFactories.Select(f => f.EngineName).ToArray();
+
+            var currentIndex = generatorEngineNames.IndexOf(generatorEngineName);
+            if (ImGui.Combo("Engine##generatorEngineName", ref currentIndex, generatorEngineNames, generatorEngineNames.Length))
             {
-                Config.CommandFormat = commandFormat;
+                Config.GeneratorEngineName = generatorEngineNames.ElementAt(currentIndex);
+                Config.Save();
+            };
+        }
+
+        ImGui.NewLine();
+        if (ImGui.CollapsingHeader("Macro Executor##macroExecutorHeader", ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var extraCommandFormat = Config.ExtraCommandFormat;
+            if (ImGui.InputText("Extra Command Format##commandFormat", ref extraCommandFormat, ushort.MaxValue))
+            {
+                Config.ExtraCommandFormat = extraCommandFormat;
                 Config.Save();
             }
-            ImGui.Text("(PM format supported via {0:P} placeholder)");
+            ImGui.Text("PM format supported via {0:P} placeholder for example: \"/cwl2 puppet now ({0:P})\"");
         }
     }
 
@@ -376,7 +386,7 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.SameLine();
                 if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
                 {
-                    MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
+                    MacroExecutor.ExecuteTask(macro, Config.ExtraCommandFormat);
                 }
             }
             else
@@ -673,7 +683,7 @@ public partial class ConfigWindow : Window, IDisposable
 
             ImGui.NewLine();
             ImGui.SetCursorPosX(20);
-            if(ImGui.CollapsingHeader($"IPCs###generatorConfigs{hash}IpcConfigs"))
+            if(ImGui.CollapsingHeader($"IPCs###generatorConfigs{hash}IpcConfigs", ImGuiTreeNodeFlags.DefaultOpen))
             {
                 ImGui.NewLine();
                 ImGui.SetCursorPosX(40);
@@ -999,7 +1009,7 @@ public partial class ConfigWindow : Window, IDisposable
         {
             try
             {
-                CurrentJsEngine = JsEngineSwitcher.Current.CreateDefaultEngine();
+                CurrentJsEngine = JsEngineSwitcher.Current.CreateEngine(Config.GeneratorEngineName);
                 var generatedMacros = new Generator(generatorConfig, CurrentJsEngine, PluginLog).Execute();
 
                 var state = GeneratorConfigToState[generatorConfig];

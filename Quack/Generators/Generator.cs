@@ -35,9 +35,9 @@ public class Generator(GeneratorConfig generatorConfig, IJsEngine jsEngine, IPlu
                 var returnValue = channel.InvokeFunc<object>(args);
 
                 PluginLog.Verbose($"IPC channel {channel.Name} returned value: {returnValue}");
-                if (returnValue is JArray || returnValue is JObject)
+                if (!returnValue.GetType().IsGenericType)
                 {
-                    return JsonConvert.SerializeObject(returnValue);
+                    return returnValue.ToString()!;
                 }
                 else
                 {
@@ -57,9 +57,9 @@ public class Generator(GeneratorConfig generatorConfig, IJsEngine jsEngine, IPlu
         {
             if (!GeneratorConfig.Script.IsNullOrWhitespace())
             {
-                PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script: {GeneratorConfig.Script}");
+                PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script");
                 JsEngine.Execute(GeneratorConfig.Script);
-                PluginLog.Debug($"Calling generator {GeneratorConfig.Name} main function with: {string.Join(", ", args)}");
+                PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} main function with: {string.Join(", ", args)}");
                 var maybeJson = JsEngine.CallFunction<string>("main", args);
                 var generatedEntries = JsonConvert.DeserializeObject<Macro[]>(maybeJson);
                 if (generatedEntries != null)

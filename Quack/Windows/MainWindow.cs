@@ -116,7 +116,7 @@ public class MainWindow : Window, IDisposable
                         ImGui.SameLine();
                         if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
                         {
-                            MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
+                            MacroExecutor.ExecuteTask(macro, Config.ExtraCommandFormat);
                         }
                     }
 

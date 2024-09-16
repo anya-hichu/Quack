@@ -14,6 +14,7 @@ using Dalamud.Utility;
 using Dalamud.Interface;
 using Quack.Listeners;
 using Quack.Utils;
+using JavaScriptEngineSwitcher.V8;
 
 namespace Quack;
 
@@ -55,7 +56,7 @@ public sealed class Plugin : IDalamudPlugin
             DisableEval = true,
             StrictMode = true
         }));
-        engineSwitcher.DefaultEngineName = JintJsEngine.EngineName;
+        engineSwitcher.EngineFactories.Add(new V8JsEngineFactory(new()));
 
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
         Config.Macros = new(Config.Macros, MacroComparer.INSTANCE);
@@ -165,7 +166,7 @@ public sealed class Plugin : IDalamudPlugin
                     var formatting = arguments[2];
                     if (formatting == "true")
                     {
-                        MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
+                        MacroExecutor.ExecuteTask(macro, Config.ExtraCommandFormat);
                     }
                     else if (formatting == "false")
                     {
