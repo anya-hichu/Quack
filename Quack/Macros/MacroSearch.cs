@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using Dalamud.Utility;
 
 namespace Quack.Macros;
 public class MacroSearch
@@ -21,5 +22,19 @@ public class MacroSearch
                                macro.Path.Contains(t, MATCH_FLAGS) ||
                                macro.Command.Contains(t, MATCH_FLAGS) ||
                                macro.Tags.Any(tag => tag.Contains(t, MATCH_FLAGS)));
+    }
+
+    public static Macro? FindByNameOrPath(IEnumerable<Macro> macros, string nameOrPath)
+    {
+        Macro? match = null;
+        if (macros.FindFirst(m => m.Path == nameOrPath, out var pathMatch))
+        {
+            match = pathMatch;
+        }
+        else if (macros.FindFirst(m => m.Name == nameOrPath, out var nameMatch))
+        {
+            match = nameMatch;
+        }
+        return match;
     }
 }

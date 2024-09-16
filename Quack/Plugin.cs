@@ -10,12 +10,13 @@ using Lumina.Excel.GeneratedSheets2;
 using Quack.Ipcs;
 using Dalamud.Game;
 using Quack.Macros;
-using System.Linq;
 using Dalamud.Utility;
 using Dalamud.Interface;
 using Quack.Listeners;
+using Quack.Utils;
 
 namespace Quack;
+
 public sealed class Plugin : IDalamudPlugin
 {
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
@@ -30,7 +31,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config and exec";
-    private const string CommandExecHelpMessage = $"Supported format: {CommandName} exec [Macro Name or Path]( | [Formatting (false/true/format)])?";
+    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path]( [Formatting (false/true/format)])?";
 
 
     public readonly WindowSystem WindowSystem = new("Quack");
@@ -112,71 +113,79 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
-        var parts = args.Split(" ", 2).ToList();
-        var subcommand = parts[0];
-
-        if (subcommand == "main")
+        var arguments = Arguments.SplitCommandLine(args);
+        if (arguments.Length == 1)
         {
-            ToggleMainUI();
-        }
-        else if (subcommand == "config")
-        {
-            ToggleConfigUI();
-        }
-        else if (subcommand == "exec")
-        {
-            if (parts.Count == 2)
+            var subcommand = arguments[0];
+            if (subcommand == "main")
             {
-                var subparts = parts[1].Split("|", 2);
-                if (subparts.Length > 0)
-                {
-                    var nameOrPath = subparts[0].Trim();
-                    if (Config.Macros.FindFirst(m => m.Name == nameOrPath || m.Path == nameOrPath, out var macro))
-                    {
-                        if (subparts.Length == 1)
-                        {
-                            MacroExecutor.ExecuteTask(macro);
-                        }
-                        else if (subparts.Length == 2)
-                        {
-                            var formatting = subparts[1].Trim();
-                            if (formatting == "true")
-                            {
-                                MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
-                            }
-                            else if (formatting == "false")
-                            {
-                                MacroExecutor.ExecuteTask(macro);
-                            }
-                            else if (!formatting.IsNullOrEmpty())
-                            {
-                                MacroExecutor.ExecuteTask(macro, formatting);
-                            }
-                            else
-                            {
-                                ChatGui.Print(CommandExecHelpMessage);
-                            }
-                        } 
-                        else
-                        {
-                            ChatGui.Print(CommandExecHelpMessage);
-                        }
-                    }
-                    else
-                    {
-                        ChatGui.Print($"No macro found with name or path: {nameOrPath}");
-                    }
-                } 
-                else
-                {
-                    ChatGui.Print(CommandExecHelpMessage);
-                }
+                ToggleMainUI();
             }
-            else
+            else if (subcommand == "config")
+            {
+                ToggleConfigUI();
+            }
+            else if (subcommand == "exec")
             {
                 ChatGui.Print(CommandExecHelpMessage);
             }
+            else
+            {
+                ChatGui.PrintError(CommandHelpMessage);
+            }
         }
+        else if (arguments.Length == 2)
+        {
+            if (arguments[0] == "exec")
+            {
+                var nameOrPath = arguments[1];
+                var macro = MacroSearch.FindByNameOrPath(Config.Macros, nameOrPath);
+                if (macro != null)
+                {
+                    MacroExecutor.ExecuteTask(macro);
+                } 
+                else
+                {
+                    ChatGui.Print($"No macro found with name or path: {nameOrPath}");
+                }
+            } 
+            else
+            {
+                ChatGui.PrintError(CommandHelpMessage);
+            }
+        }
+        else if (arguments.Length == 3)
+        {
+            if (arguments[0] == "exec")
+            {
+                var nameOrPath = arguments[1];
+                var macro = MacroSearch.FindByNameOrPath(Config.Macros, nameOrPath);
+                if (macro != null)
+                {
+                    var formatting = arguments[2];
+                    if (formatting == "true")
+                    {
+                        MacroExecutor.ExecuteTask(macro, Config.CommandFormat);
+                    }
+                    else if (formatting == "false")
+                    {
+                        MacroExecutor.ExecuteTask(macro);
+                    }
+                    else if (!formatting.IsNullOrEmpty())
+                    {
+                        MacroExecutor.ExecuteTask(macro, formatting);
+                    } 
+                    else
+                    {
+                        ChatGui.PrintError(CommandExecHelpMessage);
+                    }
+                }
+                else
+                {
+                    ChatGui.PrintError($"No macro found with name or path: {nameOrPath}");
+                }
+            }
+        } 
         else
         {
             ChatGui.Print(CommandHelpMessage);

@@ -24,4 +24,4 @@ Installable using my custom repository (https://github.com/anya-hichu/DalamudPlu
 
 - `/quack main`
 - `/quack config`
-- `/quack exec [Macro Name or Path]( | [Formatting (false/true/format)])?`
+- `/quack exec [Macro Name or Path]( [Formatting (false/true/format)])?` (quoting support)
