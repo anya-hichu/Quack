@@ -43,10 +43,13 @@ public class EmotesIpc: IDisposable
                         var key = a.Value?.Key?.RawString;
                         return key.IsNullOrEmpty() ? [] : [key];
                     }).ToArray();
-                    var textCommand = e.TextCommand.Value!.Command.RawString;
-                    var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(textCommand, []);
 
-                    return [new(e.Name, e.EmoteCategory.Value!.Name, textCommand, actionTimelineKeys, poseKeys)];
+                    var textCommandValue = e.TextCommand.Value;
+                    var shortCommand = textCommandValue.ShortCommand.RawString;
+                    var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.RawString : shortCommand;
+
+                    var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(command, []);
+                    return [new(e.Name, e.EmoteCategory.Value!.Name, command, actionTimelineKeys, poseKeys)];
                 } else
                 {
                     return [];

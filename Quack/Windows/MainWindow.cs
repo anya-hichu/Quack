@@ -85,7 +85,7 @@ public class MainWindow : Window, IDisposable
             ImGui.TableHeadersRow();
 
             var clipper = newListClipper();
-            clipper.Begin(FilteredMacros.Count(), ImGui.GetTextLineHeightWithSpacing());
+            clipper.Begin(FilteredMacros.Count(), 27);
             while(clipper.Step())
             {
                 for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)

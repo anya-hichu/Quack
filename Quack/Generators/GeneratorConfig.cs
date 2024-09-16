@@ -35,34 +35,31 @@ function main(profilesJson) {
             [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS), new(EmotesIpc.LIST)],
 """
 // Requires "DeterministicPose" and "ModSettingCommands" plugins to be installed
+const idlePseudoEmote = {
+    command: '',
+    actionTimelineKeys: [],
+    poseKeys: ['emote/pose00_loop', 'emote/pose01_loop', 'emote/pose02_loop', 'emote/pose03_loop', 'emote/pose04_loop', 'emote/pose05_loop', 'emote/pose06_loop']
+};
 
 function main(modsJson, emotesJson) {
-    var mods = JSON.parse(modsJson);
-    var emotes = JSON.parse(emotesJson);
+    const mods = JSON.parse(modsJson);
+    const emotes = JSON.parse(emotesJson);
 
-    var macros = mods.flatMap(mod => {
-        var modGamePaths = Object.keys(mod.settings.files || {})
-
-        var optionMacros = mod.settings.groupSettings.flatMap(setting => {
+    const macros = mods.flatMap(mod => {
+        const optionMacros = mod.settings.groupSettings.flatMap(setting => {
             return setting.options.flatMap(option => {
-                var optionGamePaths = Object.keys(option.files || {})
-                var optionCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, optionGamePaths);
+                const optionGamePaths = Object.keys(option.files || {})
+                const optionCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, optionGamePaths);
 
                 return optionCommandsWithPoseIndex.map(([command, poseIndex]) => {
-                    var contentLines = [
+                    const contentLines = [
                         `/penumbra bulktag disable Self | ${command}`,
                         `/modset Self "${mod.dir}" "${mod.name}" "${setting.name}" = "${option.name}"`,
                         `/penumbra mod enable Self | ${mod.dir}`,
                         '/penumbra redraw <me> <wait.1>'
                     ];
 
-                    var commandPath = command;
-                    if (poseIndex > -1) {
-                        contentLines.push(`${command} <wait.1>`, `/dpose ${poseIndex}`);
-                        commandPath = `${commandPath} (${poseIndex})`;
-                    } else {
-                        contentLines.push(command);
-                    }
+                    const commandPath = pushCommandWithPose(contentLines, command, poseIndex);
 
                     return {
                         name: `Custom Emote "${option.name}" [${commandPath}]`,
@@ -77,30 +74,25 @@ function main(modsJson, emotesJson) {
         if (optionMacros.length > 0) {
             return optionMacros;
         } else {
-            var modCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, modGamePaths);
+            const modGamePaths = Object.keys(mod.settings.files || {});
+            const modCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, modGamePaths);
 
             var commandsWithPoseIndex;
             if (modCommandsWithPoseIndex.length > 0) {
                   commandsWithPoseIndex = modCommandsWithPoseIndex;
             } else {
-                  var tagCommandsWithPoseIndex = mod.localTags.flatMap(t => t.startsWith('/') ? [[t, -1]] : []);
+                  const tagCommandsWithPoseIndex = mod.localTags.flatMap(t => t.startsWith('/') ? [[t, -1]] : []);
                   commandsWithPoseIndex = tagCommandsWithPoseIndex;
             }
 
             return commandsWithPoseIndex.map(([command, poseIndex]) => {
-                var contentLines = [
+                const contentLines = [
                     `/penumbra bulktag disable Self | ${command}`,
                     `/penumbra mod enable Self | ${mod.dir}`,
                     '/penumbra redraw <me> <wait.1>'
                 ];
 
-                var commandPath = command;
-                if (poseIndex > -1) {
-                    contentLines.push(`${command} <wait.1>`, `/dpose ${poseIndex}`);
-                    commandPath = `${commandPath} (${poseIndex})`;
-                } else {
-                    contentLines.push(command);
-                }
+                const commandPath = pushCommandWithPose(contentLines, command, poseIndex);
 
                 return {
                     name: `Custom Emote "${mod.name}" [${commandPath}]`,
@@ -115,8 +107,8 @@ function main(modsJson, emotesJson) {
 }
 
 function lookupCommandsWithPoseIndex(emotes, gamePaths) {
-    return emotes.flatMap(emote => {
-        var keys = emote.actionTimelineKeys.concat(emote.poseKeys);
+    return emotes.concat([idlePseudoEmote]).flatMap(emote => {
+        const keys = emote.actionTimelineKeys.concat(emote.poseKeys);
         return keys.flatMap(key => {
             return gamePaths.flatMap(gamePath => {
                 if (gamePath.endsWith(`${key}.pap`)) {
@@ -127,6 +119,21 @@ function lookupCommandsWithPoseIndex(emotes, gamePaths) {
             });
         });
     });
+}
+
+function pushCommandWithPose(contentLines, command, poseIndex) {
+    if (poseIndex > -1) {
+        if (command == idlePseudoEmote.command) {
+            contentLines.push(`/dpose ${poseIndex}`);
+            return `/idle (${poseIndex})`;
+        } else {
+            contentLines.push(`${command} <wait.1>`, `/dpose ${poseIndex}`);
+            return `${command} (${poseIndex})`;
+        }
+    } else {
+        contentLines.push(command);
+        return command;
+    }
 }
 
 function escape(segment) {
