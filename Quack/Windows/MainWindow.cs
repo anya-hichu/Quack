@@ -8,7 +8,6 @@ using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Quack.Macros;
 using Quack.Utils;
-using static System.Net.WebRequestMethods;
 
 namespace Quack.Windows;
 
