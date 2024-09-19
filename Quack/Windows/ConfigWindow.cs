@@ -806,7 +806,7 @@ public partial class ConfigWindow : Window, IDisposable
                 var filteredGeneratedMacros = state.FilteredGeneratedMacros;
                 var generatedMacrosFilter = state.GeneratedMacrosFilter;
 
-                var conflictingMacros = CachedMacros.Intersect(generatedMacros, MacroComparer.INSTANCE);
+                var conflictingMacros = CachedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE);
                 var conflictResolutionPopupId = $"###generatorConfigs{hash}GeneratedMacrosConflictsPopup";
                 if (conflictingMacros.Any())
                 {
