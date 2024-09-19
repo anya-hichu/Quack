@@ -35,6 +35,7 @@ function main(profilesJson) {
             [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS), new(EmotesIpc.LIST)],
 """
 // Requires "DeterministicPose" and "ModSettingCommands" plugins to be installed
+// Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
 
 const idlePseudoEmote = {
     command: '/idle',
@@ -164,16 +165,22 @@ function main(emotesJson) {
         new("Glamours",
             [new(GlamourerIpc.DESIGN_LIST)],
 """
+// Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
+
 function main(designsJson) {
     const designs = JSON.parse(designsJson);
     const macros = designs.map(d => {
+        const contentLines = [
+            '/penumbra bulktag disable Self | all',
+            '/glamour apply Base | <me>;true',
+            `/glamour apply ${d.id} | <me>; true`
+        ];
+
         return {
             name: `Apply Design "${d.name}"`,
             path: `Glamours/${d.path}/Apply`,
             tags: d.tags.concat(['glamour', 'design', 'apply']),
-            content: `/penumbra bulktag disable Self | all
-/glamour apply Base | <me>;true
-/glamour apply ${d.id} | <me>; true`
+            content: contentLines.join("\n")
         }
     })
     return JSON.stringify(macros);

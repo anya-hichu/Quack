@@ -512,11 +512,11 @@ public partial class ConfigWindow : Window, IDisposable
                 var json = reader.ReadToEnd();
                 var importedMacros = JsonConvert.DeserializeObject<List<Macro>>(json)!;
 
-                var existingMacros = CachedMacros.Intersect(importedMacros);
+                var conflictingMacros = CachedMacros.Intersect(importedMacros);
                 CachedMacros.ExceptWith(importedMacros);
                 CachedMacros.UnionWith(importedMacros);
 
-                MacroTable.Delete(existingMacros);
+                MacroTable.Delete(conflictingMacros);
                 MacroTable.Insert(importedMacros);
             }
         });
@@ -1038,11 +1038,11 @@ public partial class ConfigWindow : Window, IDisposable
     private void SaveSelectedGeneratedMacros(GeneratorConfigState state)
     {
         var selectedGeneratedMacros = state.SelectedGeneratedMacros;
-        var existingMacros = CachedMacros.Intersect(selectedGeneratedMacros);
+        var conflictingMacros = CachedMacros.Intersect(selectedGeneratedMacros);
         CachedMacros.ExceptWith(selectedGeneratedMacros);
         CachedMacros.UnionWith(selectedGeneratedMacros);
 
-        MacroTable.Delete(existingMacros);
+        MacroTable.Delete(conflictingMacros);
         MacroTable.Insert(selectedGeneratedMacros);
 
         state.GeneratedMacros.ExceptWith(selectedGeneratedMacros);
