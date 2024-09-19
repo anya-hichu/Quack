@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using SQLite;
 using System;
 
 namespace Quack.Macros;
@@ -12,14 +13,14 @@ public class Macro
     [JsonProperty("path")]
     public string Path { get; set; } = string.Empty;
 
+    [JsonProperty("command")]
+    public string Command { get; set; } = string.Empty;
+
     [JsonProperty("tags")]
     public string[] Tags { get; set; } = [];
 
     [JsonProperty("content")]
     public string Content { get; set; } = string.Empty;
-
-    [JsonProperty("command")]
-    public string Command { get; set; } = string.Empty;
 
     [JsonProperty("loop")]
     public bool Loop { get; set; } = false;

@@ -18,13 +18,13 @@ function main(profilesJson) {
     const macros = profiles.flatMap(p => {
         return [{
             name: `Enable Profile "${p.Item2}"`,
-            path: `profiles/${p.Item2}/Enable`,
-            tags: ['customize', 'profile', 'enable'],
+            path: `Customizations/${p.Item2}/Enable`,
+            tags: ['customization', 'profile', 'enable'],
             content: `/customize profile enable <me>,${p.Item2}`
         },{
             name: `Disable Profile "${p.Item2}"`,
-            path: `profiles/${p.Item2}/Disable`,
-            tags: ['customize', 'profile', 'disable'],
+            path: `Customizations/${p.Item2}/Disable`,
+            tags: ['customization', 'profile', 'disable'],
             content: `/customize profile disable <me>,${p.Item2}`
         }];
     });
@@ -313,6 +313,22 @@ function escape(segment) {
 function normalize(path) {
     return path.replaceAll('\\', '|');
 }
+"""),
+                new("Moodles",
+            [new("Moodles.GetRegisteredMoodlesInfo")],
+"""
+function main(moodlesJson) {
+     var moodles = JSON.parse(moodlesJson);
+     var macros = moodles.map(m => {
+        return {
+            name: `Apply Moodle "${m.Item3}"`,
+            path: `Moodles/${m.Item3}/Apply`,
+            tags: ['moodle', 'apply'],
+            content: `/moodle help apply self moodle ${m.Item1}`
+        };
+     });
+     return JSON.stringify(macros);
+}
 """)
 ];
     public static List<GeneratorConfig> GetDefaults()
@@ -324,10 +340,10 @@ function normalize(path) {
 
     public List<GeneratorIpcConfig> IpcConfigs { get; set; } = [];
 
-    [ObsoleteAttribute("IpcName deprecated to support multiple ipcs")]
+    [ObsoleteAttribute("IpcName deprecated to support multiple ipcs in config version 1")]
     public string IpcName { get; set; } = string.Empty;
 
-    [ObsoleteAttribute("IpcArgs deprecated to support multiple ipcs")]
+    [ObsoleteAttribute("IpcArgs deprecated to support multiple ipcs in config version 1")]
     public string IpcArgs { get; set; } = string.Empty;
 
     public string Script { get; set; } = string.Empty;

@@ -10,19 +10,21 @@ public class MacroCommands: IDisposable
 {
     private HashSet<string> RegisteredCommands { get; init; } = [];
 
+    private HashSet<Macro> CachedMacros { get; init; }
     private ICommandManager CommandManager { get; init; }
-    private Config Config { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
+    private MacroTable MacroTable { get; init; }
 
-    public MacroCommands(ICommandManager commandManager, Config config, MacroExecutor macroExecutor)
+    public MacroCommands(HashSet<Macro> cachedMacros, ICommandManager commandManager, MacroExecutor macroExecutor, MacroTable macroTable)
     {
+        CachedMacros = cachedMacros;
         CommandManager = commandManager;
-        Config = config;
         MacroExecutor = macroExecutor;
+        MacroTable = macroTable;
 
         GetMacroWithCommands().ForEach(AddMacroHandler);
 
-        Config.OnSave += UpdateMacroHandlers;
+        MacroTable.OnChange += UpdateMacroHandlers;
     }
 
     public void Dispose()
@@ -31,6 +33,8 @@ public class MacroCommands: IDisposable
         {
             RemoveHandler(command);
         }
+
+        MacroTable.OnChange -= UpdateMacroHandlers;
     }
 
     private void UpdateMacroHandlers()
@@ -81,6 +85,6 @@ public class MacroCommands: IDisposable
 
     private List<Macro> GetMacroWithCommands()
     {
-        return new(Config.Macros.Where(m => !m.Command.IsNullOrWhitespace()));
+        return new(CachedMacros.Where(m => !m.Command.IsNullOrWhitespace()));
     }
 }

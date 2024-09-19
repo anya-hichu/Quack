@@ -15,11 +15,18 @@ using Dalamud.Interface;
 using Quack.Listeners;
 using Quack.Utils;
 using JavaScriptEngineSwitcher.V8;
+using System.IO;
+using System.Collections.Generic;
+using SQLite;
 
 namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
 {
+    private const string CommandName = "/quack";
+    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config and exec";
+    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path]( [Formatting (false/true/format)])?";
+
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
@@ -28,12 +35,6 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
-
-
-    private const string CommandName = "/quack";
-    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config and exec";
-    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path]( [Formatting (false/true/format)])?";
-
 
     public readonly WindowSystem WindowSystem = new("Quack");
     private ConfigWindow ConfigWindow { get; init; }
@@ -47,9 +48,20 @@ public sealed class Plugin : IDalamudPlugin
     private PenumbraIpc PenumbraIpc { get; init; }
     private KeyBindListener KeyBindListener { get; init; }
     private MacroCommands MacroCommands { get; init; }
-    
+    private SQLiteConnection SqliteConnection { get; init; }
+    private HashSet<Macro> CachedMacros { get; init; }
+    private MacroTable MacroTable { get; init; }
+
     public Plugin()
     {
+        System.Environment.SetEnvironmentVariable("SQLite_NoConfigure", "1");
+        var dbPath = Path.Combine(PluginInterface.GetPluginLocDirectory(), $"{PluginInterface.InternalName}.db");
+
+        SqliteConnection = new SQLiteConnection(dbPath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
+
+        MacroTable = new(SqliteConnection, PluginLog);
+        MacroTable.CreateTableIfNotExists();
+
         var engineSwitcher = JsEngineSwitcher.Current;
         engineSwitcher.EngineFactories.Add(new JintJsEngineFactory(new()
         {
@@ -59,16 +71,16 @@ public sealed class Plugin : IDalamudPlugin
         engineSwitcher.EngineFactories.Add(new V8JsEngineFactory(new()));
 
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
-        Config.Macros = new(Config.Macros, MacroComparer.INSTANCE);
-        Config.MigrateIfNeeded();
+        Config.MigrateIfNeeded(MacroTable);
+        CachedMacros = MacroTable.List();
 
         MacroExecutor = new(Framework, new(SigScanner), PluginLog);
 
-        MainWindow = new(MacroExecutor, Config, PluginLog)
+        MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
         };
-        ConfigWindow = new(MacroExecutor, KeyState, Config, PluginLog)
+        ConfigWindow = new(CachedMacros, MacroExecutor, MacroTable, KeyState, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.ListAlt, ToggleMainUI)]
         };
@@ -91,7 +103,7 @@ public sealed class Plugin : IDalamudPlugin
         PenumbraIpc = new(PluginInterface, PluginLog);
 
         KeyBindListener = new(Framework, Config, ToggleMainUI);
-        MacroCommands = new(CommandManager, Config, MacroExecutor);
+        MacroCommands = new(CachedMacros, CommandManager, MacroExecutor, MacroTable);
     }
 
     public void Dispose()
@@ -110,6 +122,8 @@ public sealed class Plugin : IDalamudPlugin
 
         KeyBindListener.Dispose();
         MacroCommands.Dispose();
+
+        SqliteConnection.Dispose();
     }
 
     private void OnCommand(string command, string args)
@@ -140,7 +154,9 @@ public sealed class Plugin : IDalamudPlugin
             if (arguments[0] == "exec")
             {
                 var nameOrPath = arguments[1];
-                var macro = MacroSearch.FindByNameOrPath(Config.Macros, nameOrPath);
+                var macro = MacroTable.FindBy("path", nameOrPath);
+                macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+
                 if (macro != null)
                 {
                     MacroExecutor.ExecuteTask(macro);
@@ -160,7 +176,9 @@ public sealed class Plugin : IDalamudPlugin
             if (arguments[0] == "exec")
             {
                 var nameOrPath = arguments[1];
-                var macro = MacroSearch.FindByNameOrPath(Config.Macros, nameOrPath);
+                var macro = MacroTable.FindBy("path", nameOrPath);
+                macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+
                 if (macro != null)
                 {
                     var formatting = arguments[2];

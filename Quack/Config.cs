@@ -1,7 +1,5 @@
 using Dalamud.Configuration;
 using Dalamud.Game.ClientState.Keys;
-using JavaScriptEngineSwitcher.Core;
-using JavaScriptEngineSwitcher.Jint;
 using JavaScriptEngineSwitcher.V8;
 using Quack.Generators;
 using Quack.Macros;
@@ -13,7 +11,7 @@ namespace Quack;
 [Serializable]
 public class Config : IPluginConfiguration
 {
-    public static readonly int CURRENT_VERSION = 2;
+    public static readonly int CURRENT_VERSION = 3;
 
     public static readonly VirtualKey[] MODIFIER_KEYS = [ VirtualKey.NO_KEY, VirtualKey.CONTROL, VirtualKey.SHIFT, VirtualKey.MENU ];
 
@@ -24,15 +22,14 @@ public class Config : IPluginConfiguration
 
     public string GeneratorEngineName { get; set; } = V8JsEngine.EngineName;
 
-    [ObsoleteAttribute("CommandFormat renamed to ExtraCommandFormat")]
+    [ObsoleteAttribute("CommandFormat renamed to ExtraCommandFormat in config version 2")]
     public string CommandFormat { get; set; } = string.Empty;
     public string ExtraCommandFormat { get; set; } = "/echo {0}";
 
     public List<GeneratorConfig> GeneratorConfigs { get; set; } = [];
 
-    public HashSet<Macro> Macros { get; set; } = new(0, MacroComparer.INSTANCE);
-
-    public event Action? OnSave;
+    [ObsoleteAttribute("Macros migrated to sqlite db with full text search in config version 3")]
+    public HashSet<Macro> Macros { get; set; } = [];
 
     public Config() { 
     }
@@ -42,7 +39,7 @@ public class Config : IPluginConfiguration
         GeneratorConfigs = generatorConfigs;
     }
 
-    public void MigrateIfNeeded()
+    public void MigrateIfNeeded(MacroTable macroTable)
     {
         if (Version < CURRENT_VERSION)
         {
@@ -61,6 +58,12 @@ public class Config : IPluginConfiguration
                 CommandFormat = string.Empty;
             }
 
+            if (Version < 3)
+            {
+                macroTable.Insert(Macros);
+                Macros.Clear();
+            }
+
             Version = CURRENT_VERSION;
             Save();
         }
@@ -68,10 +71,6 @@ public class Config : IPluginConfiguration
 
     public void Save()
     {
-        // Force removal of conflicting macro before save
-        Macros = new(Macros, MacroComparer.INSTANCE);
-
         Plugin.PluginInterface.SavePluginConfig(this);
-        OnSave?.Invoke();
     }
 }

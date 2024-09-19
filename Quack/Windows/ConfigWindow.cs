@@ -30,7 +30,9 @@ public partial class ConfigWindow : Window, IDisposable
     [GeneratedRegexAttribute(@"\d+")]
     private static partial Regex NumberGeneratedRegex();
 
+    private HashSet<Macro> CachedMacros { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
+    private MacroTable MacroTable { get; init; }
     private IKeyState KeyState { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
@@ -44,7 +46,7 @@ public partial class ConfigWindow : Window, IDisposable
 
     private IJsEngine? CurrentJsEngine { get; set; }
 
-    public ConfigWindow(MacroExecutor macroExecutor, IKeyState keyState, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
+    public ConfigWindow(HashSet<Macro> cachedMacros, MacroExecutor macroExecutor, MacroTable macroTable, IKeyState keyState, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -52,7 +54,9 @@ public partial class ConfigWindow : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
+        CachedMacros = cachedMacros;
         MacroExecutor = macroExecutor;
+        MacroTable = macroTable;
         KeyState = keyState;
         Config = config;
         PluginLog = pluginLog;
@@ -60,12 +64,12 @@ public partial class ConfigWindow : Window, IDisposable
         UpdateMacrosState();
         GeneratorConfigToState = Config.GeneratorConfigs.ToDictionary(c => c, c => new GeneratorConfigState());
 
-        Config.OnSave += UpdateMacrosState;
+        MacroTable.OnChange += UpdateMacrosState;
     }
 
     public void Dispose() 
     {
-        Config.OnSave -= UpdateMacrosState;
+        MacroTable.OnChange -= UpdateMacrosState;
     }
 
     public override void Draw()
@@ -149,13 +153,16 @@ public partial class ConfigWindow : Window, IDisposable
     {
         var selectedPath = MacrosState?.SelectedPath;
         var filter = MacrosState != null? MacrosState.Filter : string.Empty;
-        var filteredMacros = MacroSearch.Lookup(Config.Macros, filter);
+        PluginLog.Debug($"Filtering {CachedMacros.Count} macros with filter '{filter}'");
+        var filteredMacros = MacroSearch.Lookup(CachedMacros, filter);
+
         MacrosState = new(
             MacrosState.GeneratePathNodes(filteredMacros), 
             selectedPath, 
             filter
         );
     }
+
 
     private void DrawMacrosTab()
     {
@@ -182,13 +189,13 @@ public partial class ConfigWindow : Window, IDisposable
         ImGui.SameLine(ImGui.GetWindowWidth() - 305);
         if (ImGui.Button("Export Filtered##filteredMacrosExport"))
         {
-            ExportMacros(MacroSearch.Lookup(Config.Macros, MacrosState.Filter));
+            ExportMacros(MacroTable.Search(MacrosState.Filter));
         }
 
         ImGui.SameLine();
         if (ImGui.Button("Export All##macrosExport"))
         {
-            ExportMacros(Config.Macros);
+            ExportMacros(CachedMacros);
         }
 
         ImGui.SameLine();
@@ -200,14 +207,14 @@ public partial class ConfigWindow : Window, IDisposable
         var deleteAllMacrosPopup = "deleteAllMacrosPopup";
         if (ImGui.BeginPopup(deleteAllMacrosPopup))
         {
-            ImGui.Text($"Confirm deleting {Config.Macros.Count} macros?");
+            ImGui.Text($"Confirm deleting {CachedMacros.Count} macros?");
 
             ImGui.SetCursorPosX(15);
             ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
             if (ImGui.Button("Yes", new(100, 30)))
             {
-                Config.Macros.Clear();
-                Config.Save();
+                CachedMacros.Clear();
+                MacroTable.DeleteAll();
                 ImGui.CloseCurrentPopup();
             }
             ImGui.PopStyleColor();
@@ -224,7 +231,7 @@ public partial class ConfigWindow : Window, IDisposable
         ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
         if (ImGui.Button("Delete All##macrosDeleteAll"))
         {
-            if (Config.Macros.Count > 0)
+            if (CachedMacros.Count > 0)
             {
                 ImGui.OpenPopup(deleteAllMacrosPopup);
             }
@@ -252,16 +259,16 @@ public partial class ConfigWindow : Window, IDisposable
         ImGui.SameLine();
         if (ImGui.BeginChild("macro", new(ImGui.GetWindowWidth() * 0.7f, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 10)))
         {
-            Config.Macros.FindFirst(m => m.Path == MacrosState.SelectedPath, out var macro);
+            CachedMacros.FindFirst(m => m.Path == MacrosState.SelectedPath, out var macro);
             if (macro != null)
             {
-                var i = Config.Macros.IndexOf(macro);
+                var i = CachedMacros.IndexOf(macro);
 
                 var name = macro.Name;
                 if (ImGui.InputText($"Name###macros{i}Name", ref name, ushort.MaxValue))
                 {
                     macro.Name = name;
-                    Config.Save();
+                    MacroTable.Update(macro);
                 }
 
                 var deleteMacroPopup = $"macros{i}DeletePopup";
@@ -303,9 +310,10 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                     if (ImGui.Button("Yes", new(100, 30)))
                     {
+                        var oldPath = macro.Path;
                         macro.Path = TmpConflictPath!;
                         MacrosState.SelectedPath = TmpConflictPath;
-                        Config.Save();
+                        MacroTable.Update(oldPath, macro);
 
                         TmpConflictPath = null;
                         ImGui.CloseCurrentPopup();
@@ -325,36 +333,30 @@ public partial class ConfigWindow : Window, IDisposable
                 if (ImGui.InputText($"Path###macros{i}Path", ref path, ushort.MaxValue))
                 {
                     TmpConflictPath = null;
-                    if (Config.Macros.FindFirst(m => m.Path == path, out var conflictingMacro) && macro != conflictingMacro)
+                    if (CachedMacros.FindFirst(m => m.Path == path, out var conflictingMacro) && macro != conflictingMacro)
                     {
                         TmpConflictPath = path;
                         ImGui.OpenPopup(pathConflictPopupId);
                     } 
                     else
                     {
+                        var oldPath = macro.Path;
                         macro.Path = path;
                         MacrosState.SelectedPath = path;
-                        Config.Save();
+                        MacroTable.Update(oldPath, macro);
                     }
                 }
 
-                var tags = string.Join(',', macro.Tags);
-                if (ImGui.InputText($"Tags (comma separated)###macros{i}Tags", ref tags, ushort.MaxValue))
+                var commandValue = macro.Command;
+                if (ImGui.InputText($"Command###macros{i}Command", ref commandValue, ushort.MaxValue, ImGuiInputTextFlags.AlwaysOverwrite))
                 {
-                    macro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
-                    Config.Save();
+                    macro.Command = commandValue;
+                    MacroTable.Update(macro);
                 }
 
-                var command = macro.Command;
-                if (ImGui.InputText($"Command###macros{i}Command", ref command, ushort.MaxValue))
+                if (!commandValue.IsNullOrWhitespace())
                 {
-                    macro.Command = MaybeFixCommand(command);
-                    Config.Save();
-                }
-
-                if (!command.IsNullOrWhitespace())
-                {
-                    var conflictingMacros = Config.Macros.Where(m => m != macro && m.Command == command);
+                    var conflictingMacros = CachedMacros.Where(m => m != macro && m.Command == macro.Command);
                     if (conflictingMacros.Any())
                     {
                         ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
@@ -363,18 +365,25 @@ public partial class ConfigWindow : Window, IDisposable
                     }
                 }
 
+                var tags = string.Join(',', macro.Tags);
+                if (ImGui.InputText($"Tags (comma separated)###macros{i}Tags", ref tags, ushort.MaxValue))
+                {
+                    macro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
+                    MacroTable.Update(macro);
+                }
+
                 var content = macro.Content;
                 if (ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 30)))
                 {
                     macro.Content = content;
-                    Config.Save();
+                    MacroTable.Update(macro);
                 }
 
                 var loop = macro.Loop;
-                if (ImGui.Checkbox($"Loop###macros{i}Content", ref loop))
+                if (ImGui.Checkbox($"Loop###macros{i}Loop", ref loop))
                 {
                     macro.Loop = loop;
-                    Config.Save();
+                    MacroTable.Update(macro);
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 322);
@@ -398,22 +407,6 @@ public partial class ConfigWindow : Window, IDisposable
         }
     }
 
-    [GeneratedRegexAttribute(@"[^a-z0-9]")]
-    private static partial Regex NonValidCommandCharactersGeneratedRegex();
-    private string MaybeFixCommand(string command)
-    {
-        if (command.Length > 0)
-        {
-            var commandName = command[0] == '/' ? command.Substring(1) : command;
-            var sanitizedCommandName = NonValidCommandCharactersGeneratedRegex().Replace(commandName, string.Empty);
-            return $"/{sanitizedCommandName}";
-        } 
-        else
-        {
-            return command;
-        }
-    }
-
     private void DrawPathNodes(HashSet<TreeNode<string>> nodes)
     {
         // Pad with zeros to improve sorting with numbers
@@ -428,7 +421,7 @@ public partial class ConfigWindow : Window, IDisposable
                 var popupId = $"Export###macro{node.Item}TreeNodePopup";
                 if (ImGui.BeginPopupContextItem(popupId))
                 {
-                    var macros = Config.Macros.Where(m => m.Path.StartsWith(node.Item));
+                    var macros = CachedMacros.Where(m => m.Path.StartsWith($"{node.Item}/"));
                     if (ImGui.MenuItem($"Export###{popupId}Export"))
                     {
                         ExportMacros(macros);
@@ -460,7 +453,7 @@ public partial class ConfigWindow : Window, IDisposable
                 var popupId = $"macro{node.Item}TreeLeafPopup";
                 if (ImGui.BeginPopupContextItem($"Export###{popupId}"))
                 {
-                    Config.Macros.FindFirst(m => m.Path == node.Item, out var macro);
+                    CachedMacros.FindFirst(m => m.Path == node.Item, out var macro);
                     if (macro != null)
                     {
                         if (ImGui.MenuItem($"Export###{popupId}Export"))
@@ -490,9 +483,11 @@ public partial class ConfigWindow : Window, IDisposable
     private void NewMacro()
     {
         var newMacro = new Macro();
-        Config.Macros.Add(newMacro);
-        MacrosState.SelectedPath = newMacro.Path;
-        Config.Save();
+        if (CachedMacros.Add(newMacro))
+        {
+            MacrosState.SelectedPath = newMacro.Path;
+            MacroTable.Insert(newMacro);
+        }
     }
 
     private void ExportMacros(IEnumerable<Macro> macros)
@@ -516,25 +511,28 @@ public partial class ConfigWindow : Window, IDisposable
                 using StreamReader reader = new(path);
                 var json = reader.ReadToEnd();
                 var importedMacros = JsonConvert.DeserializeObject<List<Macro>>(json)!;
-                Config.Macros = importedMacros.Union(Config.Macros).ToHashSet(MacroComparer.INSTANCE);
-                Config.Save();
+
+                var existingMacros = CachedMacros.Intersect(importedMacros);
+                CachedMacros.ExceptWith(importedMacros);
+                CachedMacros.UnionWith(importedMacros);
+
+                MacroTable.Delete(existingMacros);
+                MacroTable.Insert(importedMacros);
             }
         });
     }
 
     private void DeleteMacro(Macro macro)
     {
-        Config.Macros.Remove(macro);
-        Config.Save();
+        CachedMacros.Remove(macro);
+        MacroTable.Delete(macro);
     }
 
     private void DeleteMacros(IEnumerable<Macro> macros)
     {
-        foreach(var macro in macros)
-        {
-            Config.Macros.Remove(macro);
-        }
-        Config.Save();
+        var list = macros.ToList();
+        CachedMacros.ExceptWith(list);
+        MacroTable.Delete(list);
     }
 
     private void DrawGeneratorsTab()
@@ -662,7 +660,6 @@ public partial class ConfigWindow : Window, IDisposable
         var hash = generatorConfig.GetHashCode();
         if (ImGui.CollapsingHeader($"Definition##generatorConfigs{hash}Definition", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            ImGui.NewLine();
             var name = generatorConfig.Name;
             ImGui.SetCursorPosX(20);
             if (ImGui.InputText($"Name###generatorConfigs{hash}Name", ref name, ushort.MaxValue))
@@ -681,11 +678,9 @@ public partial class ConfigWindow : Window, IDisposable
 
             var ipcOrdered = funcChannels.OrderBy(g => g.Name);
 
-            ImGui.NewLine();
             ImGui.SetCursorPosX(20);
             if(ImGui.CollapsingHeader($"IPCs###generatorConfigs{hash}IpcConfigs", ImGuiTreeNodeFlags.DefaultOpen))
             {
-                ImGui.NewLine();
                 ImGui.SetCursorPosX(40);
                 if (ImGui.Button($"+###generatorConfigs{hash}IpcConfigsNew"))
                 {
@@ -764,7 +759,6 @@ public partial class ConfigWindow : Window, IDisposable
                 }
             } 
 
-            ImGui.NewLine();
             ImGui.SetCursorPosX(20);
             var scriptInputHeight = GeneratorConfigToState[generatorConfig].GeneratedMacros.Any() ? ImGui.GetTextLineHeight() * 13 : ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 35;
 
@@ -812,7 +806,7 @@ public partial class ConfigWindow : Window, IDisposable
                 var filteredGeneratedMacros = state.FilteredGeneratedMacros;
                 var generatedMacrosFilter = state.GeneratedMacrosFilter;
 
-                var conflictingMacros = Config.Macros.Intersect(generatedMacros, MacroComparer.INSTANCE);
+                var conflictingMacros = CachedMacros.Intersect(generatedMacros, MacroComparer.INSTANCE);
                 var conflictResolutionPopupId = $"###generatorConfigs{hash}GeneratedMacrosConflictsPopup";
                 if (conflictingMacros.Any())
                 {
@@ -838,7 +832,9 @@ public partial class ConfigWindow : Window, IDisposable
                         ImGui.EndPopup();
                     }
                 }
-                
+
+                ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.HealerGreen);
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
                 if (ImGui.Button($"Save Selected###generatorConfigs{hash}GeneratedMacrosSaveSelected"))
                 {
                     if (conflictingMacros.Any())
@@ -850,6 +846,8 @@ public partial class ConfigWindow : Window, IDisposable
                         SaveSelectedGeneratedMacros(state);
                     }
                 }
+                ImGui.PopStyleColor();
+                ImGui.PopStyleColor();
 
                 ImGui.SameLine();
                 if (filteredGeneratedMacros.All(selectedGeneratedMacros.Contains))
@@ -903,7 +901,7 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.TableSetupColumn($"Content###generatorConfigs{hash}GeneratedMacrosContent", ImGuiTableColumnFlags.None, 0.5f);
                     ImGui.TableHeadersRow();
 
-                    var clipper = newListClipper();
+                    var clipper = ImGuiHelper.NewListClipper();
                     clipper.Begin(filteredGeneratedMacros.Count, 27);
 
                     while(clipper.Step())
@@ -1040,16 +1038,15 @@ public partial class ConfigWindow : Window, IDisposable
     private void SaveSelectedGeneratedMacros(GeneratorConfigState state)
     {
         var selectedGeneratedMacros = state.SelectedGeneratedMacros;
-        Config.Macros = selectedGeneratedMacros.Union(Config.Macros).ToHashSet(MacroComparer.INSTANCE);
-        Config.Save();
+        var existingMacros = CachedMacros.Intersect(selectedGeneratedMacros);
+        CachedMacros.ExceptWith(selectedGeneratedMacros);
+        CachedMacros.UnionWith(selectedGeneratedMacros);
+
+        MacroTable.Delete(existingMacros);
+        MacroTable.Insert(selectedGeneratedMacros);
 
         state.GeneratedMacros.ExceptWith(selectedGeneratedMacros);
         state.FilteredGeneratedMacros.ExceptWith(selectedGeneratedMacros);
         selectedGeneratedMacros.Clear();
-    }
-
-    private unsafe static ImGuiListClipperPtr newListClipper()
-    {
-        return new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
     }
 }

@@ -7,18 +7,22 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Quack.Macros;
+using Quack.Utils;
+using static System.Net.WebRequestMethods;
 
 namespace Quack.Windows;
 
 public class MainWindow : Window, IDisposable
 {
+    private HashSet<Macro> CachedMacros { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
+    private MacroTable MacroTable { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
     private string Filter { get; set; } = string.Empty;
-    private List<Macro> FilteredMacros { get; set; } = [];
+    private HashSet<Macro> FilteredMacros { get; set; } = [];
 
-    public MainWindow(MacroExecutor macroExecutor, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
+    public MainWindow(HashSet<Macro> cachedMacros, MacroExecutor macroExecutor, MacroTable macroTable, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -26,30 +30,36 @@ public class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
+        CachedMacros = cachedMacros;
         MacroExecutor = macroExecutor;
+        MacroTable = macroTable;
         Config = config;
         PluginLog = pluginLog;
 
         UpdateFilteredMacros();
-
-        Config.OnSave += UpdateFilteredMacros;
+        MacroTable.OnChange += UpdateFilteredMacros;
     }
 
     public void UpdateFilteredMacros()
     {
-        FilteredMacros = MacroSearch.Lookup(Config.Macros, Filter).ToList();
+        FilteredMacros = MacroTable.Search(Filter);
     }
 
-    public void Dispose() 
+    public void Dispose()
     {
-        Config.OnSave -= UpdateFilteredMacros;
+        MacroTable.OnChange -= UpdateFilteredMacros;
     }
 
     public override void Draw()
     {
         var filter = Filter;
         ImGui.PushItemWidth(ImGui.GetWindowWidth() - 220);
-        if (ImGui.InputText($"Filter ({FilteredMacros.Count}/{Config.Macros.Count})###filter", ref filter, ushort.MaxValue))
+        var filterInput = ImGui.InputTextWithHint($"Filter ({FilteredMacros.Count}/{CachedMacros.Count})###filter", "Search Query (min 3 chars)", ref filter, ushort.MaxValue);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("See FTS5 query documentation for syntax and examples: https://www.sqlite.org/fts5.html");
+        }
+        if (filterInput)
         {
             Filter = filter;
             UpdateFilteredMacros();
@@ -84,7 +94,7 @@ public class MainWindow : Window, IDisposable
             ImGui.TableSetupColumn($"Actions##macroActions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
 
-            var clipper = newListClipper();
+            var clipper = ImGuiHelper.NewListClipper();
             clipper.Begin(FilteredMacros.Count(), 27);
             while(clipper.Step())
             {
@@ -127,10 +137,5 @@ public class MainWindow : Window, IDisposable
 
             ImGui.EndTable();
         }
-    }
-
-    private unsafe static ImGuiListClipperPtr newListClipper()
-    {
-        return new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
     }
 }

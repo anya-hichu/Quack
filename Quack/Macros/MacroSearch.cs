@@ -27,18 +27,4 @@ public class MacroSearch
         var ratio = (double)length / filter.Length;
         return Math.Round(ratio, 0);
     }
-
-    public static Macro? FindByNameOrPath(IEnumerable<Macro> macros, string nameOrPath)
-    {
-        Macro? match = null;
-        if (macros.FindFirst(m => m.Path == nameOrPath, out var pathMatch))
-        {
-            match = pathMatch;
-        }
-        else if (macros.FindFirst(m => m.Name == nameOrPath, out var nameMatch))
-        {
-            match = nameMatch;
-        }
-        return match;
-    }
 }
