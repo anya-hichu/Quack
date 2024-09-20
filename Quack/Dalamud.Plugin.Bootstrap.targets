@@ -11,29 +11,29 @@
 
     <Target Name="DeleteUnusedRuntimes" AfterTargets="Build;Release">
         <ItemGroup>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\ru-RU"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\alpine-arm"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\alpine-arm64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\alpine-x64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\browser-wasm"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-arm"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-arm64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-armel"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-mips64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-musl-arm"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-musl-arm64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-musl-x64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-s390x"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-x64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\linux-x86"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\maccatalyst-arm64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\maccatalyst-x64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\osx-arm64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\osx-x64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\unix"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\win-arm"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\win-arm64"/>
-            <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\win-x86"/>
+            <FoldersToDelete Include="$(OutDir)ru-RU"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\alpine-arm"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\alpine-arm64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\alpine-x64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\browser-wasm"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-arm"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-arm64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-armel"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-mips64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-musl-arm"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-musl-arm64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-musl-x64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-s390x"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-x64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\linux-x86"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\maccatalyst-arm64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\maccatalyst-x64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\osx-arm64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\osx-x64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\unix"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\win-arm"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\win-arm64"/>
+            <FoldersToDelete Include="$(OutDir)runtimes\win-x86"/>
         </ItemGroup>
         <Message Text="Deleting folders @(FoldersToDelete)"/>
         <RemoveDir Directories="@(FoldersToDelete)">
