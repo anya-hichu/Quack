@@ -43,12 +43,6 @@
           "Microsoft.ClearScript.V8": "7.4.5"
         }
       },
-      "Microsoft.ClearScript.Core": {
-        "type": "Direct",
-        "requested": "[7.4.5, )",
-        "resolved": "7.4.5",
-        "contentHash": "CIZCty2L4mXy1xg77IbNPqsz2pS0ZsFVJZ5YolPB4j62xzvDuCFU/MKnTnKve67FGIWaB9w4LVV7YUEFmjEwzw=="
-      },
       "Microsoft.ClearScript.V8.Native.win-x64": {
         "type": "Direct",
         "requested": "[7.4.5, )",
@@ -87,6 +81,11 @@
         "dependencies": {
           "Acornima": "1.1.0"
         }
+      },
+      "Microsoft.ClearScript.Core": {
+        "type": "Transitive",
+        "resolved": "7.4.5",
+        "contentHash": "CIZCty2L4mXy1xg77IbNPqsz2pS0ZsFVJZ5YolPB4j62xzvDuCFU/MKnTnKve67FGIWaB9w4LVV7YUEFmjEwzw=="
       },
       "Microsoft.ClearScript.V8": {
         "type": "Transitive",
