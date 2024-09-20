@@ -103,16 +103,29 @@ public class MainWindow : Window, IDisposable
                     if (ImGui.TableNextColumn())
                     {
                         ImGui.Text(macro.Name);
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip(macro.Name);
+                        }
                     }
 
                     if (ImGui.TableNextColumn())
                     {
                         ImGui.Text(macro.Path);
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip(macro.Path);
+                        }
                     }
 
                     if (ImGui.TableNextColumn())
                     {
-                        ImGui.Text(string.Join(", ", macro.Tags));
+                        var joinedTags = string.Join(", ", macro.Tags);
+                        ImGui.Text(joinedTags);
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip(joinedTags);
+                        }
                     }
 
                     if (ImGui.TableNextColumn())

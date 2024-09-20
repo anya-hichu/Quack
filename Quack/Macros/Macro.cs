@@ -1,5 +1,4 @@
 using Newtonsoft.Json;
-using SQLite;
 using System;
 
 namespace Quack.Macros;

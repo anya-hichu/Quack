@@ -54,28 +54,25 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
-        System.Environment.SetEnvironmentVariable("SQLite_NoConfigure", "1");
-        var dbPath = Path.Combine(PluginInterface.GetPluginLocDirectory(), $"{PluginInterface.InternalName}.db");
-
-        SqliteConnection = new SQLiteConnection(dbPath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
+        var databasePath = Path.Combine(PluginInterface.GetPluginLocDirectory(), $"{PluginInterface.InternalName}.db");
+        SqliteConnection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
 
         MacroTable = new(SqliteConnection, PluginLog);
-        MacroTable.CreateTableIfNotExists();
+        MacroTable.MaybeCreateTable();
 
-        var engineSwitcher = JsEngineSwitcher.Current;
-        engineSwitcher.EngineFactories.Add(new JintJsEngineFactory(new()
+        var engineFactories = JsEngineSwitcher.Current.EngineFactories;
+        engineFactories.Add(new V8JsEngineFactory());
+        engineFactories.Add(new JintJsEngineFactory(new()
         {
             DisableEval = true,
             StrictMode = true
         }));
-        engineSwitcher.EngineFactories.Add(new V8JsEngineFactory(new()));
-
+        
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
-        Config.MigrateIfNeeded(MacroTable);
+        Config.MaybeMigrate(MacroTable);
         CachedMacros = MacroTable.List();
 
         MacroExecutor = new(Framework, new(SigScanner), PluginLog);
-
         MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]

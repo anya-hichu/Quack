@@ -35,7 +35,7 @@ public class MacroTable(SQLiteConnection connection, IPluginLog pluginLog)
 
     public event Action? OnChange;
 
-    public void CreateTableIfNotExists()
+    public void MaybeCreateTable()
     {
         var result = Connection.Execute(CREATE_TABLE_QUERY);
         LogQuery(CREATE_TABLE_QUERY, result);
@@ -104,7 +104,7 @@ public class MacroTable(SQLiteConnection connection, IPluginLog pluginLog)
 
     public int Update(string currentPath, Macro macro)
     {
-        object[] args = [.. ToValues(macro), currentPath];
+        object[] args = [..ToValues(macro), currentPath];
         var result = Connection.Execute(UPDATE_QUERY, args);
         LogQuery(UPDATE_QUERY, result, args);
         MaybeNotifyChange(result);

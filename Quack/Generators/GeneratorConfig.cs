@@ -294,14 +294,14 @@ function main(modsJson) {
             const groupMacros = [{
                 name: `Clear Option Group "${s.name}"`,
                 path: `Mods/${m.path}/Settings/${escape(s.name)}/Clear`,
-                tags: ['options', 'clear'],
+                tags: ['mod', 'options', 'clear'],
                 content: `/modset Self "${m.dir}" "${m.name}" "${s.name}" =`
             }];
             const optionMacros = s.options.map(o => {
                 return {
                     name: `Enable Option "${o.name}"`,
                     path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}`,
-                    tags: ['option', 'enable'],
+                    tags: ['mod', 'option', 'enable'],
                     content: `/modset Self "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
                 };
             });

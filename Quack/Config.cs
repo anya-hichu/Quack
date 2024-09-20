@@ -39,7 +39,7 @@ public class Config : IPluginConfiguration
         GeneratorConfigs = generatorConfigs;
     }
 
-    public void MigrateIfNeeded(MacroTable macroTable)
+    public void MaybeMigrate(MacroTable macroTable)
     {
         if (Version < CURRENT_VERSION)
         {
