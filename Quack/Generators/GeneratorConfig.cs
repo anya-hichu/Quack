@@ -18,13 +18,13 @@ function main(profilesJson) {
     const macros = profiles.flatMap(p => {
         return [{
             name: `Enable Profile "${p.Item2}"`,
-            path: `Customizations/${p.Item2}/Enable`,
-            tags: ['customization', 'profile', 'enable'],
+            path: `Customize Profiles/${p.Item2}/Enable`,
+            tags: ['customize', 'profile', 'enable'],
             content: `/customize profile enable <me>,${p.Item2}`
         },{
             name: `Disable Profile "${p.Item2}"`,
-            path: `Customizations/${p.Item2}/Disable`,
-            tags: ['customization', 'profile', 'disable'],
+            path: `Customize Profiles/${p.Item2}/Disable`,
+            tags: ['customize', 'profile', 'disable'],
             content: `/customize profile disable <me>,${p.Item2}`
         }];
     });
@@ -35,7 +35,9 @@ function main(profilesJson) {
             [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS), new(EmotesIpc.LIST)],
 """
 // Requires "DeterministicPose" and "ModSettingCommands" plugins to be installed
+
 // Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
+// Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
 
 const idlePseudoEmote = {
     command: '/idle',
@@ -166,6 +168,7 @@ function main(emotesJson) {
             [new(GlamourerIpc.DESIGN_LIST)],
 """
 // Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
+// Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
 
 function main(designsJson) {
     const designs = JSON.parse(designsJson);
@@ -286,6 +289,8 @@ function normalize(path) {
         new("Mod Options",
             [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS)],
 """
+// Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
+
 function main(modsJson) {
     const mods = JSON.parse(modsJson);
 
