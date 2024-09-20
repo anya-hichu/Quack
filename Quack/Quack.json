@@ -1,8 +1,8 @@
 {
     "Author": "Anya Hichu",
     "Name": "Quack",
-    "Punchline": "Run actions quackly.",
-    "Description": "Generate and run macro actions quickly using a spotlight inspired interface.",
+    "Punchline": "Run actions quackly",
+    "Description": "Generate and run macro actions quickly using a spotlight inspired interface",
     "ApplicableVersion": "any",
     "Tags": [
         "search",
