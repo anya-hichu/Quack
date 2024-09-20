@@ -9,7 +9,7 @@
 
     <Import Project="$(DalamudLibPath)/targets/Dalamud.Plugin.targets"/>
 
-    <Target Name="DeleteUnusedRuntimes" AfterTargets="Build">
+    <Target Name="DeleteUnusedRuntimes" AfterTargets="Build;Release">
         <ItemGroup>
             <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\ru-RU"/>
             <FoldersToDelete Include="bin\$(Platform)\$(Configuration)\runtimes\alpine-arm"/>
