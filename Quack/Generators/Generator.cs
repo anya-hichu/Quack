@@ -4,7 +4,6 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using JavaScriptEngineSwitcher.Core;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Quack.Macros;
 using System;
 using System.Collections.Generic;

@@ -50,7 +50,7 @@ public partial class ConfigWindow : Window, IDisposable
     {
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(820, 400),
+            MinimumSize = new Vector2(1070, 400),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
@@ -681,14 +681,14 @@ public partial class ConfigWindow : Window, IDisposable
             ImGui.SetCursorPosX(20);
             if(ImGui.CollapsingHeader($"IPCs###generatorConfigs{hash}IpcConfigs", ImGuiTreeNodeFlags.DefaultOpen))
             {
-                ImGui.SetCursorPosX(40);
+                ImGui.SetCursorPosX(20);
                 if (ImGui.Button($"+###generatorConfigs{hash}IpcConfigsNew"))
                 {
                     generatorConfig.IpcConfigs.Add(new());
                     Config.Save();
                 }
 
-                ImGui.SameLine(60);
+                ImGui.SameLine(40);
                 if (ImGui.BeginTabBar($"generatorConfigs{hash}IpcConfigsTabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.FittingPolicyScroll))
                 {
                     for (var i = 0; i < generatorConfig.IpcConfigs.Count; i++)
@@ -699,7 +699,7 @@ public partial class ConfigWindow : Window, IDisposable
                         {
                             var ipcNamesForCombo = ipcOrdered.Select(g => g.Name).Prepend(string.Empty);
                             var ipcIndexForCombo = ipcNamesForCombo.IndexOf(ipcConfig.Name);
-                            ImGui.SetCursorPosX(40);
+                            ImGui.SetCursorPosX(20);
                             ImGui.PushItemWidth(500);
                             if (ImGui.Combo($"Name###generatorConfigs{hash}IpcConfigs{i}Name", ref ipcIndexForCombo, ipcNamesForCombo.ToArray(), ipcNamesForCombo.Count()))
                             {
@@ -719,7 +719,7 @@ public partial class ConfigWindow : Window, IDisposable
 
                             if (!ipcConfig.Name.IsNullOrWhitespace())
                             {
-                                ImGui.SetCursorPosX(40);
+                                ImGui.SetCursorPosX(20);
                                 if (ipcIndexForCombo > 0)
                                 {
                                     var channel = ipcOrdered.ElementAt(ipcIndexForCombo - 1);
@@ -806,13 +806,13 @@ public partial class ConfigWindow : Window, IDisposable
                 var filteredGeneratedMacros = state.FilteredGeneratedMacros;
                 var generatedMacrosFilter = state.GeneratedMacrosFilter;
 
-                var conflictingMacros = CachedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE);
+                var filteredConflictingMacros = CachedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE);
                 var conflictResolutionPopupId = $"###generatorConfigs{hash}GeneratedMacrosConflictsPopup";
-                if (conflictingMacros.Any())
+                if (filteredConflictingMacros.Any())
                 {
                     if (ImGui.BeginPopup(conflictResolutionPopupId))
                     {
-                        ImGui.Text($"Override {conflictingMacros.Count()} macros?");
+                        ImGui.Text($"Override {filteredConflictingMacros.Count()} macros?");
 
                         ImGui.SetCursorPosX(15);
                         ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
@@ -837,7 +837,7 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
                 if (ImGui.Button($"Save Selected###generatorConfigs{hash}GeneratedMacrosSaveSelected"))
                 {
-                    if (conflictingMacros.Any())
+                    if (filteredConflictingMacros.Any())
                     {
                         ImGui.OpenPopup(conflictResolutionPopupId);
                     }
@@ -882,6 +882,31 @@ public partial class ConfigWindow : Window, IDisposable
                     state.FilteredGeneratedMacros = generatedMacros;
                 }
 
+                ImGui.SameLine();
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 40);
+                var showOnlySelected = state.ShowOnlySelected;
+                if (ImGui.Checkbox("Show Only Selected###generatorConfigs{hash}GeneratedMacrosShowOnlySelected", ref showOnlySelected))
+                {
+                    state.ShowOnlySelected = showOnlySelected;
+                }
+
+                var generatedConflictingMacros = CachedMacros.Intersect(generatedMacros, MacroComparer.INSTANCE);
+                ImGui.SameLine();
+                if (generatedConflictingMacros.All(selectedGeneratedMacros.Contains))
+                {
+                    if (ImGui.Button($"Select All Non-conflicting###generatorConfigs{hash}GeneratedMacrosSelectAllNonConflicting"))
+                    {
+                        selectedGeneratedMacros.ExceptWith(generatedConflictingMacros);
+                    }
+                }
+                else
+                {
+                    if (ImGui.Button($"Select All Conflicting###generatorConfigs{hash}GeneratedMacrosSelectAllConflicting"))
+                    {
+                        selectedGeneratedMacros.UnionWith(generatedConflictingMacros);
+                    }
+                }
+
                 ImGui.SameLine(ImGui.GetWindowWidth() - 80);
                 ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                 if (ImGui.Button($"Delete All###generatorConfigs{hash}GeneratedMacrosDeleteAll"))
@@ -901,14 +926,16 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.TableSetupColumn($"Content###generatorConfigs{hash}GeneratedMacrosContent", ImGuiTableColumnFlags.None, 0.5f);
                     ImGui.TableHeadersRow();
 
+                    var displayedFilteredGeneratedMacros = showOnlySelected ? filteredGeneratedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE) : filteredGeneratedMacros;
+
                     var clipper = ImGuiHelper.NewListClipper();
-                    clipper.Begin(filteredGeneratedMacros.Count, 27);
+                    clipper.Begin(displayedFilteredGeneratedMacros.Count(), 27);
 
                     while(clipper.Step())
                     {
                         for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                         {
-                            var generatedMacro = filteredGeneratedMacros.ElementAt(i);
+                            var generatedMacro = displayedFilteredGeneratedMacros.ElementAt(i);
                             if (ImGui.TableNextColumn())
                             {
                                 var selected = selectedGeneratedMacros.Contains(generatedMacro);

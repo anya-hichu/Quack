@@ -68,7 +68,7 @@ function main(modsJson, emotesJson) {
                     return {
                         name: `Custom Emote "${option.name}" [${commandPath}]`,
                         path: `Mods/${normalize(mod.path)}/Settings/${escape(setting.name)}/Options/${escape(option.name)}/Emotes${commandPath}`,
-                        tags: ['emote', 'option', command],
+                        tags: ['mod', 'emote', 'option', command],
                         content: contentLines.join("\n")
                     };
                 });
@@ -101,7 +101,7 @@ function main(modsJson, emotesJson) {
                 return {
                     name: `Custom Emote "${mod.name}" [${commandPath}]`,
                     path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
-                    tags: ['emote', command],
+                    tags: ['mod', 'emote', command],
                     content: contentLines.join("\n")
                 };
             });      
@@ -207,7 +207,7 @@ function main(titlesJson) {
 
     const titleMacros = titles.map(t => {
         const contentLines = [
-            disablehonorificsMacro.command,
+            `${disablehonorificsMacro.command} <wait.1>`,
             `/honorific title enable ${t.Title}`
         ];
         return {

@@ -56,7 +56,7 @@ public class MainWindow : Window, IDisposable
         var filterInput = ImGui.InputTextWithHint($"Filter ({FilteredMacros.Count}/{CachedMacros.Count})###filter", "Search Query (min 3 chars)", ref filter, ushort.MaxValue);
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("See FTS5 query documentation for syntax and examples: https://www.sqlite.org/fts5.html");
+            ImGui.SetTooltip("Indexed columns with trigram: name, path, command, tags\n\nExample queries:\n - PEDRO\n - cute tags:design\n - ^Custom tags:throw NOT cheese\n\nSee FTS5 query documentation for syntax and more examples: https://www.sqlite.org/fts5.html");
         }
         if (filterInput)
         {
