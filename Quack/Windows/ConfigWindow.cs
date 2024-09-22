@@ -873,8 +873,6 @@ public partial class ConfigWindow : Window, IDisposable
                 {
                     state.GeneratedMacrosFilter = generatedMacrosFilter;
                     state.FilteredGeneratedMacros = new(MacroSearch.Lookup(generatedMacros, generatedMacrosFilter), MacroComparer.INSTANCE);
-
-                    PluginLog.Info("{0}", state.FilteredGeneratedMacros.Select(m => m.Content));
                 }
 
                 ImGui.SameLine();
