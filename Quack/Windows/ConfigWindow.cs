@@ -886,7 +886,7 @@ public partial class ConfigWindow : Window, IDisposable
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 232);
                 var showOnlySelected = state.ShowOnlySelected;
-                if (ImGui.Checkbox("Show Only Selected###generatorConfigs{hash}GeneratedMacrosShowOnlySelected", ref showOnlySelected))
+                if (ImGui.Checkbox($"Show Only Selected###generatorConfigs{hash}GeneratedMacrosShowOnlySelected", ref showOnlySelected))
                 {
                     state.ShowOnlySelected = showOnlySelected;
                 }
