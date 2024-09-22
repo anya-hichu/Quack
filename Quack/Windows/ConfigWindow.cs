@@ -850,7 +850,7 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.PopStyleColor();
 
                 ImGui.SameLine();
-                if (ImGui.Button($"Inverse Selection###generatorConfigs{hash}GeneratedMacrosInverseSelection"))
+                if (ImGui.Button($"Invert Selection###generatorConfigs{hash}GeneratedMacrosInvertSelection"))
                 {
                     state.SelectedGeneratedMacros = new(generatedMacros.Except(selectedGeneratedMacros, MacroComparer.INSTANCE), MacroComparer.INSTANCE);
                 }
@@ -884,15 +884,14 @@ public partial class ConfigWindow : Window, IDisposable
                     state.FilteredGeneratedMacros = generatedMacros;
                 }
 
-                ImGui.SameLine();
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 40);
+                ImGui.SameLine(ImGui.GetWindowWidth() - 232);
                 var showOnlySelected = state.ShowOnlySelected;
                 if (ImGui.Checkbox("Show Only Selected###generatorConfigs{hash}GeneratedMacrosShowOnlySelected", ref showOnlySelected))
                 {
                     state.ShowOnlySelected = showOnlySelected;
                 }
 
-                ImGui.SameLine(ImGui.GetWindowWidth() - 80);
+                ImGui.SameLine();
                 ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                 if (ImGui.Button($"Delete All###generatorConfigs{hash}GeneratedMacrosDeleteAll"))
                 {
