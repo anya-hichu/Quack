@@ -20,7 +20,7 @@ public class Generator(GeneratorConfig generatorConfig, IJsEngine jsEngine, IPlu
     public HashSet<Macro> Execute()
     {
         var args = CallIpcs();
-        return CallFunction(args).ToHashSet(MacroComparer.INSTANCE);
+        return new(CallFunction(args), MacroComparer.INSTANCE);
     }
 
     private object[] CallIpcs()

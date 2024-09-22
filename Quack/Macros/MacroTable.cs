@@ -183,7 +183,7 @@ public class MacroTable(SQLiteConnection connection, IPluginLog pluginLog)
 
     private static HashSet<Macro> toEntities(IEnumerable<MacroRecord> records)
     {
-        return records.Select(ToEntity).ToHashSet(MacroComparer.INSTANCE);
+        return new(records.Select(ToEntity), MacroComparer.INSTANCE);
     }
 
     private static Macro ToEntity(MacroRecord macroRecord)

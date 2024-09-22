@@ -872,7 +872,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (ImGui.InputText($"Filter ({filteredGeneratedMacros.Count}/{generatedMacros.Count})###generatorConfigs{hash}GeneratedMacrosFilter", ref generatedMacrosFilter, ushort.MaxValue))
                 {
                     state.GeneratedMacrosFilter = generatedMacrosFilter;
-                    state.FilteredGeneratedMacros = MacroSearch.Lookup(generatedMacros, generatedMacrosFilter).ToHashSet();
+                    state.FilteredGeneratedMacros = new(MacroSearch.Lookup(generatedMacros, generatedMacrosFilter), MacroComparer.INSTANCE);
 
                     PluginLog.Info("{0}", state.FilteredGeneratedMacros.Select(m => m.Content));
                 }
@@ -1024,8 +1024,8 @@ public partial class ConfigWindow : Window, IDisposable
 
                 var state = GeneratorConfigToState[generatorConfig];
                 state.GeneratedMacros = generatedMacros;
-                state.SelectedGeneratedMacros = generatedMacros.ToHashSet(MacroComparer.INSTANCE);
-                state.FilteredGeneratedMacros = MacroSearch.Lookup(generatedMacros, state.GeneratedMacrosFilter).ToHashSet(MacroComparer.INSTANCE);
+                state.SelectedGeneratedMacros = new(generatedMacros, MacroComparer.INSTANCE);
+                state.FilteredGeneratedMacros = new(MacroSearch.Lookup(generatedMacros, state.GeneratedMacrosFilter), MacroComparer.INSTANCE);
                 GeneratorException = null;
             }
             catch (GeneratorException e)
