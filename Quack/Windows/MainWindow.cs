@@ -20,6 +20,7 @@ public class MainWindow : Window, IDisposable
     private IPluginLog PluginLog { get; init; }
     private string Filter { get; set; } = string.Empty;
     private HashSet<Macro> FilteredMacros { get; set; } = [];
+    private MacroExecutionGui MacroExecutionGui { get; init; }
 
     public MainWindow(HashSet<Macro> cachedMacros, MacroExecutor macroExecutor, MacroTable macroTable, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
@@ -35,6 +36,8 @@ public class MainWindow : Window, IDisposable
         Config = config;
         PluginLog = pluginLog;
 
+        MacroExecutionGui = new(config, macroExecutor);
+
         UpdateFilteredMacros();
         MacroTable.OnChange += UpdateFilteredMacros;
     }
@@ -42,6 +45,7 @@ public class MainWindow : Window, IDisposable
     public void UpdateFilteredMacros()
     {
         FilteredMacros = MacroTable.Search(Filter);
+        MacroExecutionGui.UpdateExecutions(FilteredMacros);
     }
 
     public void Dispose()
@@ -94,7 +98,7 @@ public class MainWindow : Window, IDisposable
             ImGui.TableHeadersRow();
 
             var clipper = ImGuiHelper.NewListClipper();
-            clipper.Begin(FilteredMacros.Count(), 27);
+            clipper.Begin(FilteredMacros.Count, 27);
             while(clipper.Step())
             {
                 for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
@@ -130,16 +134,7 @@ public class MainWindow : Window, IDisposable
 
                     if (ImGui.TableNextColumn())
                     {
-                        if (ImGui.Button($"Execute###macros{i}Execute"))
-                        {
-                            MacroExecutor.ExecuteTask(macro);
-                        }
-
-                        ImGui.SameLine();
-                        if (ImGui.Button($"+ Format###macros{i}ExecuteWithFormat"))
-                        {
-                            MacroExecutor.ExecuteTask(macro, Config.ExtraCommandFormat);
-                        }
+                        MacroExecutionGui.Button(macro);
                     }
 
                     ImGui.TableNextRow();
@@ -150,4 +145,6 @@ public class MainWindow : Window, IDisposable
             ImGui.EndTable();
         }
     }
+
+
 }

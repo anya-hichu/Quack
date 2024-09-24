@@ -1,6 +1,7 @@
 using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using Quack.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,13 +12,17 @@ public class MacroCommands: IDisposable
     private HashSet<string> RegisteredCommands { get; init; } = [];
 
     private HashSet<Macro> CachedMacros { get; init; }
+    private IChatGui ChatGui { get; init; }
+    private Config Config { get; init; }
     private ICommandManager CommandManager { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
     private MacroTable MacroTable { get; init; }
 
-    public MacroCommands(HashSet<Macro> cachedMacros, ICommandManager commandManager, MacroExecutor macroExecutor, MacroTable macroTable)
+    public MacroCommands(HashSet<Macro> cachedMacros, IChatGui chatGui, Config config, ICommandManager commandManager, MacroExecutor macroExecutor, MacroTable macroTable)
     {
         CachedMacros = cachedMacros;
+        ChatGui = chatGui;
+        Config = config;
         CommandManager = commandManager;
         MacroExecutor = macroExecutor;
         MacroTable = macroTable;
@@ -75,11 +80,38 @@ public class MacroCommands: IDisposable
 
     private CommandInfo BuildCommandInfo(Macro macro)
     {
-
-        return new((command, args) => MacroExecutor.ExecuteTask(macro))
+        return new(BuildCommand(macro))
         {
-            HelpMessage = $"Execute macro {macro.Name} ({macro.Path}) using {macro.Command}",
+            HelpMessage = $"Execute macro '{macro.Name}' ({macro.Path}) using '{macro.Command}'",
             ShowInHelp = false
+        };
+    }
+
+    private IReadOnlyCommandInfo.HandlerDelegate BuildCommand(Macro macro)
+    {
+        return (command, args) =>
+        {
+            var macroExecution = new MacroExecution(macro, Config, MacroExecutor);
+            var parsedArgs = Arguments.SplitCommandLine(args);
+
+            if (parsedArgs.Length > 0)
+            {
+                macroExecution.ParsedArgs = parsedArgs;
+            } 
+            else
+            {
+                // Default args
+                macroExecution.ParseArgs();
+            }
+
+            if (macroExecution.IsExecutable())
+            {
+                macroExecution.ExecuteTask();
+            } 
+            else
+            {
+                ChatGui.PrintError(MacroExecutionGui.GetNonExecutableMessage(macroExecution));
+            }
         };
     }
 

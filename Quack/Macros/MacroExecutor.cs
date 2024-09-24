@@ -11,6 +11,8 @@ namespace Quack.Macros;
 
 public partial class MacroExecutor : IDisposable
 {
+    public const string DEFAULT_FORMAT = "{0}";
+
     [GeneratedRegexAttribute(@"<wait\.(\d+)>")]
     private static partial Regex WaitTimeGeneratedRegex();
     
@@ -45,7 +47,7 @@ public partial class MacroExecutor : IDisposable
         }
     }
 
-    public void ExecuteTask(Macro macro, string format = "{0}")
+    public void ExecuteTask(Macro macro, string format = DEFAULT_FORMAT, params string[] args)
     {
         var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
@@ -53,10 +55,10 @@ public partial class MacroExecutor : IDisposable
         {
             try
             {
-                PluginLog.Debug($"Task #{Task.CurrentId} executing macro {macro.Name} ({macro.Path})");
+                PluginLog.Debug($"Task #{Task.CurrentId} executing macro '{macro.Name}' ({macro.Path}) with format '{format}' and args [{string.Join(',', args)}]");
                 CancellationTokenSources.Add(cancellationTokenSource);
 
-                foreach (var command in macro.Content.Split("\n"))
+                foreach (var command in macro.Content.Format(args).Split("\n"))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -73,7 +75,7 @@ public partial class MacroExecutor : IDisposable
                         if (waitTimeMatch != null && waitTimeMatch.Success)
                         {
                             var waitTimeValue = waitTimeMatch.Groups[1].Value;
-                            PluginLog.Debug($"Pausing execution #{Task.CurrentId} inside macro {macro.Name} ({macro.Path}) for {waitTimeValue} sec(s) to respect {waitTimeMatch.Value}");
+                            PluginLog.Debug($"Pausing execution #{Task.CurrentId} inside macro '{macro.Name}' ({macro.Path}) for {waitTimeValue} sec(s) to respect {waitTimeMatch.Value}");
                             Thread.Sleep(int.Parse(waitTimeValue) * 1000);
                         }
                     }
@@ -83,12 +85,12 @@ public partial class MacroExecutor : IDisposable
 
                 if (macro.Loop)
                 {
-                    ExecuteTask(macro, format);
+                    ExecuteTask(macro, format, args);
                 }
             }
             catch(OperationCanceledException)
             {
-                PluginLog.Debug($"Canceled execution #{Task.CurrentId} for macro {macro.Name} ({macro.Path})");
+                PluginLog.Debug($"Canceled execution #{Task.CurrentId} for macro '{macro.Name}' ({macro.Path})");
             }
             finally
             {

@@ -10,11 +10,14 @@ public class MacroRecord
     [Column("path")]
     public string? Path { get; set; }
 
+    [Column("tags")]
+    public string? Tags { get; set; }
+
     [Column("command")]
     public string? Command { get; set; }
 
-    [Column("tags")]
-    public string? Tags { get; set; }
+    [Column("args")]
+    public string? Args { get; set; }
 
     [Column("content")]
     public string? Content { get; set; }

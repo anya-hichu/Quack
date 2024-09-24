@@ -18,14 +18,13 @@ using JavaScriptEngineSwitcher.V8;
 using System.IO;
 using System.Collections.Generic;
 using SQLite;
-
 namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
 {
     private const string CommandName = "/quack";
-    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config and exec";
-    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path]( [Formatting (false/true/format)])?";
+    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, exec and cancel";
+    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path]( [Formatting (false/true/format)])?( [Argument Value])*";
 
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
@@ -48,16 +47,16 @@ public sealed class Plugin : IDalamudPlugin
     private PenumbraIpc PenumbraIpc { get; init; }
     private KeyBindListener KeyBindListener { get; init; }
     private MacroCommands MacroCommands { get; init; }
-    private SQLiteConnection SqliteConnection { get; init; }
+    private SQLiteConnection DbConnection { get; init; }
     private HashSet<Macro> CachedMacros { get; init; }
     private MacroTable MacroTable { get; init; }
 
     public Plugin()
     {
         var databasePath = Path.Combine(PluginInterface.GetPluginLocDirectory(), $"{PluginInterface.InternalName}.db");
-        SqliteConnection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
+        DbConnection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
 
-        MacroTable = new(SqliteConnection, PluginLog);
+        MacroTable = new(DbConnection, PluginLog);
         MacroTable.MaybeCreateTable();
 
         var engineFactories = JsEngineSwitcher.Current.EngineFactories;
@@ -69,7 +68,10 @@ public sealed class Plugin : IDalamudPlugin
         }));
         
         Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
-        Config.MaybeMigrate(MacroTable);
+
+        var migrator = new Migrator(DbConnection, MacroTable);
+        migrator.ExecuteMigrations(Config);
+
         CachedMacros = MacroTable.List();
 
         MacroExecutor = new(Framework, new(SigScanner), PluginLog);
@@ -100,7 +102,7 @@ public sealed class Plugin : IDalamudPlugin
         PenumbraIpc = new(PluginInterface, PluginLog);
 
         KeyBindListener = new(Framework, Config, ToggleMainUI);
-        MacroCommands = new(CachedMacros, CommandManager, MacroExecutor, MacroTable);
+        MacroCommands = new(CachedMacros, ChatGui, Config, CommandManager, MacroExecutor, MacroTable);
     }
 
     public void Dispose()
@@ -120,7 +122,7 @@ public sealed class Plugin : IDalamudPlugin
         KeyBindListener.Dispose();
         MacroCommands.Dispose();
 
-        SqliteConnection.Dispose();
+        DbConnection.Dispose();
     }
 
     private void OnCommand(string command, string args)
@@ -141,6 +143,10 @@ public sealed class Plugin : IDalamudPlugin
             {
                 ChatGui.Print(CommandExecHelpMessage);
             }
+            else if (subcommand == "cancel")
+            {
+                MacroExecutor.CancelTasks();
+            }
             else
             {
                 ChatGui.PrintError(CommandHelpMessage);
@@ -148,58 +154,89 @@ public sealed class Plugin : IDalamudPlugin
         }
         else if (arguments.Length == 2)
         {
-            if (arguments[0] == "exec")
+            if (arguments[0] != "exec")
             {
-                var nameOrPath = arguments[1];
-                var macro = MacroTable.FindBy("path", nameOrPath);
-                macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+                ChatGui.PrintError(CommandHelpMessage);
+                return;
+            }
 
-                if (macro != null)
-                {
-                    MacroExecutor.ExecuteTask(macro);
-                } 
-                else
-                {
-                    ChatGui.Print($"No macro found with name or path: {nameOrPath}");
-                }
+            var nameOrPath = arguments[1];
+            var macro = MacroTable.FindBy("path", nameOrPath);
+            macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+
+            if (macro == null)
+            {
+                ChatGui.Print($"No macro found with name or path '{nameOrPath}'");
+                return;
+            }
+
+            var macroExecution = new MacroExecution(macro, Config, MacroExecutor);
+            macroExecution.ParseArgs();
+
+            if (macroExecution.IsExecutable())
+            {
+                macroExecution.ExecuteTask();
+            }
+            else
+            {
+                ChatGui.PrintError(MacroExecutionGui.GetNonExecutableMessage(macroExecution));
+            }
+        }
+        else if (arguments.Length >= 3)
+        {
+            if (arguments[0] != "exec")
+            {
+                ChatGui.Print(CommandHelpMessage);
+                return;
+            }
+
+            var nameOrPath = arguments[1];
+            var macro = MacroTable.FindBy("path", nameOrPath);
+            macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+
+            if (macro == null)
+            {
+                ChatGui.PrintError($"No macro found with name or path '{nameOrPath}'");
+                return;
+            }
+
+            var formatting = arguments[2];
+            var macroExecution = new MacroExecution(macro, Config, MacroExecutor);
+            if (arguments.Length > 3)
+            {
+                macroExecution.ParsedArgs = arguments[3..];
             } 
             else
             {
-                ChatGui.PrintError(CommandHelpMessage);
+                // Default args from macro
+                macroExecution.ParseArgs();
             }
-        }
-        else if (arguments.Length == 3)
-        {
-            if (arguments[0] == "exec")
+                    
+            if (formatting == "true")
             {
-                var nameOrPath = arguments[1];
-                var macro = MacroTable.FindBy("path", nameOrPath);
-                macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+                macroExecution.UseConfigFormat();
+            }
+            else if (formatting == "false")
+            {
+                macroExecution.Format = MacroExecutor.DEFAULT_FORMAT;
+            }
+            else if (!formatting.IsNullOrEmpty())
+            {
+                macroExecution.Format = formatting;
+            }
+            else
+            {
+                ChatGui.PrintError(CommandExecHelpMessage);
+                return;
+            }
 
-                if (macro != null)
-                {
-                    var formatting = arguments[2];
-                    if (formatting == "true")
-                    {
-                        MacroExecutor.ExecuteTask(macro, Config.ExtraCommandFormat);
-                    }
-                    else if (formatting == "false")
-                    {
-                        MacroExecutor.ExecuteTask(macro);
-                    }
-                    else if (!formatting.IsNullOrEmpty())
-                    {
-                        MacroExecutor.ExecuteTask(macro, formatting);
-                    } 
-                    else
-                    {
-                        ChatGui.PrintError(CommandExecHelpMessage);
-                    }
-                }
-                else
-                {
-                    ChatGui.PrintError($"No macro found with name or path: {nameOrPath}");
-                }
+            if (macroExecution.IsExecutable())
+            {
+                macroExecution.ExecuteTask();
+            } 
+            else
+            {
+                ChatGui.PrintError(MacroExecutionGui.GetNonExecutableMessage(macroExecution));
             }
         } 
         else
@@ -207,6 +244,8 @@ public sealed class Plugin : IDalamudPlugin
             ChatGui.Print(CommandHelpMessage);
         }
     }
+
+
 
     private void DrawUI() => WindowSystem.Draw();
     private void ToggleConfigUI() => ConfigWindow.Toggle();

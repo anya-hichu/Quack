@@ -11,7 +11,7 @@ namespace Quack;
 [Serializable]
 public class Config : IPluginConfiguration
 {
-    public static readonly int CURRENT_VERSION = 3;
+    public static readonly int CURRENT_VERSION = 4;
 
     public static readonly VirtualKey[] MODIFIER_KEYS = [ VirtualKey.NO_KEY, VirtualKey.CONTROL, VirtualKey.SHIFT, VirtualKey.MENU ];
 
@@ -37,36 +37,6 @@ public class Config : IPluginConfiguration
     public Config(List<GeneratorConfig> generatorConfigs)
     {
         GeneratorConfigs = generatorConfigs;
-    }
-
-    public void MaybeMigrate(MacroTable macroTable)
-    {
-        if (Version < CURRENT_VERSION)
-        {
-            if (Version < 1)
-            {
-                GeneratorConfigs.ForEach(c =>
-                {
-                    c.IpcConfigs.Add(new(c.IpcName, c.IpcArgs));
-                    c.IpcName = c.IpcArgs = string.Empty;
-                });
-            }
-
-            if (Version < 2)
-            {
-                ExtraCommandFormat = CommandFormat;
-                CommandFormat = string.Empty;
-            }
-
-            if (Version < 3)
-            {
-                macroTable.Insert(Macros);
-                Macros.Clear();
-            }
-
-            Version = CURRENT_VERSION;
-            Save();
-        }
     }
 
     public void Save()

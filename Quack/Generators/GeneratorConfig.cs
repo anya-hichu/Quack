@@ -10,22 +10,27 @@ namespace Quack.Generators;
 public class GeneratorConfig
 {
     private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
-        new("Customize Profiles",
+        new("Customize",
             [new("CustomizePlus.Profile.GetList")],
 """
+// Target name
+var args = 'self';
+
 function main(profilesJson) {
     const profiles = JSON.parse(profilesJson);
     const macros = profiles.flatMap(p => {
         return [{
-            name: `Enable Profile "${p.Item2}"`,
-            path: `Customize Profiles/${p.Item2}/Enable`,
+            name: `Enable Profile [${p.Item2}]`,
+            path: `Customizations/${p.Item2}/Enable`,
             tags: ['customize', 'profile', 'enable'],
-            content: `/customize profile enable <me>,${p.Item2}`
+            args: args,
+            content: `/customize profile enable {0},${p.Item2}`
         },{
-            name: `Disable Profile "${p.Item2}"`,
-            path: `Customize Profiles/${p.Item2}/Disable`,
+            name: `Disable Profile [${p.Item2}]`,
+            path: `Customizations/${p.Item2}/Disable`,
             tags: ['customize', 'profile', 'disable'],
-            content: `/customize profile disable <me>,${p.Item2}`
+            args: args,
+            content: `/customize profile disable {0},${p.Item2}`
         }];
     });
     return JSON.stringify(macros);
@@ -38,6 +43,9 @@ function main(profilesJson) {
 
 // Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
 // Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
+
+// Collection name
+var args = 'Self';
 
 const idlePseudoEmote = {
     command: '/idle',
@@ -57,18 +65,19 @@ function main(modsJson, emotesJson) {
 
                 return optionCommandsWithPoseIndex.map(([command, poseIndex]) => {
                     const contentLines = [
-                        `/penumbra bulktag disable Self | ${command}`,
-                        `/modset Self "${mod.dir}" "${mod.name}" "${setting.name}" = "${option.name}"`,
-                        `/penumbra mod enable Self | ${mod.dir}`,
+                        `/penumbra bulktag disable {0} | ${command}`,
+                        `/modset {0} "${mod.dir}" "${mod.name}" "${setting.name}" = "${option.name}"`,
+                        `/penumbra mod enable {0} | ${mod.dir}`,
                         '/penumbra redraw <me> <wait.1>'
                     ];
 
                     const commandPath = pushCommandWithPose(contentLines, command, poseIndex);
 
                     return {
-                        name: `Custom Emote "${option.name}" [${commandPath}]`,
+                        name: `Custom Emote [${option.name}] [${commandPath}]`,
                         path: `Mods/${normalize(mod.path)}/Settings/${escape(setting.name)}/Options/${escape(option.name)}/Emotes${commandPath}`,
                         tags: ['mod', 'emote', 'option', command],
+                        args: args,
                         content: contentLines.join("\n")
                     };
                 });
@@ -91,17 +100,18 @@ function main(modsJson, emotesJson) {
 
             return commandsWithPoseIndex.map(([command, poseIndex]) => {
                 const contentLines = [
-                    `/penumbra bulktag disable Self | ${command}`,
-                    `/penumbra mod enable Self | ${mod.dir}`,
+                    `/penumbra bulktag disable {0} | ${command}`,
+                    `/penumbra mod enable {0} | ${mod.dir}`,
                     '/penumbra redraw <me> <wait.1>'
                 ];
 
                 const commandPath = pushCommandWithPose(contentLines, command, poseIndex);
 
                 return {
-                    name: `Custom Emote "${mod.name}" [${commandPath}]`,
+                    name: `Custom Emote [${mod.name}] [${commandPath}]`,
                     path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
                     tags: ['mod', 'emote', command],
+                    args: args,
                     content: contentLines.join("\n")
                 };
             });      
@@ -170,19 +180,22 @@ function main(emotesJson) {
 // Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
 // Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
 
+var args = 'Self Base';
+
 function main(designsJson) {
     const designs = JSON.parse(designsJson);
     const macros = designs.map(d => {
         const contentLines = [
-            '/penumbra bulktag disable Self | all',
-            '/glamour apply Base | <me>;true',
+            '/penumbra bulktag disable {0} | all',
+            '/glamour apply {1} | <me>;true',
             `/glamour apply ${d.id} | <me>; true`
         ];
 
         return {
-            name: `Apply Design "${d.name}"`,
+            name: `Apply Design [${d.name}]`,
             path: `Glamours/${d.path}/Apply`,
             tags: d.tags.concat(['glamour', 'design', 'apply']),
+            args: args,
             content: contentLines.join("\n")
         }
     })
@@ -211,7 +224,7 @@ function main(titlesJson) {
             `/honorific title enable ${t.Title}`
         ];
         return {
-            name: `Enable Honorific "${t.Title}"`,
+            name: `Enable Honorific [${t.Title}]`,
             path: `Honorifics/${t.Title}/Enable`,
             tags: ['honorific', 'title', 'enable'],
             content: contentLines.join("\n")
@@ -235,7 +248,7 @@ const jobs = [
 function main() {
     const macros = jobs.map(j => {
         return {
-            name: `Equip Job "${j}"`,
+            name: `Equip Job [${j}]`,
             path: `Jobs/${j}/Equip`,
             tags: ['job', j.toLowerCase(), 'equip'],
             content: `/equipjob ${j}`
@@ -264,19 +277,26 @@ function main(rawMacrosJson) {
         new("Mods",
             [new(PenumbraIpc.MOD_LIST)],
 """
+// Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
+
+// Collection name
+var args = 'Self';
+
 function main(modsJson) {
     const mods = JSON.parse(modsJson);
     const macros = mods.flatMap(m => {
         return [{
-            name: `Enable Mod "${m.name}"`,
+            name: `Enable Mod [${m.name}]`,
             path: `Mods/${normalize(m.path)}/Enable`,
             tags: m.localTags.concat(['mod', 'enable']),
-            content: `/penumbra mod enable Self | ${m.dir}`
+            args: args,
+            content: `/penumbra mod enable {0} | ${m.dir}`
         },{
-            name: `Disable Mod "${m.name}"`,
+            name: `Disable Mod [${m.name}]`,
             path: `Mods/${normalize(m.path)}/Disable`,
             tags: m.localTags.concat(['mod', 'disable']),
-            content: `/penumbra mod disable Self | ${m.dir}`
+            args: args,
+            content: `/penumbra mod disable {0} | ${m.dir}`
         }];
     })
     return JSON.stringify(macros);
@@ -291,23 +311,28 @@ function normalize(path) {
 """
 // Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
 
+// Collection name
+var args = 'Self';
+
 function main(modsJson) {
     const mods = JSON.parse(modsJson);
 
     const macros = mods.flatMap(m => {
         return m.settings.groupSettings.flatMap(s => {
             const groupMacros = [{
-                name: `Clear Option Group "${s.name}"`,
+                name: `Clear Option Group [${s.name}]`,
                 path: `Mods/${m.path}/Settings/${escape(s.name)}/Clear`,
                 tags: ['mod', 'options', 'clear'],
-                content: `/modset Self "${m.dir}" "${m.name}" "${s.name}" =`
+                args: args,
+                content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" =`
             }];
             const optionMacros = s.options.map(o => {
                 return {
-                    name: `Enable Option "${o.name}"`,
+                    name: `Enable Option [${o.name}]`,
                     path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}`,
                     tags: ['mod', 'option', 'enable'],
-                    content: `/modset Self "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
+                    args: args,
+                    content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
                 };
             });
 
@@ -329,14 +354,18 @@ function normalize(path) {
                 new("Moodles",
             [new("Moodles.GetRegisteredMoodlesInfo")],
 """
+// Target name
+var args = 'self';
+
 function main(moodlesJson) {
      var moodles = JSON.parse(moodlesJson);
      var macros = moodles.map(m => {
         return {
-            name: `Apply Moodle "${m.Item3}"`,
+            name: `Apply Moodle [${m.Item3}]`,
             path: `Moodles/${m.Item3}/Apply`,
             tags: ['moodle', 'apply'],
-            content: `/moodle help apply self moodle ${m.Item1}`
+            args: args,
+            content: `/moodle apply {0} moodle ${m.Item1}`
         };
      });
      return JSON.stringify(macros);
@@ -352,10 +381,10 @@ function main(moodlesJson) {
 
     public List<GeneratorIpcConfig> IpcConfigs { get; set; } = [];
 
-    [ObsoleteAttribute("IpcName deprecated to support multiple ipcs in config version 1")]
+    [ObsoleteAttribute($"IpcName deprecated to support multiple ipcs in config version 1")]
     public string IpcName { get; set; } = string.Empty;
 
-    [ObsoleteAttribute("IpcArgs deprecated to support multiple ipcs in config version 1")]
+    [ObsoleteAttribute($"IpcArgs deprecated to support multiple ipcs in config version 1")]
     public string IpcArgs { get; set; } = string.Empty;
 
     public string Script { get; set; } = string.Empty;

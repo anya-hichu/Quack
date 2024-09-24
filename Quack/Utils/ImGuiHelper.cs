@@ -4,7 +4,7 @@ namespace Quack.Utils;
 
 public class ImGuiHelper
 {
-    public unsafe static ImGuiListClipperPtr NewListClipper()
+    public static unsafe ImGuiListClipperPtr NewListClipper()
     {
         return new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
     }
