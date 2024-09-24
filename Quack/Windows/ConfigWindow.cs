@@ -165,7 +165,7 @@ public partial class ConfigWindow : Window, IDisposable
             filter
         );
 
-        MacroExecutionGui.UpdateExecutions(filteredMacros);
+        MacroExecutionGui.UpdateExecutions(CachedMacros.FindFirst(m => m.Path == selectedPath, out var selectedMacro) ? filteredMacros.Union([selectedMacro]) : filteredMacros);
     }
 
 
@@ -264,28 +264,28 @@ public partial class ConfigWindow : Window, IDisposable
         ImGui.SameLine();
         if (ImGui.BeginChild("macro", new(ImGui.GetWindowWidth() * 0.7f, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 10)))
         {
-            CachedMacros.FindFirst(m => m.Path == MacrosState.SelectedPath, out var macro);
-            if (macro != null)
+            CachedMacros.FindFirst(m => m.Path == MacrosState.SelectedPath, out var selectedMacro);
+            if (selectedMacro != null)
             {
-                var i = CachedMacros.IndexOf(macro);
+                var i = CachedMacros.IndexOf(selectedMacro);
 
-                var name = macro.Name;
+                var name = selectedMacro.Name;
                 if (ImGui.InputText($"Name###macros{i}Name", ref name, ushort.MaxValue))
                 {
-                    macro.Name = name;
-                    MacroTable.Update(macro);
+                    selectedMacro.Name = name;
+                    MacroTable.Update(selectedMacro);
                 }
 
                 var deleteMacroPopupId = $"macros{i}DeletePopup";
                 if (ImGui.BeginPopup(deleteMacroPopupId))
                 {
-                    ImGui.Text($"Confirm deleting {(macro.Name.IsNullOrWhitespace()? BLANK_NAME : macro.Name)} macro?");
+                    ImGui.Text($"Confirm deleting {(selectedMacro.Name.IsNullOrWhitespace()? BLANK_NAME : selectedMacro.Name)} macro?");
 
                     ImGui.SetCursorPosX(15);
                     ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                     if (ImGui.Button($"Yes###{deleteMacroPopupId}Yes", new(100, 30)))
                     {
-                        DeleteMacro(macro);
+                        DeleteMacro(selectedMacro);
                         ImGui.CloseCurrentPopup();
                     }
                     ImGui.PopStyleColor();
@@ -315,10 +315,10 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                     if (ImGui.Button("Yes", new(100, 30)))
                     {
-                        var oldPath = macro.Path;
-                        macro.Path = TmpConflictPath!;
+                        var oldPath = selectedMacro.Path;
+                        selectedMacro.Path = TmpConflictPath!;
                         MacrosState.SelectedPath = TmpConflictPath;
-                        MacroTable.Update(oldPath, macro);
+                        MacroTable.Update(oldPath, selectedMacro);
 
                         TmpConflictPath = null;
                         ImGui.CloseCurrentPopup();
@@ -334,32 +334,32 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.EndPopup();
                 }
 
-                var path = TmpConflictPath != null ? TmpConflictPath : macro.Path;
+                var path = TmpConflictPath != null ? TmpConflictPath : selectedMacro.Path;
                 if (ImGui.InputText($"Path###macros{i}Path", ref path, ushort.MaxValue))
                 {
                     TmpConflictPath = null;
-                    if (CachedMacros.FindFirst(m => m.Path == path, out var conflictingMacro) && macro != conflictingMacro)
+                    if (CachedMacros.FindFirst(m => m.Path == path, out var conflictingMacro) && selectedMacro != conflictingMacro)
                     {
                         TmpConflictPath = path;
                         ImGui.OpenPopup(pathConflictPopupId);
                     } 
                     else
                     {
-                        var oldPath = macro.Path;
-                        macro.Path = path;
+                        var oldPath = selectedMacro.Path;
+                        selectedMacro.Path = path;
                         MacrosState.SelectedPath = path;
-                        MacroTable.Update(oldPath, macro);
+                        MacroTable.Update(oldPath, selectedMacro);
                     }
                 }
 
-                var tags = string.Join(',', macro.Tags);
+                var tags = string.Join(',', selectedMacro.Tags);
                 if (ImGui.InputText($"Tags (comma separated)###macros{i}Tags", ref tags, ushort.MaxValue))
                 {
-                    macro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
-                    MacroTable.Update(macro);
+                    selectedMacro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
+                    MacroTable.Update(selectedMacro);
                 }
 
-                var command = macro.Command;
+                var command = selectedMacro.Command;
                 var commandInput = ImGui.InputText($"Command###macros{i}Command", ref command, ushort.MaxValue);
                 if (ImGui.IsItemHovered())
                 {
@@ -367,13 +367,13 @@ public partial class ConfigWindow : Window, IDisposable
                 }
                 if (commandInput)
                 {
-                    macro.Command = command;
-                    MacroTable.Update(macro);
+                    selectedMacro.Command = command;
+                    MacroTable.Update(selectedMacro);
                 }
 
                 if (!command.IsNullOrWhitespace())
                 {
-                    var conflictingMacros = CachedMacros.Where(m => m != macro && m.Command == macro.Command);
+                    var conflictingMacros = CachedMacros.Where(m => m != selectedMacro && m.Command == selectedMacro.Command);
                     if (conflictingMacros.Any())
                     {
                         ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.DalamudRed);
@@ -382,7 +382,7 @@ public partial class ConfigWindow : Window, IDisposable
                     }
                 }
 
-                var args = macro.Args;
+                var args = selectedMacro.Args;
                 var argsInput = ImGui.InputText($"Args###macros{i}Args", ref args, ushort.MaxValue);
                 if (ImGui.IsItemHovered())
                 {
@@ -390,26 +390,26 @@ public partial class ConfigWindow : Window, IDisposable
                 }
                 if (argsInput)
                 {
-                    macro.Args = args;
-                    MacroTable.Update(macro);
+                    selectedMacro.Args = args;
+                    MacroTable.Update(selectedMacro);
                 }
 
-                var content = macro.Content;
+                var content = selectedMacro.Content;
                 if (ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 30)))
                 {
-                    macro.Content = content;
-                    MacroTable.Update(macro);
+                    selectedMacro.Content = content;
+                    MacroTable.Update(selectedMacro);
                 }
 
-                var loop = macro.Loop;
+                var loop = selectedMacro.Loop;
                 if (ImGui.Checkbox($"Loop###macros{i}Loop", ref loop))
                 {
-                    macro.Loop = loop;
-                    MacroTable.Update(macro);
+                    selectedMacro.Loop = loop;
+                    MacroTable.Update(selectedMacro);
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 255);
-                MacroExecutionGui.Button(macro);
+                MacroExecutionGui.Button(selectedMacro);
             }
             else
             {
@@ -747,7 +747,7 @@ public partial class ConfigWindow : Window, IDisposable
                                         ImGui.Text($"In=[{string.Join(", ", genericTypes.Take(genericTypes.Length - 1).Select(a => a.Name))}]");
 
                                         var ipcArgs = ipcConfig.Args;
-                                        ImGui.SetCursorPosX(40);
+                                        ImGui.SetCursorPosX(20);
                                         ImGui.PushItemWidth(500);
                                         if (ImGui.InputText($"Args###generatorConfigs{hash}IpcConfigs{i}Args", ref ipcArgs, ushort.MaxValue))
                                         {

@@ -365,7 +365,7 @@ function main(moodlesJson) {
             path: `Moodles/${m.Item3}/Apply`,
             tags: ['moodle', 'apply'],
             args: args,
-            content: `/moodle apply {0} moodle ${m.Item1}`
+            content: `/moodle apply {0} moodle "${m.Item1}"`
         };
      });
      return JSON.stringify(macros);

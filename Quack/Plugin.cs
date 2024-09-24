@@ -24,7 +24,7 @@ public sealed class Plugin : IDalamudPlugin
 {
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, exec and cancel";
-    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path]( [Formatting (false/true/format)])?( [Argument Value])*";
+    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path or Command]( [Formatting (false/true/format)])?( [Argument Value])*";
 
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
@@ -160,13 +160,14 @@ public sealed class Plugin : IDalamudPlugin
                 return;
             }
 
-            var nameOrPath = arguments[1];
-            var macro = MacroTable.FindBy("path", nameOrPath);
-            macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+            var macroLookup = arguments[1];
+            var macro = MacroTable.FindBy("path", macroLookup);
+            macro = macro ?? MacroTable.FindBy("name", macroLookup);
+            macro = macro ?? MacroTable.FindBy("command", macroLookup);
 
             if (macro == null)
             {
-                ChatGui.Print($"No macro found with name or path '{nameOrPath}'");
+                ChatGui.Print($"No macro found with lookup '{macroLookup}'");
                 return;
             }
 
@@ -190,13 +191,14 @@ public sealed class Plugin : IDalamudPlugin
                 return;
             }
 
-            var nameOrPath = arguments[1];
-            var macro = MacroTable.FindBy("path", nameOrPath);
-            macro = macro ?? MacroTable.FindBy("name", nameOrPath);
+            var macroLookup = arguments[1];
+            var macro = MacroTable.FindBy("path", macroLookup);
+            macro = macro ?? MacroTable.FindBy("name", macroLookup);
+            macro = macro ?? MacroTable.FindBy("command", macroLookup);
 
             if (macro == null)
             {
-                ChatGui.PrintError($"No macro found with name or path '{nameOrPath}'");
+                ChatGui.PrintError($"No macro found with lookup '{macroLookup}'");
                 return;
             }
 
