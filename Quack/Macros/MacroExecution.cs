@@ -6,7 +6,7 @@ namespace Quack.Macros;
 
 public partial class MacroExecution(Macro macro, Config config, MacroExecutor macroExecutor)
 {
-    [GeneratedRegexAttribute(@"(?:^|[^{])\{(?<index>\d)\}(?:[^}]|$)")]
+    [GeneratedRegexAttribute(@"(?:^|[^{])\{(?<index>\d+)\}(?:[^}]|$)")]
     private static partial Regex ContentPlaceholderGeneratedRegex();
 
     public Macro Macro { get; init; } = macro;
