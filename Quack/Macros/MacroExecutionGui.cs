@@ -57,7 +57,7 @@ public class MacroExecutionGui(Config config, MacroExecutor macroExecutor)
                 }
                 else
                 {
-                    ImGui.Text($"Execution requires {macroExecution.CountContentPlaceholders()} argument(s)");
+                    ImGui.Text($"Execution requires {macroExecution.CountDistinctContentPlaceholders()} argument(s)");
                 }
                 ImGui.EndPopup();
             }
@@ -109,6 +109,6 @@ public class MacroExecutionGui(Config config, MacroExecutor macroExecutor)
 
     public static string GetNonExecutableMessage(MacroExecution macroExecution)
     {
-        return $"Expected {macroExecution.CountContentPlaceholders()} argument(s) for macro '{macroExecution.Macro.Name}' (parsed {macroExecution.ParsedArgs.Length})";
+        return $"Expected {macroExecution.CountDistinctContentPlaceholders()} argument(s) for macro '{macroExecution.Macro.Name}' (parsed {macroExecution.ParsedArgs.Length})";
     }
 }
