@@ -6,7 +6,7 @@ namespace Quack.Macros;
 
 public partial class MacroExecution(Macro macro, Config config, MacroExecutor macroExecutor)
 {
-    [GeneratedRegexAttribute(@"(?:^|[^{])(\{\d\})(?:[^}]|$)")]
+    [GeneratedRegexAttribute(@"(?:^|[^{])\{(?<index>\d)\}(?:[^}]|$)")]
     private static partial Regex ContentPlaceholderGeneratedRegex();
 
     public Macro Macro { get; init; } = macro;
@@ -19,10 +19,10 @@ public partial class MacroExecution(Macro macro, Config config, MacroExecutor ma
 
     public string[] ParsedArgs { get; set; } = []; 
 
-    public int CountDistinctContentPlaceholders()
+    public int RequiredArgumentsLength()
     {
-        var placeholderMatches = ContentPlaceholderGeneratedRegex().Matches(Macro.Content);
-        return placeholderMatches.Select(m => m.Value).Distinct().Count();
+        var matches = ContentPlaceholderGeneratedRegex().Matches(Macro.Content);
+        return matches.Select(m => int.Parse(m.Groups["index"].Value)).Max() + 1;
     }
 
     public void ParseArgs()
@@ -32,7 +32,7 @@ public partial class MacroExecution(Macro macro, Config config, MacroExecutor ma
 
     public bool IsExecutable()
     {
-        return CountDistinctContentPlaceholders() == ParsedArgs.Length;
+        return RequiredArgumentsLength() == ParsedArgs.Length;
     }
 
     public void UseConfigFormat()
