@@ -22,7 +22,7 @@ public partial class MacroExecution(Macro macro, Config config, MacroExecutor ma
     public int RequiredArgumentsLength()
     {
         var matches = ContentPlaceholderGeneratedRegex().Matches(Macro.Content);
-        return matches.Select(m => int.Parse(m.Groups["index"].Value)).Max() + 1;
+        return matches.Count > 0 ? matches.Select(m => int.Parse(m.Groups["index"].Value)).Max() + 1 : 0;
     }
 
     public void ParseArgs()
