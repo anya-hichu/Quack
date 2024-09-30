@@ -170,18 +170,18 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
         if (result > 0)
         {
             OnChange?.Invoke();
-            PluginLog.Debug("Notified macros changed");
+            PluginLog.Verbose("Notified macros changed");
         }
     }
 
     private void LogQuery(string query, int result)
     {
-        PluginLog.Debug($"Executed query '{query}' with result {result}");
+        PluginLog.Verbose($"Executed query '{query}' with result {result}");
     }
 
     private void LogQuery(string query, int result, object[] args)
     {
-        PluginLog.Debug($"Executed query '{query}' {JsonSerializer.Serialize(args)} with result {result}");
+        PluginLog.Verbose($"Executed query '{query}' {JsonSerializer.Serialize(args)} with result {result}");
     }
 
     private static object[] ToValues(Macro macro)

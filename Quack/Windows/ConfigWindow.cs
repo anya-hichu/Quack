@@ -156,7 +156,7 @@ public partial class ConfigWindow : Window, IDisposable
     {
         var selectedPath = MacrosState?.SelectedPath;
         var filter = MacrosState != null? MacrosState.Filter : string.Empty;
-        PluginLog.Debug($"Filtering {CachedMacros.Count} macros with filter '{filter}'");
+        PluginLog.Verbose($"Filtering {CachedMacros.Count} macros with filter '{filter}'");
         var filteredMacros = MacroSearch.Lookup(CachedMacros, filter);
         
         MacrosState = new(

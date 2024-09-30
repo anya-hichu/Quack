@@ -187,7 +187,7 @@ function main(designsJson) {
     const macros = designs.map(d => {
         const contentLines = [
             '/penumbra bulktag disable {0} | all',
-            '/glamour apply {1} | <me>;true',
+            '/glamour apply {1} | <me>; true',
             `/glamour apply ${d.id} | <me>; true`
         ];
 
@@ -225,12 +225,16 @@ function main(titlesJson) {
         ];
         return {
             name: `Enable Honorific [${t.Title}]`,
-            path: `Honorifics/${t.Title}/Enable`,
+            path: `Honorifics/${escape(t.Title)}/Enable`,
             tags: ['honorific', 'title', 'enable'],
             content: contentLines.join("\n")
         };
     });
     return JSON.stringify(titleMacros.concat([disablehonorificsMacro]));
+}
+
+function escape(segment) {
+    return segment.replaceAll('/', '|');
 }
 """),
         new("Jobs",
@@ -265,7 +269,7 @@ function main(rawMacrosJson) {
     const macros = rawMacros.flatMap(m => {
         var setName = ['Individual', 'Shared'][m.set];
         return [{
-            name: m.name,
+            name: `Macro [${m.name || 'Blank'}]`,
             tags: ['macro', setName.toLowerCase()],
             path: `Macros/${setName}/${m.index}/${m.name}`,
             content: m.content

@@ -73,7 +73,6 @@ public sealed class Plugin : IDalamudPlugin
         migrator.ExecuteMigrations(Config);
 
         CachedMacros = MacroTable.List();
-
         MacroExecutor = new(Framework, new(SigScanner), PluginLog);
         MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
         {

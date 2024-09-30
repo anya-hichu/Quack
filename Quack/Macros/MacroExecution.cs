@@ -19,7 +19,7 @@ public partial class MacroExecution(Macro macro, Config config, MacroExecutor ma
 
     public string[] ParsedArgs { get; set; } = []; 
 
-    public int RequiredArgumentsLength()
+    public int RequiredArgsLength()
     {
         var matches = ContentPlaceholderGeneratedRegex().Matches(Macro.Content);
         return matches.Count > 0 ? matches.Select(m => int.Parse(m.Groups["index"].Value)).Max() + 1 : 0;
@@ -32,7 +32,7 @@ public partial class MacroExecution(Macro macro, Config config, MacroExecutor ma
 
     public bool IsExecutable()
     {
-        return RequiredArgumentsLength() == ParsedArgs.Length;
+        return RequiredArgsLength() == ParsedArgs.Length;
     }
 
     public void UseConfigFormat()

@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
@@ -9,17 +10,18 @@ using System.Threading.Tasks;
 
 namespace Quack.Macros;
 
-public partial class MacroExecutor : IDisposable
+public unsafe partial class MacroExecutor : IDisposable
 {
+    private const int DEFAULT_INTERVAL = 20;
+
     public const string DEFAULT_FORMAT = "{0}";
 
     [GeneratedRegexAttribute(@"<wait\.(\d+)>")]
     private static partial Regex WaitTimeGeneratedRegex();
-    
+
     private IFramework Framework { get; init; }
     private Chat Chat { get; init; }
     private IPluginLog PluginLog { get; init; }
-    private List<CancellationTokenSource> CancellationTokenSources { get; init; } = [];
     private Queue<string> PendingMessages { get; init; } = new();
 
     public MacroExecutor(IFramework framework, Chat chat, IPluginLog pluginLog)
@@ -27,7 +29,6 @@ public partial class MacroExecutor : IDisposable
         Framework = framework;
         Chat = chat;
         PluginLog = pluginLog;
-
 
         Framework.Update += OnUpdate;
     }
@@ -41,72 +42,76 @@ public partial class MacroExecutor : IDisposable
 
     public void OnUpdate(IFramework framework)
     {
-        while(PendingMessages.TryDequeue(out var message))
+        while (PendingMessages.TryDequeue(out var message))
         {
-            Chat.SendMessage(message);
+            if (RaptureShellModule.Instance()->MacroLocked)
+            {
+                Chat.SendMessage(message);
+            }
         }
     }
 
     public void ExecuteTask(Macro macro, string format = DEFAULT_FORMAT, params string[] args)
     {
-        var cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = cancellationTokenSource.Token;
         Task.Run(() =>
         {
             try
             {
+                RaptureShellModule.Instance()->MacroLocked = true;
                 PluginLog.Debug($"Task #{Task.CurrentId} executing macro '{macro.Name}' ({macro.Path}) with format '{format}' and args [{string.Join(',', args)}]");
-                CancellationTokenSources.Add(cancellationTokenSource);
-
-                foreach (var command in macro.Content.Format(args).Split("\n"))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    if (!command.IsNullOrWhitespace())
-                    {
-                        var commandWithoutWait = WaitTimeGeneratedRegex().Replace(command, string.Empty);
-                        if (!commandWithoutWait.IsNullOrWhitespace())
-                        {
-                            var message = string.Format(new PMFormatter(), format, commandWithoutWait);
-                            PendingMessages.Enqueue(message);
-                        }
-                            
-                        var waitTimeMatch = WaitTimeGeneratedRegex().Match(command);
-                        if (waitTimeMatch != null && waitTimeMatch.Success)
-                        {
-                            var waitTimeValue = waitTimeMatch.Groups[1].Value;
-                            PluginLog.Debug($"Pausing execution #{Task.CurrentId} inside macro '{macro.Name}' ({macro.Path}) for {waitTimeValue} sec(s) to respect {waitTimeMatch.Value}");
-                            Thread.Sleep(int.Parse(waitTimeValue) * 1000);
-                        }
-                    }
-                }
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (macro.Loop)
-                {
-                    ExecuteTask(macro, format, args);
-                }
-            }
-            catch(OperationCanceledException)
-            {
-                PluginLog.Debug($"Canceled execution #{Task.CurrentId} for macro '{macro.Name}' ({macro.Path})");
-            }
+                Execute(macro, format, args);
+            } 
             finally
             {
-                CancellationTokenSources.Remove(cancellationTokenSource);
+                RaptureShellModule.Instance()->MacroLocked = false;
             }
-        }, cancellationToken);
+        });
+    }
+
+    private void Execute(Macro macro, string format, string[] args)
+    {
+        var formattedContent = macro.Content.Format(args);
+        PluginLog.Verbose($"Executing macro content inside task #{Task.CurrentId}:\n{formattedContent}");
+
+        var lines = formattedContent.Split("\n");
+        for (var i = 0; i < lines.Length && RaptureShellModule.Instance()->MacroLocked; i++)
+        {
+            var line = lines[i];
+
+            if (!line.IsNullOrWhitespace())
+            {
+                var waitTimeMatch = WaitTimeGeneratedRegex().Match(line);
+                var lineWithoutWait = waitTimeMatch.Success ? WaitTimeGeneratedRegex().Replace(line, string.Empty) : line;
+
+                var message = string.Format(new PMFormatter(), format, lineWithoutWait);
+                PendingMessages.Enqueue(message);
+
+                if (waitTimeMatch.Success)
+                {
+                    var waitTimeValue = waitTimeMatch.Groups[1].Value;
+                    PluginLog.Verbose($"Pausing execution #{Task.CurrentId} inside macro '{macro.Name}' ({macro.Path}) at line #{i + 1} for {waitTimeValue} sec(s)");
+                    Thread.Sleep(int.Parse(waitTimeValue) * 1000);
+                } 
+                else
+                {
+                    Thread.Sleep(DEFAULT_INTERVAL);
+                }
+            }
+        }
+
+        if (macro.Loop && RaptureShellModule.Instance()->MacroLocked)
+        {
+            Execute(macro, format, args);
+        }
     }
 
     public bool HasRunningTasks()
     {
-        return CancellationTokenSources.Count > 0;
+        return RaptureShellModule.Instance()->MacroLocked;
     }
 
     public void CancelTasks()
     {
-        CancellationTokenSources.ForEach(s => s.Cancel());
-        CancellationTokenSources.Clear();
+        Chat.SendMessage("/macrocancel");
     }
 }

@@ -57,7 +57,7 @@ public class MacroExecutionGui(Config config, MacroExecutor macroExecutor)
                 }
                 else
                 {
-                    ImGui.Text($"Execution requires {macroExecution.RequiredArgumentsLength()} argument(s)");
+                    ImGui.Text($"Execution requires {macroExecution.RequiredArgsLength()} argument(s)");
                 }
                 ImGui.EndPopup();
             }
@@ -109,6 +109,6 @@ public class MacroExecutionGui(Config config, MacroExecutor macroExecutor)
 
     public static string GetNonExecutableMessage(MacroExecution macroExecution)
     {
-        return $"Expected {macroExecution.RequiredArgumentsLength()} argument(s) for macro '{macroExecution.Macro.Name}' (parsed {macroExecution.ParsedArgs.Length})";
+        return $"Expected {macroExecution.RequiredArgsLength()} argument(s) for macro '{macroExecution.Macro.Name}' (parsed {macroExecution.ParsedArgs.Length})";
     }
 }
