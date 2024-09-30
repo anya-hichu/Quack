@@ -23,6 +23,7 @@ public unsafe partial class MacroExecutor : IDisposable
     private Chat Chat { get; init; }
     private IPluginLog PluginLog { get; init; }
     private Queue<string> PendingMessages { get; init; } = new();
+    private List<CancellationTokenSource> CancellationTokenSources { get; set; } = [];
 
     public MacroExecutor(IFramework framework, Chat chat, IPluginLog pluginLog)
     {
@@ -36,8 +37,8 @@ public unsafe partial class MacroExecutor : IDisposable
     public void Dispose()
     {
         Framework.Update -= OnUpdate;
-
         CancelTasks();
+        CancellationTokenSources.ForEach(t => t.Cancel());
     }
 
     public void OnUpdate(IFramework framework)
@@ -53,19 +54,29 @@ public unsafe partial class MacroExecutor : IDisposable
 
     public void ExecuteTask(Macro macro, string format = DEFAULT_FORMAT, params string[] args)
     {
+        var cancellationTokenSource = new CancellationTokenSource();
         Task.Run(() =>
         {
             try
             {
-                RaptureShellModule.Instance()->MacroLocked = true;
+                if (CancellationTokenSources.Count == 0)
+                {
+                    RaptureShellModule.Instance()->MacroLocked = true;
+                }
+                CancellationTokenSources.Add(cancellationTokenSource);
+
                 PluginLog.Debug($"Task #{Task.CurrentId} executing macro '{macro.Name}' ({macro.Path}) with format '{format}' and args [{string.Join(',', args)}]");
                 Execute(macro, format, args);
             } 
             finally
             {
-                RaptureShellModule.Instance()->MacroLocked = false;
+                CancellationTokenSources.Remove(cancellationTokenSource);
+                if (CancellationTokenSources.Count == 0)
+                {
+                    RaptureShellModule.Instance()->MacroLocked = false;
+                }
             }
-        });
+        }, cancellationTokenSource.Token);
     }
 
     private void Execute(Macro macro, string format, string[] args)
