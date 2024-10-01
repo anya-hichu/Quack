@@ -64,15 +64,15 @@ function main(modsJson, emotesJson) {
                 const optionCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, optionGamePaths);
 
                 return optionCommandsWithPoseIndex.map(([command, poseIndex]) => {
+                    const emoteCommands = buildCommands(command, poseIndex);
                     const contentLines = [
+                        `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" "${setting.name}" == "${option.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
                         `/penumbra bulktag disable {0} | ${command}`,
                         `/modset {0} "${mod.dir}" "${mod.name}" "${setting.name}" = "${option.name}"`,
                         `/penumbra mod enable {0} | ${mod.dir}`,
                         '/penumbra redraw <me> <wait.1>'
-                    ];
-
-                    const commandPath = pushCommandWithPose(contentLines, command, poseIndex);
-
+                    ].concat(emoteCommands);
+                    const commandPath= buildCommandPath(command, poseIndex); 
                     return {
                         name: `Custom Emote [${option.name}] [${commandPath}]`,
                         path: `Mods/${normalize(mod.path)}/Settings/${escape(setting.name)}/Options/${escape(option.name)}/Emotes${commandPath}`,
@@ -99,14 +99,14 @@ function main(modsJson, emotesJson) {
             }
 
             return commandsWithPoseIndex.map(([command, poseIndex]) => {
+               const emoteCommands = buildCommands(command, poseIndex);
                 const contentLines = [
+                    `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
                     `/penumbra bulktag disable {0} | ${command}`,
                     `/penumbra mod enable {0} | ${mod.dir}`,
                     '/penumbra redraw <me> <wait.1>'
-                ];
-
-                const commandPath = pushCommandWithPose(contentLines, command, poseIndex);
-
+                ].concat(emoteCommands);
+                const commandPath = buildCommandPath(command, poseIndex);
                 return {
                     name: `Custom Emote [${mod.name}] [${commandPath}]`,
                     path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
@@ -135,23 +135,36 @@ function lookupCommandsWithPoseIndex(emotes, gamePaths) {
     });
 }
 
-function pushCommandWithPose(contentLines, command, poseIndex) {
+function buildCommands(command, poseIndex) {
     if (poseIndex > -1) {
         if (command == idlePseudoEmote.command) {
-            contentLines.push(`/dpose ${poseIndex}`);
-            return `/idle (${poseIndex})`;
+            return [`/dpose ${poseIndex}`];
         } else {
-            contentLines.push(`${command} <wait.1>`, `/dpose ${poseIndex}`);
+            return [`${command} <wait.1>`, `/dpose ${poseIndex}`];
+        }
+    } else {
+        return [command];
+    }
+}
+
+function buildCommandPath(command, poseIndex) {
+    if (poseIndex > -1) {
+        if (command == idlePseudoEmote.command) {
+            return `/idle ${poseIndex}`;
+        } else {
             return `${command} (${poseIndex})`;
         }
     } else {
-        contentLines.push(command);
         return command;
     }
 }
 
 function escape(segment) {
     return segment.replaceAll('/', '|');
+}
+
+function escapeCommand(command) {
+    return `"${command.replaceAll('[', '[[').replaceAll(']', ']]').replaceAll('<', '[').replaceAll('>', ']')}"`
 }
 
 function normalize(path) {

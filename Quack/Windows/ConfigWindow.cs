@@ -567,20 +567,20 @@ public partial class ConfigWindow : Window, IDisposable
             NewGeneratorConfig();
         }
 
-        ImGui.SameLine(ImGui.GetWindowWidth() - 310);
-        if (ImGui.Button("Export##generatorConfigsExport"))
+        ImGui.SameLine(ImGui.GetWindowWidth() - 340);
+        if (ImGui.Button("Export All##generatorConfigsExportAll"))
         {
-            ExportGeneratorConfigs();
+            ExportGeneratorConfigs(Config.GeneratorConfigs);
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Import##generatorConfigsExport"))
+        if (ImGui.Button("Import All##generatorConfigsImportAll"))
         {
             ImportGeneratorConfigs();
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Recreate Defaults##generatorConfigsAppendDefaults"))
+        if (ImGui.Button("Recreate Defaults##generatorConfigsRecreateDefaults"))
         {
             RecreateDefaultGeneratorConfigs();
         }
@@ -639,14 +639,14 @@ public partial class ConfigWindow : Window, IDisposable
         }
     }
 
-    private void ExportGeneratorConfigs()
+    private void ExportGeneratorConfigs(IEnumerable<GeneratorConfig> generatorConfigs)
     {
         FileDialogManager.SaveFileDialog("Export Generators", ".*", "generators.json", ".json", (valid, path) =>
         {
             if (valid)
             {
                 using var file = File.CreateText(path);
-                new JsonSerializer().Serialize(file, Config.GeneratorConfigs);
+                new JsonSerializer().Serialize(file, generatorConfigs);
             }
         });
     }
@@ -681,7 +681,12 @@ public partial class ConfigWindow : Window, IDisposable
                 Config.Save();
             }
 
-            ImGui.SameLine(ImGui.GetWindowWidth() - 65);
+            ImGui.SameLine(ImGui.GetWindowWidth() - 115);
+            if (ImGui.Button("Export##generatorConfigsExport"))
+            {
+                ExportGeneratorConfigs([generatorConfig]);
+            }
+            ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
             if (ImGui.Button($"Delete###generatorConfigs{hash}Delete"))
             {
