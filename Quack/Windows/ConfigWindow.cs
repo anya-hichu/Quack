@@ -316,7 +316,10 @@ public partial class ConfigWindow : Window, IDisposable
                     if (ImGui.Button("Yes", new(100, 30)))
                     {
                         var oldPath = selectedMacro.Path;
+                        CachedMacros.Remove(selectedMacro);
                         selectedMacro.Path = TmpConflictPath!;
+                        CachedMacros.Add(selectedMacro);
+
                         MacrosState.SelectedPath = TmpConflictPath;
                         MacroTable.Update(oldPath, selectedMacro);
 
@@ -346,7 +349,9 @@ public partial class ConfigWindow : Window, IDisposable
                     else
                     {
                         var oldPath = selectedMacro.Path;
+                        CachedMacros.Remove(selectedMacro);
                         selectedMacro.Path = path;
+                        CachedMacros.Add(selectedMacro);
                         MacrosState.SelectedPath = path;
                         MacroTable.Update(oldPath, selectedMacro);
                     }
@@ -464,7 +469,7 @@ public partial class ConfigWindow : Window, IDisposable
                 var opened = ImGui.TreeNodeEx($"{(name.IsNullOrWhitespace() ? BLANK_NAME : name)}###macro{node.Item}TreeLeaf", flags);
 
                 var popupId = $"macro{node.Item}TreeLeafPopup";
-                if (ImGui.BeginPopupContextItem($"Export###{popupId}"))
+                if (ImGui.BeginPopupContextItem(popupId))
                 {
                     CachedMacros.FindFirst(m => m.Path == node.Item, out var macro);
                     if (macro != null)

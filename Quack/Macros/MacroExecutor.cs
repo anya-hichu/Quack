@@ -12,8 +12,7 @@ namespace Quack.Macros;
 
 public unsafe partial class MacroExecutor : IDisposable
 {
-    private const int DEFAULT_INTERVAL = 20;
-
+    public const int DEFAULT_INTERVAL_MS = 20;
     public const string DEFAULT_FORMAT = "{0}";
 
     [GeneratedRegexAttribute(@"<wait\.(\d+)>")]
@@ -43,12 +42,9 @@ public unsafe partial class MacroExecutor : IDisposable
 
     public void OnUpdate(IFramework framework)
     {
-        while (PendingMessages.TryDequeue(out var message))
+        while (PendingMessages.TryDequeue(out var message) && RaptureShellModule.Instance()->MacroLocked)
         {
-            if (RaptureShellModule.Instance()->MacroLocked)
-            {
-                Chat.SendMessage(message);
-            }
+            Chat.SendMessage(message);
         }
     }
 
@@ -70,6 +66,12 @@ public unsafe partial class MacroExecutor : IDisposable
             } 
             finally
             {
+                // Wait until all the messages have been processed
+                while(PendingMessages.Count > 0)
+                {
+                    Thread.Sleep(DEFAULT_INTERVAL_MS);
+                }
+
                 CancellationTokenSources.Remove(cancellationTokenSource);
                 if (CancellationTokenSources.Count == 0)
                 {
@@ -105,7 +107,7 @@ public unsafe partial class MacroExecutor : IDisposable
                 } 
                 else
                 {
-                    Thread.Sleep(DEFAULT_INTERVAL);
+                    Thread.Sleep(DEFAULT_INTERVAL_MS);
                 }
             }
         }
