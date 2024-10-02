@@ -33,14 +33,18 @@ public unsafe class MacroSharedLock : IDisposable
         {
             SetGameLock(true);
         }
-        Ids.Add(id);
-        PluginLog.Verbose($"Acquired macro lock #{id} (current: [{string.Join(", ", Ids)}])");
+        if(Ids.Add(id))
+        {
+            PluginLog.Verbose($"Acquired macro lock #{id} (current: [{string.Join(", ", Ids)}])");
+        }
     }
 
     public void Release(int id)
     {
-        Ids.Remove(id);
-        PluginLog.Verbose($"Released macro lock #{id} (current: [{string.Join(", ", Ids)}])");
+        if(Ids.Remove(id))
+        {
+            PluginLog.Verbose($"Released macro lock #{id} (current: [{string.Join(", ", Ids)}])");
+        }
         if (Ids.Count == 0)
         {
             SetGameLock(false);
