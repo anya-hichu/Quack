@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Quack.Macros;
 
-public partial class MacroExecutor(ChatServer chatServer, MacroMultiLock macroMultiLock, IPluginLog pluginLog) : IDisposable
+public partial class MacroExecutor(ChatServer chatServer, MacroSharedLock macroSharedLock, IPluginLog pluginLog) : IDisposable
 {
     public static readonly int DEFAULT_MESSAGE_INTERVAL_MS = 60;
     public const string DEFAULT_FORMAT = "{0}";
@@ -18,7 +18,7 @@ public partial class MacroExecutor(ChatServer chatServer, MacroMultiLock macroMu
     private static partial Regex WaitTimeGeneratedRegex();
 
     private ChatServer ChatServer { get; init; } = chatServer;
-    private MacroMultiLock MacroMultiLock { get; init; } = macroMultiLock;
+    private MacroSharedLock MacroSharedLock { get; init; } = macroSharedLock;
     private IPluginLog PluginLog { get; init; } = pluginLog;
     private List<CancellationTokenSource> CancellationTokenSources { get; set; } = [];
 
@@ -36,13 +36,13 @@ public partial class MacroExecutor(ChatServer chatServer, MacroMultiLock macroMu
             var taskId = Task.CurrentId!.Value;
             try
             {
-                MacroMultiLock.Acquire(taskId);
+                MacroSharedLock.Acquire(taskId);
                 PluginLog.Debug($"Task #{taskId} executing macro '{macro.Name}' ({macro.Path}) with format '{format}' and args [{string.Join(',', args)}]");
                 Execute(macro, format, args);
             } 
             finally
             {
-                MacroMultiLock.Release(taskId);
+                MacroSharedLock.Release(taskId);
             }
             
         }, cancellationTokenSource.Token);
@@ -56,7 +56,7 @@ public partial class MacroExecutor(ChatServer chatServer, MacroMultiLock macroMu
         PluginLog.Verbose($"Executing macro content inside task #{taskId}:\n{formattedContent}");
 
         var lines = formattedContent.Split("\n");
-        for (var i = 0; i < lines.Length && MacroMultiLock.isAcquired(taskId); i++)
+        for (var i = 0; i < lines.Length && MacroSharedLock.isAcquired(taskId); i++)
         {
             var line = lines[i];
 
@@ -65,10 +65,10 @@ public partial class MacroExecutor(ChatServer chatServer, MacroMultiLock macroMu
                 var waitTimeMatch = WaitTimeGeneratedRegex().Match(line);
                 var lineWithoutWait = waitTimeMatch.Success ? WaitTimeGeneratedRegex().Replace(line, string.Empty) : line;
 
-                var message = string.Format(new PMFormatter(), format, lineWithoutWait).TrimEnd();
+                var message = string.Format(new PMFormatter(), format, lineWithoutWait);
 
                 ChatServer.SendMessage(message);
-                PluginLog.Verbose($"Send message: '{message}'");
+                PluginLog.Verbose($"Send chat message: '{message}'");
 
                 if (waitTimeMatch.Success)
                 {
@@ -84,7 +84,7 @@ public partial class MacroExecutor(ChatServer chatServer, MacroMultiLock macroMu
             }
         }
 
-        if (macro.Loop && MacroMultiLock.isAcquired(taskId))
+        if (macro.Loop && MacroSharedLock.isAcquired(taskId))
         {
             Execute(macro, format, args);
         }
@@ -92,11 +92,11 @@ public partial class MacroExecutor(ChatServer chatServer, MacroMultiLock macroMu
 
     public bool HasRunningTasks()
     {
-        return MacroMultiLock.isAcquired();
+        return MacroSharedLock.isAcquired();
     }
 
     public void CancelTasks()
     {
-        MacroMultiLock.ReleaseAll();
+        MacroSharedLock.ReleaseAll();
     }
 }

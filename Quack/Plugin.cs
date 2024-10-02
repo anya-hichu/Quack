@@ -50,7 +50,7 @@ public sealed class Plugin : IDalamudPlugin
     private SQLiteConnection DbConnection { get; init; }
     private HashSet<Macro> CachedMacros { get; init; }
     private MacroTable MacroTable { get; init; }
-    private MacroMultiLock MacroMultiLock { get; init; }
+    private MacroSharedLock MacroSharedLock { get; init; }
 
     public Plugin()
     {
@@ -75,8 +75,8 @@ public sealed class Plugin : IDalamudPlugin
 
         CachedMacros = MacroTable.List();
 
-        MacroMultiLock = new(Framework, PluginLog);
-        MacroExecutor = new(new(SigScanner), MacroMultiLock, PluginLog);
+        MacroSharedLock = new(Framework, PluginLog);
+        MacroExecutor = new(new(SigScanner), MacroSharedLock, PluginLog);
         MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
@@ -125,7 +125,7 @@ public sealed class Plugin : IDalamudPlugin
         MacroCommands.Dispose();
 
         DbConnection.Dispose();
-        MacroMultiLock.Dispose();
+        MacroSharedLock.Dispose();
     }
 
     private void OnCommand(string command, string args)

@@ -6,14 +6,14 @@ using System.Linq;
 
 namespace Quack.Macros;
 
-public unsafe class MacroMultiLock : IDisposable
+public unsafe class MacroSharedLock : IDisposable
 {
     private SortedSet<int> Ids { get; init; } = [];
     private IFramework Framework { get; init; }
     private IPluginLog PluginLog { get; init; }
     private RaptureShellModule* RaptureShell { get; init; } = RaptureShellModule.Instance();
 
-    public MacroMultiLock(IFramework framework, IPluginLog pluginLog)
+    public MacroSharedLock(IFramework framework, IPluginLog pluginLog)
     {
         Framework = framework;
         PluginLog = pluginLog;
@@ -31,27 +31,27 @@ public unsafe class MacroMultiLock : IDisposable
     {
         if (Ids.Count == 0)
         {
-            SetMacroLocked(true);
+            SetGameLock(true);
         }
         Ids.Add(id);
-        PluginLog.Verbose($"Acquired macro multi lock #{id} (current: [{string.Join(", ", Ids)}])");
+        PluginLog.Verbose($"Acquired macro lock #{id} (current: [{string.Join(", ", Ids)}])");
     }
 
     public void Release(int id)
     {
         Ids.Remove(id);
+        PluginLog.Verbose($"Released macro lock #{id} (current: [{string.Join(", ", Ids)}])");
         if (Ids.Count == 0)
         {
-            PluginLog.Verbose($"Released macro lock #{id} (current: [{string.Join(", ", Ids)}])");
-            SetMacroLocked(false);
+            SetGameLock(false);
         }
     }
 
     public void ReleaseAll()
     {
         Ids.Clear();
-        PluginLog.Verbose("Released macro multi lock");
-        SetMacroLocked(false);
+        PluginLog.Verbose("Released macro shared lock");
+        SetGameLock(false);
     }
 
     public bool isAcquired(int id)
@@ -72,15 +72,15 @@ public unsafe class MacroMultiLock : IDisposable
             {
                 var lastId = Ids.Last();
                 Ids.Remove(lastId);
-                PluginLog.Verbose($"Released macro multi lock #{lastId} through cancellation (current: [{string.Join(", ", Ids)}])");
+                PluginLog.Verbose($"Released macro shared lock #{lastId} through cancellation (current: [{string.Join(", ", Ids)}])");
 
                 var macroLocked = Ids.Count > 0;
-                SetMacroLocked(macroLocked);
+                SetGameLock(macroLocked);
             }
         }
     }
 
-    private void SetMacroLocked(bool value)
+    private void SetGameLock(bool value)
     {
         if (RaptureShell->MacroLocked != value)
         {
