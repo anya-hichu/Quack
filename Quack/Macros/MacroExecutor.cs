@@ -1,5 +1,6 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using Quack.Chat;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Quack.Macros;
 
-public partial class MacroExecutor(ChatServer chatServer, MacroSharedLock macroSharedLock, IPluginLog pluginLog) : IDisposable
+public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroSharedLock, IPluginLog pluginLog) : IDisposable
 {
     public static readonly int DEFAULT_MESSAGE_INTERVAL_MS = 60;
     public const string DEFAULT_FORMAT = "{0}";
@@ -17,7 +18,7 @@ public partial class MacroExecutor(ChatServer chatServer, MacroSharedLock macroS
     [GeneratedRegexAttribute(@"<wait\.(\d+)>")]
     private static partial Regex WaitTimeGeneratedRegex();
 
-    private ChatServer ChatServer { get; init; } = chatServer;
+    private ChatSender ChatSender { get; init; } = chatSender;
     private MacroSharedLock MacroSharedLock { get; init; } = macroSharedLock;
     private IPluginLog PluginLog { get; init; } = pluginLog;
     private List<CancellationTokenSource> CancellationTokenSources { get; set; } = [];
@@ -67,8 +68,7 @@ public partial class MacroExecutor(ChatServer chatServer, MacroSharedLock macroS
 
                 var message = string.Format(new PMFormatter(), format, lineWithoutWait);
 
-                ChatServer.SendMessage(message);
-                PluginLog.Verbose($"Send chat message: '{message}'");
+                ChatSender.Enqueue(taskId, message);
 
                 if (waitTimeMatch.Success)
                 {

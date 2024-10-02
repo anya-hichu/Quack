@@ -9,7 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
-namespace Quack.Utils;
+namespace Quack.Chat;
 
 /// <summary>
 /// A class containing chat functionality
@@ -22,11 +22,11 @@ public class ChatServer
         internal const string SanitiseString = "E8 ?? ?? ?? ?? EB 0A 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8D AE";
     }
 
-    private delegate void ProcessChatBoxDelegate(IntPtr uiModule, IntPtr message, IntPtr unused, byte a4);
+    private delegate void ProcessChatBoxDelegate(nint uiModule, nint message, nint unused, byte a4);
 
     private ProcessChatBoxDelegate? ProcessChatBox { get; }
 
-    private readonly unsafe delegate* unmanaged<Utf8String*, int, IntPtr, void> sanitiseString = null!;
+    private readonly unsafe delegate* unmanaged<Utf8String*, int, nint, void> sanitiseString = null!;
 
     internal ChatServer(ISigScanner scanner)
     {
@@ -39,7 +39,7 @@ public class ChatServer
         {
             if (scanner.TryScanText(Signatures.SanitiseString, out var sanitisePtr))
             {
-                sanitiseString = (delegate* unmanaged<Utf8String*, int, IntPtr, void>)sanitisePtr;
+                sanitiseString = (delegate* unmanaged<Utf8String*, int, nint, void>)sanitisePtr;
             }
         }
     }
@@ -64,13 +64,13 @@ public class ChatServer
             throw new InvalidOperationException("Could not find signature for chat sending");
         }
 
-        var uiModule = (IntPtr)Framework.Instance()->GetUIModule();
+        var uiModule = (nint)Framework.Instance()->GetUIModule();
 
         using var payload = new ChatPayload(message);
         var mem1 = Marshal.AllocHGlobal(400);
         Marshal.StructureToPtr(payload, mem1, false);
 
-        ProcessChatBox(uiModule, mem1, IntPtr.Zero, 0);
+        ProcessChatBox(uiModule, mem1, nint.Zero, 0);
 
         Marshal.FreeHGlobal(mem1);
     }
@@ -131,7 +131,7 @@ public class ChatServer
 
         var uText = Utf8String.FromString(text);
 
-        sanitiseString(uText, 0x27F, IntPtr.Zero);
+        sanitiseString(uText, 0x27F, nint.Zero);
         var sanitised = uText->ToString();
 
         uText->Dtor();
@@ -145,7 +145,7 @@ public class ChatServer
     private readonly struct ChatPayload : IDisposable
     {
         [FieldOffset(0)]
-        private readonly IntPtr textPtr;
+        private readonly nint textPtr;
 
         [FieldOffset(16)]
         private readonly ulong textLen;

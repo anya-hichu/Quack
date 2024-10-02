@@ -18,6 +18,7 @@ using JavaScriptEngineSwitcher.V8;
 using System.IO;
 using System.Collections.Generic;
 using SQLite;
+using Quack.Chat;
 namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
@@ -51,6 +52,7 @@ public sealed class Plugin : IDalamudPlugin
     private HashSet<Macro> CachedMacros { get; init; }
     private MacroTable MacroTable { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
+    private ChatSender ChatSender { get; init; }
 
     public Plugin()
     {
@@ -76,7 +78,8 @@ public sealed class Plugin : IDalamudPlugin
         CachedMacros = MacroTable.List();
 
         MacroSharedLock = new(Framework, PluginLog);
-        MacroExecutor = new(new(SigScanner), MacroSharedLock, PluginLog);
+        ChatSender = new(new(SigScanner), Framework, MacroSharedLock, PluginLog);
+        MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
         MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
@@ -126,6 +129,7 @@ public sealed class Plugin : IDalamudPlugin
 
         DbConnection.Dispose();
         MacroSharedLock.Dispose();
+        ChatSender.Dispose();
     }
 
     private void OnCommand(string command, string args)
