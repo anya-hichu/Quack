@@ -14,7 +14,7 @@ namespace Quack.Utils;
 /// <summary>
 /// A class containing chat functionality
 /// </summary>
-public class Chat
+public class ChatServer
 {
     private static class Signatures
     {
@@ -28,7 +28,7 @@ public class Chat
 
     private readonly unsafe delegate* unmanaged<Utf8String*, int, IntPtr, void> sanitiseString = null!;
 
-    internal Chat(ISigScanner scanner)
+    internal ChatServer(ISigScanner scanner)
     {
         if (scanner.TryScanText(Signatures.SendChat, out var processChatBoxPtr))
         {

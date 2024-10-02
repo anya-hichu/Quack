@@ -26,4 +26,4 @@ Installable using my custom repository (https://github.com/anya-hichu/DalamudPlu
 - `/quack config`
 - `/quack exec [Macro Name or Path]( [Formatting (false/true/format)])?( [Argument Value])*` (quoting support)
 - `[Macro Command]( [Argument Value])*`
-- `/quack cancel` (alias for /macrocancel)
+- `/quack cancel` - Cancel all executing macros (/macrocancel is scoped)
