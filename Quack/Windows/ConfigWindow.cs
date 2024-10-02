@@ -572,7 +572,7 @@ public partial class ConfigWindow : Window, IDisposable
             NewGeneratorConfig();
         }
 
-        ImGui.SameLine(ImGui.GetWindowWidth() - 340);
+        ImGui.SameLine(ImGui.GetWindowWidth() - 360);
         if (ImGui.Button("Export All##generatorConfigsExportAll"))
         {
             ExportGeneratorConfigs(Config.GeneratorConfigs);
@@ -585,7 +585,7 @@ public partial class ConfigWindow : Window, IDisposable
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Recreate Defaults##generatorConfigsRecreateDefaults"))
+        if (ImGui.Button($"Recreate Defaults (V{GeneratorConfig.DEFAULTS_VERSION})##generatorConfigsRecreateDefaults"))
         {
             RecreateDefaultGeneratorConfigs();
         }

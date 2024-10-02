@@ -9,8 +9,9 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
+    public static readonly int DEFAULTS_VERSION = 1;
     private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
-        new("Customize",
+        new($"Customize (V{DEFAULTS_VERSION})",
             [new("CustomizePlus.Profile.GetList")],
 """
 // Target name
@@ -36,7 +37,7 @@ function main(profilesJson) {
     return JSON.stringify(macros);
 }
 """),
-        new("Custom Emotes",
+        new($"Custom Emotes (V{DEFAULTS_VERSION})",
             [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS), new(EmotesIpc.LIST)],
 """
 // Requires "DeterministicPose" and "ModSettingCommands" plugins to be installed
@@ -171,7 +172,7 @@ function normalize(path) {
     return path.replaceAll('\\', '|');
 }
 """),
-        new("Emotes",
+        new($"Emotes (V{DEFAULTS_VERSION})",
             [new(EmotesIpc.LIST)],
 """
 function main(emotesJson) {
@@ -187,7 +188,7 @@ function main(emotesJson) {
     return JSON.stringify(macros);
 }
 """),
-        new("Glamours",
+        new($"Glamours (V{DEFAULTS_VERSION})",
             [new(GlamourerIpc.DESIGN_LIST)],
 """
 // Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
@@ -215,7 +216,7 @@ function main(designsJson) {
     return JSON.stringify(macros);
 }
 """),
-        new("Honorifics",
+        new($"Honorifics (V{DEFAULTS_VERSION})",
             [new("Honorific.GetCharacterTitleList", """["Character Name", WorldId]""")],
 """
 // Second IPC argument value (WorldId) can be found as key in %appdata%\xivlauncher\pluginConfigs\Honorific.json
@@ -250,7 +251,7 @@ function escape(segment) {
     return segment.replaceAll('/', '|');
 }
 """),
-        new("Jobs",
+        new($"Jobs (V{DEFAULTS_VERSION})",
             [],
 """
 // Requires Simple Tweak > Command > Equip Job Command to be enabled
@@ -274,7 +275,7 @@ function main() {
     return JSON.stringify(macros);
 }
 """),
-        new("Macros",
+        new($"Macros (V{DEFAULTS_VERSION})",
             [new("Quack.Macros.GetList")],
 """
 function main(rawMacrosJson) {
@@ -291,7 +292,7 @@ function main(rawMacrosJson) {
     return JSON.stringify(macros);
 }
 """),
-        new("Mods",
+        new($"Mods (V{DEFAULTS_VERSION})",
             [new(PenumbraIpc.MOD_LIST)],
 """
 // Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
@@ -323,7 +324,7 @@ function normalize(path) {
     return path.replaceAll('\\', '|');
 }
 """),
-        new("Mod Options",
+        new($"Mod Options (V{DEFAULTS_VERSION})",
             [new(PenumbraIpc.MOD_LIST_WITH_SETTINGS)],
 """
 // Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
@@ -336,21 +337,44 @@ function main(modsJson) {
 
     const macros = mods.flatMap(m => {
         return m.settings.groupSettings.flatMap(s => {
-            const groupMacros = [{
+            var isMulti = s.type == "Multi"
+            const groupMacros = isMulti ? [{
                 name: `Clear Option Group [${s.name}]`,
                 path: `Mods/${m.path}/Settings/${escape(s.name)}/Clear`,
                 tags: ['mod', 'options', 'clear'],
                 args: args,
                 content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" =`
-            }];
-            const optionMacros = s.options.map(o => {
-                return {
-                    name: `Enable Option [${o.name}]`,
-                    path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}`,
-                    tags: ['mod', 'option', 'enable'],
-                    args: args,
-                    content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
-                };
+            }] : []; 
+            const optionMacros = s.options.flatMap(o => {
+                if (isMulti) {
+                    return [{
+                        name: `Enable Exclusively Option [${o.name}]`,
+                        path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable [Exclusive]`,
+                        tags: ['mod', 'option', 'enable', 'exclusive'],
+                        args: args,
+                        content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
+                    }, {
+                        name: `Enable Option [${o.name}]`,
+                        path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable`,
+                        tags: ['mod', 'option', 'enable'],
+                        args: args,
+                        content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" += "${o.name}"`
+                    }, {
+                        name: `Disable Option [${o.name}]`,
+                        path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Disable`,
+                        tags: ['mod', 'option', 'disable'],
+                        args: args,
+                        content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" -= "${o.name}"`
+                    }];
+                } else {
+                    return [{
+                        name: `Enable Option [${o.name}]`,
+                        path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable`,
+                        tags: ['mod', 'option', 'enable'],
+                        args: args,
+                        content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
+                    }];
+                }
             });
 
             return groupMacros.concat(optionMacros);
@@ -368,7 +392,7 @@ function normalize(path) {
     return path.replaceAll('\\', '|');
 }
 """),
-                new("Moodles",
+        new($"Moodles (V{DEFAULTS_VERSION})",
             [new("Moodles.GetRegisteredMoodlesInfo")],
 """
 // Target name
