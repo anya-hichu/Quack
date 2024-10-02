@@ -35,7 +35,7 @@ public unsafe class MacroSharedLock : IDisposable
         }
         if(Ids.Add(id))
         {
-            PluginLog.Verbose($"Acquired macro lock #{id} (shared: [{string.Join(", ", Ids)}])");
+            PluginLog.Verbose($"Acquired macro shared lock #{id} [{string.Join(", ", Ids)}]");
         }
     }
 
@@ -43,7 +43,7 @@ public unsafe class MacroSharedLock : IDisposable
     {
         if(Ids.Remove(id))
         {
-            PluginLog.Verbose($"Released macro lock #{id} (shared: [{string.Join(", ", Ids)}])");
+            PluginLog.Verbose($"Released macro shared lock #{id} [{string.Join(", ", Ids)}]");
         }
         if (Ids.Count == 0)
         {
@@ -76,7 +76,7 @@ public unsafe class MacroSharedLock : IDisposable
             {
                 var lastId = Ids.Last();
                 Ids.Remove(lastId);
-                PluginLog.Verbose($"Released macro shared lock #{lastId} through cancellation (shared: [{string.Join(", ", Ids)}])");
+                PluginLog.Verbose($"Released macro shared lock #{lastId} through cancellation [{string.Join(", ", Ids)}]");
 
                 var macroLocked = Ids.Count > 0;
                 SetGameLock(macroLocked);
