@@ -298,7 +298,12 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.EndPopup();
                 }
 
-                ImGui.SameLine(ImGui.GetWindowWidth() - 80);
+                ImGui.SameLine(ImGui.GetWindowWidth() - 150);
+                if (ImGui.Button($"Duplicate###macros{i}Duplicate"))
+                {
+                    DuplicateMacro(selectedMacro);
+                }
+                ImGui.SameLine();
                 ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudRed);
                 if (ImGui.Button($"Delete###macros{i}Delete"))
                 {
@@ -400,14 +405,24 @@ public partial class ConfigWindow : Window, IDisposable
                 }
 
                 var content = selectedMacro.Content;
-                if (ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 30)))
+                var contentInput = ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 30));
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip("Additional behaviors:\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)");
+                }
+                if (contentInput)
                 {
                     selectedMacro.Content = content;
                     MacroTable.Update(selectedMacro);
                 }
 
                 var loop = selectedMacro.Loop;
-                if (ImGui.Checkbox($"Loop###macros{i}Loop", ref loop))
+                var loopInput = ImGui.Checkbox($"Loop###macros{i}Loop", ref loop);
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip("Execution can be stopped using 'Cancel All' button or '/quack cancel' command");
+                }
+                if (loopInput)
                 {
                     selectedMacro.Loop = loop;
                     MacroTable.Update(selectedMacro);
@@ -436,9 +451,13 @@ public partial class ConfigWindow : Window, IDisposable
             {
                 var opened = ImGui.TreeNodeEx($"{name}###macro{node.Item}TreeNode");
 
-                var popupId = $"Export###macro{node.Item}TreeNodePopup";
+                var popupId = $"macro{node.Item}TreeNodePopup";
                 if (ImGui.BeginPopupContextItem(popupId))
                 {
+                    if (ImGui.MenuItem($"New###{popupId}New"))
+                    {
+                        NewMacro($"{node.Item}/");
+                    }
                     var macros = CachedMacros.Where(m => m.Path.StartsWith($"{node.Item}/"));
                     if (ImGui.MenuItem($"Export###{popupId}Export"))
                     {
@@ -474,6 +493,11 @@ public partial class ConfigWindow : Window, IDisposable
                     CachedMacros.FindFirst(m => m.Path == node.Item, out var macro);
                     if (macro != null)
                     {
+                        if (ImGui.MenuItem($"Duplicate###{popupId}Duplicate"))
+                        {
+                            DuplicateMacro(macro);
+                        }
+
                         if (ImGui.MenuItem($"Export###{popupId}Export"))
                         {
                             ExportMacros([macro]);
@@ -500,11 +524,35 @@ public partial class ConfigWindow : Window, IDisposable
     }
     private void NewMacro()
     {
+        MaybeAddMacro(new());
+    }
+
+    private void NewMacro(string path)
+    {
         var newMacro = new Macro();
-        if (CachedMacros.Add(newMacro))
+        newMacro.Path = path;
+        MaybeAddMacro(newMacro);
+    }
+
+    private void DuplicateMacro(Macro macro)
+    {
+        var duplicateMacro = macro.Clone();
+        for (var i = 2; CachedMacros.Contains(duplicateMacro); i++)
         {
-            MacrosState.SelectedPath = newMacro.Path;
-            MacroTable.Insert(newMacro);
+            var suffix = $" ({i})";
+            duplicateMacro.Name = $"{macro.Name}{suffix}";
+            duplicateMacro.Path = $"{macro.Path}{suffix}";
+        }
+
+        MaybeAddMacro(duplicateMacro);
+    }
+
+    private void MaybeAddMacro(Macro macro)
+    {
+        if (CachedMacros.Add(macro))
+        {
+            MacrosState.SelectedPath = macro.Path;
+            MacroTable.Insert(macro);
         }
     }
 

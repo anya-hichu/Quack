@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Shell;
 using System;
 using System.Collections.Generic;
@@ -58,21 +59,26 @@ public unsafe class MacroSharedLock : IDisposable
         SetGameLock(false);
     }
 
-    public bool isAcquired(int id)
+    public bool IsAcquired(int id)
     {
         return Ids.Contains(id);
     }
 
-    public bool isAcquired()
+    public bool IsAcquired()
     {
         return Ids.Count > 0;
+    }
+
+    public bool HasAcquiredLast(int id)
+    {
+        return Ids.Last() == id;
     }
 
     private void OnFrameworkUpdate(IFramework framework)
     {
         if (!RaptureShell->MacroLocked)
         {
-            if (isAcquired())
+            if (IsAcquired())
             {
                 var lastId = Ids.Last();
                 Ids.Remove(lastId);

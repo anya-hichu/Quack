@@ -1,17 +1,26 @@
 using Dalamud.Plugin.Services;
+using Jint.Runtime;
 using Quack.Macros;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Quack.Chat;
 
 public class ChatSender: IDisposable
 {
+    private class Payload(string message, int lockId, TaskCompletionSource<bool> completion)
+    {
+        public int LockId { get; init; } = lockId;
+        public string Message { get; init; } = message;
+        public TaskCompletionSource<bool> Completion { get; init; } = completion;
+    }
+
     private ChatServer ChatServer { get; init; }
     private IFramework Framework { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
     public IPluginLog PluginLog { get; init; }
-    private Queue<(int, string)> MessageEntries { get; init; } = [];
+    private Queue<Payload> PendingPayloads { get; init; } = [];
 
     public ChatSender(ChatServer chatServer, IFramework framework, MacroSharedLock macroSharedLock, IPluginLog pluginLog)
     {
@@ -28,28 +37,28 @@ public class ChatSender: IDisposable
         Framework.Update -= OnFrameworkUpdate;
     }
 
-    public void Enqueue(int id, string message)
+    public Task SendOnFrameworkThread(string message, int lockId)
     {
-        MessageEntries.Enqueue((id, message));
+        var completion = new TaskCompletionSource<bool>();
+        PendingPayloads.Enqueue(new(message, lockId, completion));
+        return completion.Task;
     }
 
     private void OnFrameworkUpdate(IFramework framework)
     {
-        while (MessageEntries.TryDequeue(out var entry))
+        while (PendingPayloads.TryDequeue(out var payload))
         {
-            var taskId = entry.Item1;
-            var message = entry.Item2;
-            if (MacroSharedLock.isAcquired(taskId))
+            if (MacroSharedLock.IsAcquired(payload.LockId))
             {
-                ChatServer.SendMessage(message);
-                PluginLog.Verbose($"Sent chat message for task #{taskId}: '{message}'");
+                ChatServer.SendMessage(payload.Message);
+                PluginLog.Verbose($"Sent chat message: '{payload.Message}' (lock #{payload.LockId})");
+                payload.Completion.SetResult(true);
             } 
             else
             {
-                PluginLog.Verbose($"Dismissed chat message for task #{taskId} because macro shared lock was released: '{message}'");
+                PluginLog.Verbose($"Discarded chat message: '{payload.Message}' (lock #{payload.LockId} was released)");
+                payload.Completion.SetResult(false);
             }
         }
     }
-
-
 }

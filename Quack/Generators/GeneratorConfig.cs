@@ -9,7 +9,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 1;
+    public static readonly int DEFAULTS_VERSION = 2;
     private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
         new($"Customize (V{DEFAULTS_VERSION})",
             [new("CustomizePlus.Profile.GetList")],
@@ -54,11 +54,19 @@ const idlePseudoEmote = {
     poseKeys: ['emote/pose00_loop', 'emote/pose01_loop', 'emote/pose02_loop', 'emote/pose03_loop', 'emote/pose04_loop', 'emote/pose05_loop', 'emote/pose06_loop']
 };
 
+const resetPositionMacro = {
+    name: `Reset Position`,
+    path: 'Macros/Customs/Reset Position',
+    tags: ['reset', 'position', 'macro'],
+    command: '/resetposition',
+    content: ['/ifinthatposition -v -$', '/standup <wait.1>'].join("\n")
+};
+
 function main(modsJson, emotesJson) {
     const mods = JSON.parse(modsJson);
     const emotes = JSON.parse(emotesJson);
 
-    const macros = mods.flatMap(mod => {
+    const customEmoteMacros = mods.flatMap(mod => {
         const optionMacros = mod.settings.groupSettings.flatMap(setting => {
             return setting.options.flatMap(option => {
                 const optionGamePaths = Object.keys(option.files || {})
@@ -67,13 +75,14 @@ function main(modsJson, emotesJson) {
                 return optionCommandsWithPoseIndex.map(([command, poseIndex]) => {
                     const emoteCommands = buildCommands(command, poseIndex);
                     const contentLines = [
-                        `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" "${setting.name}" == "${option.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
+                        `${resetPositionMacro.command} <wait.macro>`,
+                        `/ifmodset -e -@ -$ {0} "${mod.dir}" "${mod.name}" "${setting.name}" == "${option.name}" ; ${emoteCommands.map(escapeCommand).join(' ')} "/macrocancel" <wait.cancel>`,
                         `/penumbra bulktag disable {0} | ${command}`,
                         `/modset {0} "${mod.dir}" "${mod.name}" "${setting.name}" = "${option.name}"`,
                         `/penumbra mod enable {0} | ${mod.dir}`,
                         '/penumbra redraw <me> <wait.1>'
                     ].concat(emoteCommands);
-                    const commandPath= buildCommandPath(command, poseIndex); 
+                    const commandPath = buildCommandPath(command, poseIndex); 
                     return {
                         name: `Custom Emote [${option.name}] [${commandPath}]`,
                         path: `Mods/${normalize(mod.path)}/Settings/${escape(setting.name)}/Options/${escape(option.name)}/Emotes${commandPath}`,
@@ -100,9 +109,10 @@ function main(modsJson, emotesJson) {
             }
 
             return commandsWithPoseIndex.map(([command, poseIndex]) => {
-               const emoteCommands = buildCommands(command, poseIndex);
+                const emoteCommands = buildCommands(command, poseIndex);
                 const contentLines = [
-                    `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
+                    `${resetPositionMacro.command} <wait.macro>`,
+                    `/ifmodset -e -@ -$ {0} "${mod.dir}" "${mod.name}" ; ${emoteCommands.map(escapeCommand).join(' ')} "/macrocancel" <wait.cancel>`,
                     `/penumbra bulktag disable {0} | ${command}`,
                     `/penumbra mod enable {0} | ${mod.dir}`,
                     '/penumbra redraw <me> <wait.1>'
@@ -118,6 +128,9 @@ function main(modsJson, emotesJson) {
             });      
         }
     });
+
+    const macros = [resetPositionMacro].concat(customEmoteMacros);
+
     return JSON.stringify(macros);
 }
 
@@ -141,10 +154,10 @@ function buildCommands(command, poseIndex) {
         if (command == idlePseudoEmote.command) {
             return [`/dpose ${poseIndex}`];
         } else {
-            return [`${command} <wait.1>`, `/dpose ${poseIndex}`];
+            return [`${command} motion <wait.1>`, `/dpose ${poseIndex}`];
         }
     } else {
-        return [command];
+        return [`${command} motion`];
     }
 }
 
@@ -177,13 +190,18 @@ function normalize(path) {
 """
 function main(emotesJson) {
     const emotes = JSON.parse(emotesJson);
-    const macros = emotes.map(e => {
-        return {
+    const macros = emotes.flatMap(e => {
+        return [{
             name: e.name,
             path: `Emotes/${e.category[0].toUpperCase()}${e.category.slice(1)}/${e.name}`,
             tags: ['emote', e.category.toLowerCase(), e.command],
             content: e.command
-        };
+        }, {
+            name: `${e.name} [motion]`,
+            path: `Emotes/${e.category[0].toUpperCase()}${e.category.slice(1)}/${e.name} [motion]`,
+            tags: ['emote', e.category.toLowerCase(), e.command],
+            content: `${e.command} motion`
+        }];
     });
     return JSON.stringify(macros);
 }
@@ -194,14 +212,13 @@ function main(emotesJson) {
 // Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
 // Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
 
-var args = 'Self Base';
+var args = 'Self';
 
 function main(designsJson) {
     const designs = JSON.parse(designsJson);
     const macros = designs.map(d => {
         const contentLines = [
             '/penumbra bulktag disable {0} | all',
-            '/glamour apply {1} | <me>; true',
             `/glamour apply ${d.id} | <me>; true`
         ];
 
@@ -234,7 +251,7 @@ function main(titlesJson) {
 
     const titleMacros = titles.map(t => {
         const contentLines = [
-            `${disablehonorificsMacro.command} <wait.1>`,
+            `${disablehonorificsMacro.command} <wait.macro>`,
             `/honorific title enable ${t.Title}`
         ];
         return {
@@ -244,7 +261,10 @@ function main(titlesJson) {
             content: contentLines.join("\n")
         };
     });
-    return JSON.stringify(titleMacros.concat([disablehonorificsMacro]));
+
+    const macros = [disablehonorificsMacro].concat(titleMacros);
+
+    return JSON.stringify(macros);
 }
 
 function escape(segment) {
@@ -349,7 +369,7 @@ function main(modsJson) {
                 if (isMulti) {
                     return [{
                         name: `Enable Exclusively Option [${o.name}]`,
-                        path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable [Exclusive]`,
+                        path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable [exclusive]`,
                         tags: ['mod', 'option', 'enable', 'exclusive'],
                         args: args,
                         content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`

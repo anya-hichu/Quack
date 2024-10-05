@@ -26,4 +26,9 @@ public class Macro
 
     [JsonProperty("loop")]
     public bool Loop { get; set; } = false;
+
+    public Macro Clone()
+    {
+        return (Macro)MemberwiseClone();
+    }
 }

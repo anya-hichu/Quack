@@ -3,7 +3,7 @@ using Dalamud.Utility;
 using Quack.Chat;
 using Quack.Utils;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,23 +15,23 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
     public static readonly int DEFAULT_MESSAGE_INTERVAL_MS = 60;
     public const string DEFAULT_FORMAT = "{0}";
 
-    [GeneratedRegexAttribute(@"<wait\.(\d+)>")]
-    private static partial Regex WaitTimeGeneratedRegex();
+    [GeneratedRegexAttribute(@"<wait\.(?<wait>\d+|macro|cancel)>")]
+    private static partial Regex WaitPlaceholderGeneratedRegex();
+
+    [GeneratedRegexAttribute(@"^/wait(?: (?<wait>\d+))?\s*$")]
+    private static partial Regex WaitCommandGeneratedRegex();
 
     private ChatSender ChatSender { get; init; } = chatSender;
     private MacroSharedLock MacroSharedLock { get; init; } = macroSharedLock;
     private IPluginLog PluginLog { get; init; } = pluginLog;
-    private List<CancellationTokenSource> CancellationTokenSources { get; set; } = [];
 
     public void Dispose()
     {
         CancelTasks();
-        CancellationTokenSources.ForEach(t => t.Cancel());
     }
 
     public void ExecuteTask(Macro macro, string format = DEFAULT_FORMAT, params string[] args)
     {
-        var cancellationTokenSource = new CancellationTokenSource();
         Task.Run(() =>
         {
             var taskId = Task.CurrentId!.Value;
@@ -39,17 +39,16 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
             {
                 MacroSharedLock.Acquire(taskId);
                 PluginLog.Debug($"Task #{taskId} executing macro '{macro.Name}' ({macro.Path}) with format '{format}' and args [{string.Join(',', args)}]");
-                Execute(macro, format, args);
-            } 
+                ExecuteInCurrentTask(macro, format, args);
+            }
             finally
             {
                 MacroSharedLock.Release(taskId);
             }
-            
-        }, cancellationTokenSource.Token);
+        });
     }
 
-    private void Execute(Macro macro, string format, string[] args)
+    private void ExecuteInCurrentTask(Macro macro, string format, string[] args)
     {
         var taskId = Task.CurrentId!.Value;
 
@@ -57,46 +56,92 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
         PluginLog.Verbose($"Executing macro content inside task #{taskId}:\n{formattedContent}");
 
         var lines = formattedContent.Split("\n");
-        for (var i = 0; i < lines.Length && MacroSharedLock.isAcquired(taskId); i++)
+        for (var i = 0; i < lines.Length && MacroSharedLock.IsAcquired(taskId); i++)
         {
             var line = lines[i];
 
             if (!line.IsNullOrWhitespace())
             {
-                var waitTimeMatch = WaitTimeGeneratedRegex().Match(line);
-                var lineWithoutWait = waitTimeMatch.Success ? WaitTimeGeneratedRegex().Replace(line, string.Empty) : line;
+                var waitPlaceholderMatches = WaitPlaceholderGeneratedRegex().Matches(line);
+                var lineWithoutWait = waitPlaceholderMatches.Count > 0 ? WaitPlaceholderGeneratedRegex().Replace(line, string.Empty) : line;
 
                 var message = string.Format(new PMFormatter(), format, lineWithoutWait);
 
-                ChatSender.Enqueue(taskId, message);
-
-                if (waitTimeMatch.Success)
+                var waitCommandMatch = WaitCommandGeneratedRegex().Match(message);
+                if (waitCommandMatch.Success)
                 {
-                    var waitTimeValue = waitTimeMatch.Groups[1].Value;
-                    PluginLog.Verbose($"Pausing execution #{Task.CurrentId} inside macro '{macro.Name}' ({macro.Path}) at line #{i + 1} for {waitTimeValue} sec(s)");
-                    Thread.Sleep(int.Parse(waitTimeValue) * 1000);
-                    PluginLog.Verbose($"Resuming execution #{Task.CurrentId}");
-                } 
+                    var value = waitCommandMatch.Groups["wait"].Value;
+                    var secs = value.IsNullOrEmpty() ? 1 : int.Parse(value);
+                    Sleep(secs, macro, i);
+                }
                 else
+                {
+                    Task.WaitAny(ChatSender.SendOnFrameworkThread(message, taskId));
+                }
+
+                if (waitPlaceholderMatches.Count > 0)
+                {
+                    foreach (Match waitPlaceholderMatch in waitPlaceholderMatches)
+                    {
+                        var value = waitPlaceholderMatch.Groups["wait"].Value;
+
+                        var isWaitCancel = value == "cancel";
+                        if (value == "macro" || isWaitCancel)
+                        {
+                            if (isWaitCancel)
+                            {
+                                // Placeholder subtask to scope /macrocancel
+                                Task.Run(() =>
+                                {
+                                    var subtaskId = Task.CurrentId!.Value;
+                                    MacroSharedLock.Acquire(subtaskId);
+                                });
+                            }
+
+                            PluginLog.Verbose($"Pausing execution #{taskId} inside macro '{macro.Name}' ({macro.Path}) for <wait.{value}> at line #{i + 1}");
+                            while (!MacroSharedLock.HasAcquiredLast(taskId))
+                            {
+                                Thread.Sleep(DEFAULT_MESSAGE_INTERVAL_MS);
+                            }
+                            PluginLog.Verbose($"Resuming execution #{taskId}");
+                        }
+                        else if (int.TryParse(value, out var secs))
+                        {
+                            Sleep(secs, macro, i);
+                        }
+                        else
+                        {
+                            throw new UnreachableException($"Unsupported <wait.{value}> placeholder");
+                        }
+                    }
+                }
+                else if (!waitCommandMatch.Success)
                 {
                     Thread.Sleep(DEFAULT_MESSAGE_INTERVAL_MS);
                 }
             }
         }
 
-        if (macro.Loop && MacroSharedLock.isAcquired(taskId))
+        if (macro.Loop && MacroSharedLock.IsAcquired(taskId))
         {
-            Execute(macro, format, args);
+            ExecuteInCurrentTask(macro, format, args);
         }
     }
 
     public bool HasRunningTasks()
     {
-        return MacroSharedLock.isAcquired();
+        return MacroSharedLock.IsAcquired();
     }
 
     public void CancelTasks()
     {
         MacroSharedLock.ReleaseAll();
+    }
+
+    private void Sleep(int secs, Macro macro, int i)
+    {
+        PluginLog.Verbose($"Pausing execution #{Task.CurrentId} inside macro '{macro.Name}' ({macro.Path}) for {secs} sec(s) at line #{i + 1}");
+        Thread.Sleep(secs * 1000);
+        PluginLog.Verbose($"Resuming execution #{Task.CurrentId}");
     }
 }
