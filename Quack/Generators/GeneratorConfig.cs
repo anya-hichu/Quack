@@ -76,7 +76,7 @@ function main(modsJson, emotesJson) {
                     const emoteCommands = buildCommands(command, poseIndex);
                     const contentLines = [
                         `${resetPositionMacro.command} <wait.macro>`,
-                        `/ifmodset -e -@ -$ {0} "${mod.dir}" "${mod.name}" "${setting.name}" == "${option.name}" ; ${emoteCommands.map(escapeCommand).join(' ')} "/macrocancel" <wait.cancel>`,
+                        `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" "${setting.name}" == "${option.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
                         `/penumbra bulktag disable {0} | ${command}`,
                         `/modset {0} "${mod.dir}" "${mod.name}" "${setting.name}" = "${option.name}"`,
                         `/penumbra mod enable {0} | ${mod.dir}`,
@@ -112,7 +112,7 @@ function main(modsJson, emotesJson) {
                 const emoteCommands = buildCommands(command, poseIndex);
                 const contentLines = [
                     `${resetPositionMacro.command} <wait.macro>`,
-                    `/ifmodset -e -@ -$ {0} "${mod.dir}" "${mod.name}" ; ${emoteCommands.map(escapeCommand).join(' ')} "/macrocancel" <wait.cancel>`,
+                    `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
                     `/penumbra bulktag disable {0} | ${command}`,
                     `/penumbra mod enable {0} | ${mod.dir}`,
                     '/penumbra redraw <me> <wait.1>'
