@@ -35,17 +35,23 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
+    [PluginService] internal static IClientState ClientState { get; private set; } = null!;
 
     public readonly WindowSystem WindowSystem = new("Quack");
     private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
 
     private Config Config { get; init; }
-    private MacroExecutor MacroExecutor { get; init; }
+
+    private CustomMacrosIpc CustomMacrosIpc { get; init; }
     private EmotesIpc EmotesIpc { get; init; }
+    private DalamudIpc DalamudIpc { get; init; }
     private GlamourerIpc GlamourerIpc { get; init; }
+    private LocalPlayerIpc LocalPlayerIpc { get; init; }
     private MacrosIpc MacrosIpc { get; init; }
     private PenumbraIpc PenumbraIpc { get; init; }
+
+    private MacroExecutor MacroExecutor { get; init; }
     private KeyBindListener KeyBindListener { get; init; }
     private MacroCommands MacroCommands { get; init; }
     private SQLiteConnection DbConnection { get; init; }
@@ -101,8 +107,11 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
 
-        EmotesIpc = new(PluginInterface, DataManager.GetExcelSheet<Emote>());
+        CustomMacrosIpc = new(CachedMacros, PluginInterface);
+        EmotesIpc = new(PluginInterface, DataManager.GetExcelSheet<Emote>()!);
+        DalamudIpc = new(PluginInterface);
         GlamourerIpc = new(PluginInterface, PluginLog);
+        LocalPlayerIpc = new(PluginInterface, ClientState);
         MacrosIpc = new(PluginInterface);
         PenumbraIpc = new(PluginInterface, PluginLog);
 
@@ -119,8 +128,11 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.RemoveHandler(CommandName);
 
+        CustomMacrosIpc.Dispose();
         EmotesIpc.Dispose();
+        DalamudIpc.Dispose();
         GlamourerIpc.Dispose();
+        LocalPlayerIpc.Dispose();
         MacrosIpc.Dispose();
         PenumbraIpc.Dispose();
 

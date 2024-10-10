@@ -831,7 +831,7 @@ public partial class ConfigWindow : Window, IDisposable
             } 
 
             ImGui.SetCursorPosX(20);
-            var scriptInputHeight = GeneratorConfigToState[generatorConfig].GeneratedMacros.Any() ? ImGui.GetTextLineHeight() * 13 : ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 35;
+            var scriptInputHeight = GeneratorConfigToState[generatorConfig].GeneratedMacros.Any() ? ImGui.GetTextLineHeight() * 13 : ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 40;
 
             var script = generatorConfig.Script;
             if (ImGui.InputTextMultiline($"Script (js)###generatorConfigs{hash}Script", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, scriptInputHeight)))

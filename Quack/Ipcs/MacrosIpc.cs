@@ -10,16 +10,8 @@ namespace Quack.Ipcs;
 
 public unsafe class MacrosIpc : IDisposable
 {
-    public class MacroData(int index, string name, uint set, string content)
-    {
-        public int index = index;
-        public string name = name;
-        public uint set = set;
-        public string content = content;
-    }
-
     public static readonly string LIST = "Quack.Macros.GetList";
-    private ICallGateProvider<MacroData[]> GetListProvider { get; init; }
+    private ICallGateProvider<Dictionary<string, object>[]> GetListProvider { get; init; }
 
     private readonly RaptureMacroModule* raptureMacroModule;
 
@@ -27,42 +19,43 @@ public unsafe class MacrosIpc : IDisposable
     {
         raptureMacroModule = RaptureMacroModule.Instance();
 
-        GetListProvider = pluginInterface.GetIpcProvider<MacroData[]>(LIST);
-        GetListProvider.RegisterFunc(() =>
-        {
-            var list = ListMacros(0);
-            list.AddRange(ListMacros(1));
-            return list.ToArray();
-        });
-    }
-
-    private List<MacroData> ListMacros(uint set)
-    {
-        return Enumerable.Range(0, 99).SelectMany<int, MacroData>(i =>
-        {
-            var rawMacro = raptureMacroModule->GetMacro(set, (uint)i);
-            if (raptureMacroModule->GetLineCount(rawMacro) > 0)
-            {
-                return [
-                    new(i,
-                        rawMacro->Name.ToString(),
-                        set,
-                        string.Join("\n", rawMacro->Lines.ToArray()
-                                                         .Select(l => $"{l}")
-                                                         .Where(l => !l.IsNullOrWhitespace()) )
-                    )
-                ];
-            } 
-            else
-            {
-                return [];
-            }
-
-        }).ToList();
+        GetListProvider = pluginInterface.GetIpcProvider<Dictionary<string, object>[]>(LIST);
+        GetListProvider.RegisterFunc(ListMacros);
     }
 
     public void Dispose()
     {
         GetListProvider.UnregisterFunc();
     }
+
+    private Dictionary<string, object>[] ListMacros()
+    {
+        return ListSetMacros(0).Union(ListSetMacros(1)).ToArray();
+    }
+
+    private IEnumerable<Dictionary<string, object>> ListSetMacros(uint set)
+    {
+        return Enumerable.Range(0, 99).SelectMany<int, Dictionary<string, object>>(i =>
+        {
+            var rawMacro = raptureMacroModule->GetMacro(set, (uint)i);
+            if (raptureMacroModule->GetLineCount(rawMacro) > 0)
+            {
+                return [new()
+                {
+                    { "index", i },
+                    { "name", rawMacro->Name.ToString() },
+                    { "set", set },
+                    { "content", string.Join("\n", rawMacro->Lines.ToArray()
+                                                         .Select(l => l.ToString())
+                                                         .Where(l => !l.IsNullOrWhitespace())) }
+                }];
+            }
+            else
+            {
+                return [];
+            }
+        });
+    }
+
+
 }

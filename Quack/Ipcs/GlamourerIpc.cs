@@ -23,14 +23,6 @@ public class GlamourerIpc : IDisposable
         public string[] Tags { get; set; } = [];
     }
 
-    public class DesignData(string id, string name, string path, string[] tags)
-    {
-        public string id = id;
-        public string name = name;
-        public string path = path;
-        public string[] tags = tags;
-    }
-
     public static readonly string DESIGN_LIST = "Quack.Glamourer.GetDesignList";
 
     private IPluginLog PluginLog { get; init; }
@@ -40,14 +32,14 @@ public class GlamourerIpc : IDisposable
     private string DesignConfigPathTemplate { get; init; }
 
     private ICallGateSubscriber<Dictionary<string, string>> BaseGetDesignListSubscriber { get; init; }
-    private ICallGateProvider<DesignData[]> GetDesignListProvider { get; init; }
+    private ICallGateProvider<Dictionary<string, object>[]> GetDesignListProvider { get; init; }
 
     public GlamourerIpc(IDalamudPluginInterface pluginInterface, IPluginLog pluginLog)
     {
         PluginLog = pluginLog;
 
         BaseGetDesignListSubscriber = pluginInterface.GetIpcSubscriber<Dictionary<string, string>>("Glamourer.GetDesignList.V2");
-        GetDesignListProvider = pluginInterface.GetIpcProvider<DesignData[]>(DESIGN_LIST);
+        GetDesignListProvider = pluginInterface.GetIpcProvider<Dictionary<string, object>[]>(DESIGN_LIST);
 
         PluginConfigsDirectory = Path.GetFullPath(Path.Combine(pluginInterface.GetPluginConfigDirectory(), ".."));
 
@@ -64,8 +56,7 @@ public class GlamourerIpc : IDisposable
         GetDesignListProvider.UnregisterFunc();
     }
 
-
-    private DesignData[] GetDesignList()
+    private Dictionary<string, object>[] GetDesignList()
     {
         var designList = BaseGetDesignListSubscriber.InvokeFunc();
 
@@ -87,10 +78,12 @@ public class GlamourerIpc : IDisposable
 
                     PluginLog.Debug($"Retrieved {designConfig.Tags.Length} glamourer tags from {Path.GetRelativePath(PluginConfigsDirectory, designConfigPath)}");
 
-                    return new DesignData(d.Key,
-                                          d.Value,
-                                          sortOrderConfig.Data.GetValueOrDefault(d.Key, d.Value), // Root items don't have a path
-                                          designConfig.Tags);
+                    return new Dictionary<string, object>() {
+                        { "id", d.Key},
+                        { "name", d.Value},
+                        { "path", sortOrderConfig.Data.GetValueOrDefault(d.Key, d.Value)}, // Root items don't have a path
+                        { "tags", designConfig.Tags}
+                    };
                 }
                 else
                 {

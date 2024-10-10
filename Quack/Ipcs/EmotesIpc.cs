@@ -18,48 +18,52 @@ public class EmotesIpc: IDisposable
         { "/doze", ["emote/l_pose00_loop", "emote/l_pose01_loop", "emote/l_pose02_loop"] }
     };
 
-    public class EmoteData(string name, string category, string command, string[] actionTimelineKeys, string[] poseKeys)
-    {
-        public string name = name;
-        public string category = category;
-        public string command = command;
-        public string[] actionTimelineKeys = actionTimelineKeys;
-        public string[] poseKeys = poseKeys;
-    }
-
     public static readonly string LIST = "Quack.Emotes.GetList";
-    private ICallGateProvider<EmoteData[]> GetListProvider { get; init; }
 
-    public EmotesIpc(IDalamudPluginInterface pluginInterface, ExcelSheet<Emote>? excelSheetEmote) {
-        GetListProvider = pluginInterface.GetIpcProvider<EmoteData[]>(LIST);
-        GetListProvider.RegisterFunc(() =>
-        {
-            return excelSheetEmote!.SelectMany<Emote, EmoteData>(e =>
-            {
-                if (e.EmoteCategory.Value != null && e.TextCommand.Value != null)
-                {
-                    var actionTimelineKeys = e.ActionTimeline.SelectMany<LazyRow<ActionTimeline>, string>(a =>
-                    {
-                        var key = a.Value?.Key?.RawString;
-                        return key.IsNullOrEmpty() ? [] : [key];
-                    }).ToArray();
+    private ExcelSheet<Emote> EmoteSheet { get; init; }
+    private ICallGateProvider<Dictionary<string, object>[]> GetListProvider { get; init; }
 
-                    var textCommandValue = e.TextCommand.Value;
-                    var shortCommand = textCommandValue.ShortCommand.RawString;
-                    var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.RawString : shortCommand;
+    public EmotesIpc(IDalamudPluginInterface pluginInterface, ExcelSheet<Emote> emoteSheet) {
+        EmoteSheet = emoteSheet;
 
-                    var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(command, []);
-                    return [new(e.Name, e.EmoteCategory.Value!.Name, command, actionTimelineKeys, poseKeys)];
-                } else
-                {
-                    return [];
-                }
-            }).ToArray();
-        });
+        GetListProvider = pluginInterface.GetIpcProvider<Dictionary<string, object>[]>(LIST);
+        GetListProvider.RegisterFunc(GetList);
     }
 
     public void Dispose()
     {
         GetListProvider.UnregisterFunc();
+    }
+
+    public Dictionary<string, object>[] GetList()
+    {
+        return EmoteSheet.SelectMany<Emote, Dictionary<string, object>>(e => {
+            if (e.EmoteCategory.Value != null && e.TextCommand.Value != null)
+            {
+                var actionTimelineKeys = e.ActionTimeline.SelectMany<LazyRow<ActionTimeline>, string>(t =>
+                {
+                    var key = t.Value?.Key?.RawString;
+                    return key.IsNullOrEmpty() ? [] : [key];
+                }).ToArray();
+
+                var textCommandValue = e.TextCommand.Value;
+                var shortCommand = textCommandValue.ShortCommand.RawString;
+                var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.RawString : shortCommand;
+
+                var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(command, []);
+
+                return [new() {
+                    {"name", e.Name.RawString},
+                    {"category",  e.EmoteCategory.Value!.Name.RawString},
+                    {"command", command },
+                    {"actionTimelineKeys", actionTimelineKeys},
+                    {"poseKeys", poseKeys}
+                }];
+            }
+            else
+            {
+                return [];
+            }
+        }).ToArray();
     }
 }
