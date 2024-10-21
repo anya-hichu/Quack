@@ -9,7 +9,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 3;
+    public static readonly int DEFAULTS_VERSION = 4;
     private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
         new($"Customize (V{DEFAULTS_VERSION})",
             [new("CustomizePlus.Profile.GetList")],
@@ -67,6 +67,28 @@ function main(modsJson, emotesJson) {
     const emotes = JSON.parse(emotesJson);
 
     const customEmoteMacros = mods.flatMap(mod => {
+        const modGamePaths = Object.keys(mod.settings.files || {});
+        const modCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, modGamePaths);
+
+        const modMacros = modCommandsWithPoseIndex.map(([command, poseIndex]) => {
+            const emoteCommands = buildCommands(command, poseIndex);
+            const contentLines = [
+                `${RESET_POSITION_MACRO.command} <wait.macro>`,
+                `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
+                `/penumbra bulktag disable {0} | ${command}`,
+                `/penumbra mod enable {0} | ${mod.dir}`,
+                '/penumbra redraw <me> <wait.2>'
+            ].concat(emoteCommands);
+            const commandPath = buildCommandPath(command, poseIndex);
+            return {
+                name: `Custom Emote [${mod.name}] [${commandPath}]`,
+                path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
+                tags: ['mod', 'emote', command],
+                args: ARGS,
+                content: contentLines.join("\n")
+            };
+        });
+
         const optionMacros = mod.settings.groupSettings.flatMap(setting => {
             return setting.options.flatMap(option => {
                 const optionGamePaths = Object.keys(option.files || {})
@@ -94,39 +116,7 @@ function main(modsJson, emotesJson) {
             });
         })
 
-        if (optionMacros.length > 0) {
-            return optionMacros;
-        } else {
-            const modGamePaths = Object.keys(mod.settings.files || {});
-            const modCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, modGamePaths);
-
-            var commandsWithPoseIndex;
-            if (modCommandsWithPoseIndex.length > 0) {
-                  commandsWithPoseIndex = modCommandsWithPoseIndex;
-            } else {
-                  const tagCommandsWithPoseIndex = mod.localTags.flatMap(t => t.startsWith('/') ? [[t, -1]] : []);
-                  commandsWithPoseIndex = tagCommandsWithPoseIndex;
-            }
-
-            return commandsWithPoseIndex.map(([command, poseIndex]) => {
-                const emoteCommands = buildCommands(command, poseIndex);
-                const contentLines = [
-                    `${RESET_POSITION_MACRO.command} <wait.macro>`,
-                    `/ifmodset -e -$ {0} "${mod.dir}" "${mod.name}" ; ${emoteCommands.map(escapeCommand).join(' ')}`,
-                    `/penumbra bulktag disable {0} | ${command}`,
-                    `/penumbra mod enable {0} | ${mod.dir}`,
-                    '/penumbra redraw <me> <wait.1>'
-                ].concat(emoteCommands);
-                const commandPath = buildCommandPath(command, poseIndex);
-                return {
-                    name: `Custom Emote [${mod.name}] [${commandPath}]`,
-                    path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
-                    tags: ['mod', 'emote', command],
-                    args: ARGS,
-                    content: contentLines.join("\n")
-                };
-            });      
-        }
+        return modMacros.concat(optionMacros);
     });
 
     const macros = [RESET_POSITION_MACRO].concat(customEmoteMacros);
@@ -473,6 +463,9 @@ const TRANSFORMERS = [
     // Assign custom commands for specific custom emotes
     {match: m => m.path.includes('Remote Shock Collar [Mittens]') && m.tags.includes('emote'), mutate: m => m.command = `/shock${['/upset', '/shocked', '/sulk', '/kneel'].indexOf(m.tags.find(t => t.startsWith('/'))) + 1}`},
     {match: m => m.path.includes('Remote Vibrator [Mittens]') && m.tags.includes('emote'), mutate: m => m.command = `/vibrate${['/blush', '/stagger', '/panic', '/grovel', '/pdead'].indexOf(m.tags.find(t => t.startsWith('/'))) + 1}`},
+
+    // Doze Anywhere plugin support
+    {match: m => m.tags.includes('emote') && (m.tags.includes('/sit') || m.tags.includes('/doze')), mutate: m => m.content = m.content.replaceAll(new RegExp('(?<!\\| ?)/(sit|doze)(?=\\W|$)', 'gm'), '/$1anywhere')},
 
     {match: m => m.path.includes('Eorzean-Nightlife-V2') && m.tags.includes('emote'), mutate: (macro, macros, mods) => {
         // Disable other emote groups to avoid internal conflicts in modpack
