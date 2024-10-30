@@ -30,7 +30,8 @@ public class Generator(GeneratorConfig generatorConfig, IJsEngine jsEngine, IPlu
             if (Service<CallGate>.Get().Gates.TryGetValue(ipcConfig.Name, out var channel))
             {
                 var args = JsonConvert.DeserializeObject<object[]>(ipcConfig.Args);
-                PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} IPC channel {channel.Name} with arguments: {args}");
+
+                PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} IPC channel {channel.Name} with arguments: {ipcConfig.Args}");
                 var returnValue = channel.InvokeFunc<object>(args);
 
                 PluginLog.Verbose($"IPC channel {channel.Name} returned value: {returnValue}");

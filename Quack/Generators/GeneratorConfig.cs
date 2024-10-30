@@ -461,8 +461,8 @@ function main(collectionNamesJson) {
 // Examples
 const TRANSFORMERS = [
     // Assign custom commands for specific custom emotes
-    {match: m => m.path.includes('Remote Shock Collar [Mittens]') && m.tags.includes('emote'), mutate: m => m.command = `/shock${['/upset', '/shocked', '/sulk', '/kneel'].indexOf(m.tags.find(t => t.startsWith('/'))) + 1}`},
-    {match: m => m.path.includes('Remote Vibrator [Mittens]') && m.tags.includes('emote'), mutate: m => m.command = `/vibrate${['/blush', '/stagger', '/panic', '/grovel', '/pdead'].indexOf(m.tags.find(t => t.startsWith('/'))) + 1}`},
+    {match: m => m.path.includes('Remote Shock Collar [Mittens]') && m.tags.includes('option') && m.tags.includes('emote'), mutate: m => m.command = `/shock${['/upset', '/shocked', '/sulk', '/kneel'].indexOf(m.tags.find(t => t.startsWith('/'))) + 1}`},
+    {match: m => m.path.includes('Remote Vibrator [Mittens]') && m.tags.includes('option') && m.tags.includes('emote'), mutate: m => m.command = `/vibrate${['/blush', '/stagger', '/panic', '/grovel', '/pdead'].indexOf(m.tags.find(t => t.startsWith('/'))) + 1}`},
 
     // Doze anywhere plugin support, press ALT to activate (https://github.com/Warpholomey/DozeAnywhere)
     {match: m => m.tags.includes('emote') && (m.tags.includes('/sit') || m.tags.includes('/doze')), mutate: m => m.content = m.content.replaceAll(new RegExp('(?<!\\| ?)/(sit|doze)(?=\\W|$)', 'gm'), '/x$1')},
