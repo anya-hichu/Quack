@@ -59,7 +59,8 @@ public sealed class Plugin : IDalamudPlugin
     private MacroTable MacroTable { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
     private ChatSender ChatSender { get; init; }
-
+    private TaskQueue TaskQueue { get; init; } = new();
+    
     public Plugin()
     {
         var databasePath = Path.Combine(PluginInterface.GetPluginLocDirectory(), $"{PluginInterface.InternalName}.db");
@@ -90,7 +91,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
         };
-        ConfigWindow = new(CachedMacros, MacroExecutor, MacroTable, KeyState, Config, PluginLog)
+        ConfigWindow = new(CachedMacros, MacroExecutor, MacroTable, KeyState, Config, PluginLog, TaskQueue)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.ListAlt, ToggleMainUI)]
         };

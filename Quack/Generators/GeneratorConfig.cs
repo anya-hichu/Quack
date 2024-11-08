@@ -9,7 +9,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 4;
+    public static readonly int DEFAULTS_VERSION = 5;
     private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
         new($"Customize (V{DEFAULTS_VERSION})",
             [new("CustomizePlus.Profile.GetList")],
@@ -234,7 +234,7 @@ function main(titlesJson) {
 
     const disablehonorificsMacro = {
         name: `Disable Honorifics`,
-        path: 'Honorifics/Disable',
+        path: 'Macros/Customs/Disable Honorifics',
         tags: ['honorifics', 'titles', 'disable'],
         command: '/disablehonorifics',
         content: titles.map(t => `/honorific title disable ${t.Title}`).join("\n")
@@ -434,27 +434,6 @@ function main(moodlesJson) {
      return JSON.stringify(macros);
 }
 """),
-        new($"Plugin Collections (V{DEFAULTS_VERSION})", 
-            [new(DalamudIpc.PLUGIN_COLLECTION_NAME_LIST)],
-"""
-function main(collectionNamesJson) {
-     var collectionNames = JSON.parse(collectionNamesJson);
-     var macros = collectionNames.flatMap(n => {
-        return [{
-            name: `Enable Plugin Collection [${n}]`,
-            path: `Plugins/Collections/${n}/Enable`,
-            tags: ['plugin', 'collection', 'enable'],
-            content: `/xlenablecollection "${n}"`
-        }, {
-            name: `Disable Plugin Collection [${n}]`,
-            path: `Plugins/Collections/${n}/Disable`,
-            tags: ['plugin', 'collection', 'disable'],
-            content: `/xldisablecollection "${n}"`
-        }];
-     });
-     return JSON.stringify(macros);
-}
-"""),
         new($"Overrides (V{DEFAULTS_VERSION})",
             [new(CustomMacrosIpc.LIST), new(PenumbraIpc.MOD_LIST_WITH_SETTINGS)],
 """
@@ -516,6 +495,27 @@ function main(customMacrosJson, modsJson) {
 
 function isJsonEqual(lhs, rhs) {
     return JSON.stringify(lhs) === JSON.stringify(rhs);
+}
+"""),
+        new($"Plugin Collections (V{DEFAULTS_VERSION})", 
+            [new(DalamudIpc.PLUGIN_COLLECTION_NAME_LIST)],
+"""
+function main(collectionNamesJson) {
+     var collectionNames = JSON.parse(collectionNamesJson);
+     var macros = collectionNames.flatMap(n => {
+        return [{
+            name: `Enable Plugin Collection [${n}]`,
+            path: `Plugins/Collections/${n}/Enable`,
+            tags: ['plugin', 'collection', 'enable'],
+            content: `/xlenablecollection "${n}"`
+        }, {
+            name: `Disable Plugin Collection [${n}]`,
+            path: `Plugins/Collections/${n}/Disable`,
+            tags: ['plugin', 'collection', 'disable'],
+            content: `/xldisablecollection "${n}"`
+        }];
+     });
+     return JSON.stringify(macros);
 }
 """)
 ];
