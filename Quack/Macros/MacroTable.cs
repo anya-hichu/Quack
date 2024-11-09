@@ -15,7 +15,6 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
 
     private static readonly string ALL = string.Join(", ", COLUMNS);
     private static readonly string VALUES = string.Join(", ", COLUMNS.Select(c => "?"));
-    private static readonly string ALL_ASSIGNMENTS = string.Join(", ", COLUMNS.Select(c => $"{c}=?"));
 
     private static readonly string CREATE_TABLE_QUERY = "CREATE VIRTUAL TABLE IF NOT EXISTS macros USING fts5(name, path, command, args UNINDEXED, tags, content UNINDEXED, loop UNINDEXED, tokenize='trigram');";
     private static readonly string DROP_TABLE_QUERY = "DROP TABLE IF EXISTS macros";
@@ -24,7 +23,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
     private static readonly string FIND_BY_QUERY = $"SELECT {ALL} FROM macros WHERE {{0}}=? LIMIT 1;";
     private static readonly string SEARCH_QUERY = $"SELECT {ALL} FROM macros WHERE macros MATCH ? ORDER BY rank;";
     private static readonly string INSERT_QUERY = $"INSERT INTO macros ({ALL}) VALUES ({VALUES})";
-    private static readonly string UPDATE_QUERY = $"UPDATE macros SET {ALL_ASSIGNMENTS} WHERE path=?;";
+    private static readonly string UPDATE_QUERY = $"UPDATE macros SET {{0}}=? WHERE path=?;";
     private static readonly string DELETE_EQ_QUERY = "DELETE FROM macros WHERE path=?;";
     private static readonly string DELETE_QUERY = "DELETE FROM macros;";
 
@@ -112,16 +111,18 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
         }
     }
 
-    public int Update(Macro macro)
+    public int Update(string column, Macro macro)
     {
-        return Update(macro.Path, macro);
+        return Update(column, macro, macro.Path);
     }
 
-    public int Update(string currentPath, Macro macro)
+    public int Update(string column, Macro macro, string path)
     {
-        object[] args = [..ToValues(macro), currentPath];
-        var result = DbConnection.Execute(UPDATE_QUERY, args);
-        LogQuery(UPDATE_QUERY, result, args);
+        var value = ToValues(macro).ElementAt(COLUMNS.IndexOf(column));
+        object[] args = [value, path];
+        var query = UPDATE_QUERY.Format(column);
+        var result = DbConnection.Execute(query, args);
+        LogQuery(query, result, args);
         MaybeNotifyChange(result);
         return result;
     }
@@ -204,14 +205,15 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
 
     public static Macro ToEntity(MacroRecord macroRecord)
     {
-        var macro = new Macro();
-        macro.Name = macroRecord.Name!;
-        macro.Path = macroRecord.Path!;
-        macro.Tags = macroRecord.Tags!.Split(',');
-        macro.Command = macroRecord.Command!;
-        macro.Args = macroRecord.Args!;
-        macro.Content = macroRecord.Content!;
-        macro.Loop = bool.Parse(macroRecord.Loop!);
-        return macro;
+        return new()
+        {
+            Name = macroRecord.Name!,
+            Path = macroRecord.Path!,
+            Tags = macroRecord.Tags!.Split(','),
+            Command = macroRecord.Command!,
+            Args = macroRecord.Args!,
+            Content = macroRecord.Content!,
+            Loop = bool.Parse(macroRecord.Loop!)
+        };
     }
 }

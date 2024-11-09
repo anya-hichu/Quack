@@ -22,16 +22,16 @@ public class MacroTableQueue(MacroTable macroTable, ActionQueue actionQueue)
         return ActionQueue.Enqueue(() => MacroTable.Insert(clones));
     }
 
-    public Task Update(Macro macro)
+    public Task Update(string column, Macro macro)
     {
         var clone = Clone(macro);
-        return ActionQueue.Enqueue(() => MacroTable.Update(clone));
+        return ActionQueue.Enqueue(() => MacroTable.Update(column, clone));
     }
 
-    public Task Update(string currentPath, Macro macro)
+    public Task Update(string column, Macro macro, string path)
     {
         var clone = Clone(macro);
-        return ActionQueue.Enqueue(() => MacroTable.Update(currentPath, clone));
+        return ActionQueue.Enqueue(() => MacroTable.Update(column, clone, path));
     }
 
     public Task Delete(Macro macro)

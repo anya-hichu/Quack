@@ -278,7 +278,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (ImGui.InputText($"Name###macros{i}Name", ref name, ushort.MaxValue))
                 {
                     selectedMacro.Name = name;
-                    Debouncers.Invoke($"macro_table.update[{i}].name", () => MacroTableQueue.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].name", () => MacroTableQueue.Update("name", selectedMacro));
                 }
 
                 var deleteMacroPopupId = $"macros{i}DeletePopup";
@@ -331,7 +331,7 @@ public partial class ConfigWindow : Window, IDisposable
                         CachedMacros.Add(selectedMacro);
 
                         MacrosState.SelectedPath = TmpConflictPath;
-                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update(oldPath, selectedMacro));
+                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update("path", selectedMacro, oldPath));
   
                         TmpConflictPath = null;
                         ImGui.CloseCurrentPopup();
@@ -363,7 +363,7 @@ public partial class ConfigWindow : Window, IDisposable
                         selectedMacro.Path = path;
                         CachedMacros.Add(selectedMacro);
                         MacrosState.SelectedPath = path;
-                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update(oldPath, selectedMacro));
+                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update("path", selectedMacro, oldPath));
                     }
                 }
 
@@ -371,7 +371,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (ImGui.InputText($"Tags (comma separated)###macros{i}Tags", ref tags, ushort.MaxValue))
                 {
                     selectedMacro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
-                    Debouncers.Invoke($"macro_table.update[{i}].tags", () => MacroTableQueue.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].tags", () => MacroTableQueue.Update("tags", selectedMacro));
                 }
 
                 var command = selectedMacro.Command;
@@ -383,7 +383,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (commandInput)
                 {
                     selectedMacro.Command = command;
-                    Debouncers.Invoke($"macro_table.update[{i}].command", () => MacroTableQueue.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].command", () => MacroTableQueue.Update("command", selectedMacro));
                 }
 
                 if (!command.IsNullOrWhitespace())
@@ -406,7 +406,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (argsInput)
                 {
                     selectedMacro.Args = args;
-                    Debouncers.Invoke($"macro_table.update[{i}].args", () => MacroTableQueue.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].args", () => MacroTableQueue.Update("args", selectedMacro));
                 }
 
                 var content = selectedMacro.Content;
@@ -418,7 +418,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (contentInput)
                 {
                     selectedMacro.Content = content;
-                    Debouncers.Invoke($"macro_table.update[{i}].content", () => MacroTableQueue.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].content", () => MacroTableQueue.Update("content", selectedMacro));
                 }
 
                 var loop = selectedMacro.Loop;
@@ -430,7 +430,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (loopInput)
                 {
                     selectedMacro.Loop = loop;
-                    Debouncers.Invoke($"macro_table.update[{i}].loop", () => MacroTableQueue.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].loop", () => MacroTableQueue.Update("loop", selectedMacro));
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 255);
