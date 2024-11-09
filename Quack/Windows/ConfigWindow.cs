@@ -31,12 +31,13 @@ public partial class ConfigWindow : Window, IDisposable
     private static partial Regex NumberGeneratedRegex();
 
     private HashSet<Macro> CachedMacros { get; init; }
+    private Debouncers Debouncers { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
     private MacroTable MacroTable { get; init; }
+    private MacroTableQueue MacroTableQueue { get; init; }
     private IKeyState KeyState { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
-    private TaskQueue TaskQueue { get; init; }
 
     private MacrosState MacrosState { get; set; } = null!;
 
@@ -49,7 +50,7 @@ public partial class ConfigWindow : Window, IDisposable
     private IJsEngine? CurrentJsEngine { get; set; }
     private MacroExecutionGui MacroExecutionGui { get; init; }
 
-    public ConfigWindow(HashSet<Macro> cachedMacros, MacroExecutor macroExecutor, MacroTable macroTable, IKeyState keyState, Config config, IPluginLog pluginLog, TaskQueue taskQueue) : base("Quack Config##configWindow")
+    public ConfigWindow(HashSet<Macro> cachedMacros, Debouncers debouncers, MacroExecutor macroExecutor, MacroTable macroTable, MacroTableQueue macroTableQueue, IKeyState keyState, Config config, IPluginLog pluginLog) : base("Quack Config##configWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -58,12 +59,13 @@ public partial class ConfigWindow : Window, IDisposable
         };
 
         CachedMacros = cachedMacros;
+        Debouncers = debouncers;
         MacroExecutor = macroExecutor;
         MacroTable = macroTable;
         KeyState = keyState;
         Config = config;
         PluginLog = pluginLog;
-        TaskQueue = taskQueue;
+        MacroTableQueue = macroTableQueue;
 
         MacroExecutionGui = new(config, macroExecutor);
 
@@ -222,7 +224,7 @@ public partial class ConfigWindow : Window, IDisposable
             if (ImGui.Button("Yes", new(100, 30)))
             {
                 CachedMacros.Clear();
-                TaskQueue.Enqueue(() => MacroTable.DeleteAll());
+                MacroTableQueue.DeleteAll();
                 ImGui.CloseCurrentPopup();
             }
             ImGui.PopStyleColor();
@@ -276,7 +278,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (ImGui.InputText($"Name###macros{i}Name", ref name, ushort.MaxValue))
                 {
                     selectedMacro.Name = name;
-                    TaskQueue.Enqueue(() => MacroTable.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].name", () => MacroTableQueue.Update(selectedMacro));
                 }
 
                 var deleteMacroPopupId = $"macros{i}DeletePopup";
@@ -329,8 +331,8 @@ public partial class ConfigWindow : Window, IDisposable
                         CachedMacros.Add(selectedMacro);
 
                         MacrosState.SelectedPath = TmpConflictPath;
-                        TaskQueue.Enqueue(() => MacroTable.Update(oldPath, selectedMacro));
-
+                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update(oldPath, selectedMacro));
+  
                         TmpConflictPath = null;
                         ImGui.CloseCurrentPopup();
                     }
@@ -361,7 +363,7 @@ public partial class ConfigWindow : Window, IDisposable
                         selectedMacro.Path = path;
                         CachedMacros.Add(selectedMacro);
                         MacrosState.SelectedPath = path;
-                        TaskQueue.Enqueue(() => MacroTable.Update(oldPath, selectedMacro));
+                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update(oldPath, selectedMacro));
                     }
                 }
 
@@ -369,7 +371,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (ImGui.InputText($"Tags (comma separated)###macros{i}Tags", ref tags, ushort.MaxValue))
                 {
                     selectedMacro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
-                    TaskQueue.Enqueue(() => MacroTable.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].tags", () => MacroTableQueue.Update(selectedMacro));
                 }
 
                 var command = selectedMacro.Command;
@@ -381,7 +383,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (commandInput)
                 {
                     selectedMacro.Command = command;
-                    TaskQueue.Enqueue(() => MacroTable.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].command", () => MacroTableQueue.Update(selectedMacro));
                 }
 
                 if (!command.IsNullOrWhitespace())
@@ -404,7 +406,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (argsInput)
                 {
                     selectedMacro.Args = args;
-                    TaskQueue.Enqueue(() => MacroTable.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].args", () => MacroTableQueue.Update(selectedMacro));
                 }
 
                 var content = selectedMacro.Content;
@@ -416,7 +418,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (contentInput)
                 {
                     selectedMacro.Content = content;
-                    TaskQueue.Enqueue(() => MacroTable.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].content", () => MacroTableQueue.Update(selectedMacro));
                 }
 
                 var loop = selectedMacro.Loop;
@@ -428,7 +430,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (loopInput)
                 {
                     selectedMacro.Loop = loop;
-                    TaskQueue.Enqueue(() => MacroTable.Update(selectedMacro));
+                    Debouncers.Invoke($"macro_table.update[{i}].loop", () => MacroTableQueue.Update(selectedMacro));
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 255);
@@ -555,7 +557,7 @@ public partial class ConfigWindow : Window, IDisposable
         if (CachedMacros.Add(macro))
         {
             MacrosState.SelectedPath = macro.Path;
-            TaskQueue.Enqueue(() => MacroTable.Insert(macro));
+            MacroTableQueue.Insert(macro);
         }
     }
 
@@ -585,11 +587,8 @@ public partial class ConfigWindow : Window, IDisposable
                 CachedMacros.ExceptWith(importedMacros);
                 CachedMacros.UnionWith(importedMacros);
 
-                TaskQueue.Enqueue(() =>
-                {
-                    MacroTable.Delete(conflictingMacros);
-                    MacroTable.Insert(importedMacros);
-                });
+                MacroTableQueue.Delete(conflictingMacros);
+                MacroTableQueue.Insert(importedMacros);
             }
         });
     }
@@ -597,14 +596,14 @@ public partial class ConfigWindow : Window, IDisposable
     private void DeleteMacro(Macro macro)
     {
         CachedMacros.Remove(macro);
-        TaskQueue.Enqueue(() => MacroTable.Delete(macro));
+        MacroTableQueue.Delete(macro);
     }
 
     private void DeleteMacros(IEnumerable<Macro> macros)
     {
         var list = macros.ToList();
         CachedMacros.ExceptWith(list);
-        TaskQueue.Enqueue(() => MacroTable.Delete(list));
+        MacroTableQueue.Delete(list);
     }
 
     private void DrawGeneratorsTab()
@@ -1134,12 +1133,8 @@ public partial class ConfigWindow : Window, IDisposable
         CachedMacros.ExceptWith(selectedGeneratedMacros);
         CachedMacros.UnionWith(selectedGeneratedMacros);
 
-        TaskQueue.Enqueue(() =>
-        {
-            MacroTable.Delete(conflictingMacros);
-            MacroTable.Insert(selectedGeneratedMacros);
-        });
-        
+        MacroTableQueue.Delete(conflictingMacros);
+        MacroTableQueue.Insert(selectedGeneratedMacros);
 
         state.GeneratedMacros.ExceptWith(selectedGeneratedMacros);
         state.FilteredGeneratedMacros.ExceptWith(selectedGeneratedMacros);

@@ -3,12 +3,11 @@ using System.Threading.Tasks;
 
 namespace Quack.Utils;
 
-public class TaskQueue
+public class ActionQueue
 {
     private Task Tail { get; set; } = Task.CompletedTask;
-
-    public void Enqueue(Action action)
+    public Task Enqueue(Action action)
     {
-        Tail = Tail.ContinueWith((_) => action());
+        return Tail = Tail.ContinueWith(_ => action());
     }
 }

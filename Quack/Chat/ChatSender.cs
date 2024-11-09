@@ -1,5 +1,4 @@
 using Dalamud.Plugin.Services;
-using Jint.Runtime;
 using Quack.Macros;
 using System;
 using System.Collections.Generic;

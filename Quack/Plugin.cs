@@ -57,10 +57,12 @@ public sealed class Plugin : IDalamudPlugin
     private SQLiteConnection DbConnection { get; init; }
     private HashSet<Macro> CachedMacros { get; init; }
     private MacroTable MacroTable { get; init; }
+    private MacroTableQueue MacroTableQueue { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
     private ChatSender ChatSender { get; init; }
-    private TaskQueue TaskQueue { get; init; } = new();
-    
+    private ActionQueue Tasks { get; init; } = new();
+    private Debouncers Debouncers { get; init; }
+
     public Plugin()
     {
         var databasePath = Path.Combine(PluginInterface.GetPluginLocDirectory(), $"{PluginInterface.InternalName}.db");
@@ -87,11 +89,14 @@ public sealed class Plugin : IDalamudPlugin
         MacroSharedLock = new(Framework, PluginLog);
         ChatSender = new(new(SigScanner), Framework, MacroSharedLock, PluginLog);
         MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
+        MacroTableQueue = new(MacroTable, Tasks);
+        Debouncers = new(PluginLog);
+
         MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
         };
-        ConfigWindow = new(CachedMacros, MacroExecutor, MacroTable, KeyState, Config, PluginLog, TaskQueue)
+        ConfigWindow = new(CachedMacros, Debouncers, MacroExecutor, MacroTable, MacroTableQueue, KeyState, Config, PluginLog)
         {
             TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.ListAlt, ToggleMainUI)]
         };
@@ -143,6 +148,8 @@ public sealed class Plugin : IDalamudPlugin
         DbConnection.Dispose();
         MacroSharedLock.Dispose();
         ChatSender.Dispose();
+
+        Debouncers.Dispose();
     }
 
     private void OnCommand(string command, string args)
