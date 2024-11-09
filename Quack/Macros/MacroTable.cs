@@ -23,7 +23,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
     private static readonly string FIND_BY_QUERY = $"SELECT {ALL} FROM macros WHERE {{0}}=? LIMIT 1;";
     private static readonly string SEARCH_QUERY = $"SELECT {ALL} FROM macros WHERE macros MATCH ? ORDER BY rank;";
     private static readonly string INSERT_QUERY = $"INSERT INTO macros ({ALL}) VALUES ({VALUES})";
-    private static readonly string UPDATE_QUERY = $"UPDATE macros SET {{0}}=? WHERE path=?;";
+    private static readonly string UPDATE_QUERY = "UPDATE macros SET {0}=? WHERE path=?;";
     private static readonly string DELETE_EQ_QUERY = "DELETE FROM macros WHERE path=?;";
     private static readonly string DELETE_QUERY = "DELETE FROM macros;";
 
