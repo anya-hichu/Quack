@@ -60,7 +60,7 @@ public sealed class Plugin : IDalamudPlugin
     private MacroTableQueue MacroTableQueue { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
     private ChatSender ChatSender { get; init; }
-    private ActionQueue Tasks { get; init; } = new();
+    private ActionQueue ActionQueue { get; init; } = new();
     private Debouncers Debouncers { get; init; }
 
     public Plugin()
@@ -89,16 +89,16 @@ public sealed class Plugin : IDalamudPlugin
         MacroSharedLock = new(Framework, PluginLog);
         ChatSender = new(new(SigScanner), Framework, MacroSharedLock, PluginLog);
         MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
-        MacroTableQueue = new(MacroTable, Tasks);
+        MacroTableQueue = new(MacroTable, ActionQueue);
         Debouncers = new(PluginLog);
 
         MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
         {
-            TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.Cog, ToggleConfigUI)]
+            TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
         };
         ConfigWindow = new(CachedMacros, Debouncers, MacroExecutor, MacroTable, MacroTableQueue, KeyState, Config, PluginLog)
         {
-            TitleBarButtons = [BuildTitleBarButton(FontAwesomeIcon.ListAlt, ToggleMainUI)]
+            TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
         };
 
         WindowSystem.AddWindow(MainWindow);
@@ -148,8 +148,6 @@ public sealed class Plugin : IDalamudPlugin
         DbConnection.Dispose();
         MacroSharedLock.Dispose();
         ChatSender.Dispose();
-
-        Debouncers.Dispose();
     }
 
     private void OnCommand(string command, string args)
@@ -274,17 +272,7 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-
-
     private void DrawUI() => WindowSystem.Draw();
     private void ToggleConfigUI() => ConfigWindow.Toggle();
     private void ToggleMainUI() => MainWindow.Toggle();
-
-    private static Window.TitleBarButton BuildTitleBarButton(FontAwesomeIcon icon, System.Action callback)
-    {
-        Window.TitleBarButton button = new();
-        button.Icon = icon;
-        button.Click = (_) => callback();
-        return button;
-    }
 }

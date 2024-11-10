@@ -275,10 +275,12 @@ public partial class ConfigWindow : Window, IDisposable
                 var i = CachedMacros.IndexOf(selectedMacro);
 
                 var name = selectedMacro.Name;
-                if (ImGui.InputText($"Name###macros{i}Name", ref name, ushort.MaxValue))
+                var nameInputId = $"macros{i}Name";
+                if (ImGui.InputText($"Name###{nameInputId}", ref name, ushort.MaxValue))
                 {
                     selectedMacro.Name = name;
-                    Debouncers.Invoke($"macro_table.update[{i}].name", () => MacroTableQueue.Update("name", selectedMacro));
+                    ImGui.GetID(nameInputId);
+                    Debounce(nameInputId, () => MacroTableQueue.Update("name", selectedMacro));
                 }
 
                 var deleteMacroPopupId = $"macros{i}DeletePopup";
@@ -316,7 +318,7 @@ public partial class ConfigWindow : Window, IDisposable
                 }
                 ImGui.PopStyleColor();
 
-                var pathConflictPopupId = $"###macros{i}PathConflictPopup";
+                var pathConflictPopupId = $"macros{i}PathConflictPopup";
                 if (ImGui.BeginPopup(pathConflictPopupId))
                 {
                     ImGui.Text($"Confirm macro override?");
@@ -331,7 +333,7 @@ public partial class ConfigWindow : Window, IDisposable
                         CachedMacros.Add(selectedMacro);
 
                         MacrosState.SelectedPath = TmpConflictPath;
-                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update("path", selectedMacro, oldPath));
+                        MacroTableQueue.Update("path", selectedMacro, oldPath);
   
                         TmpConflictPath = null;
                         ImGui.CloseCurrentPopup();
@@ -348,7 +350,8 @@ public partial class ConfigWindow : Window, IDisposable
                 }
 
                 var path = TmpConflictPath != null ? TmpConflictPath : selectedMacro.Path;
-                if (ImGui.InputText($"Path###macros{i}Path", ref path, ushort.MaxValue))
+                var pathInputId = $"macros{i}Path";
+                if (ImGui.InputText($"Path###{pathInputId}", ref path, ushort.MaxValue))
                 {
                     TmpConflictPath = null;
                     if (CachedMacros.FindFirst(m => m.Path == path, out var conflictingMacro) && selectedMacro != conflictingMacro)
@@ -363,19 +366,21 @@ public partial class ConfigWindow : Window, IDisposable
                         selectedMacro.Path = path;
                         CachedMacros.Add(selectedMacro);
                         MacrosState.SelectedPath = path;
-                        Debouncers.Invoke($"macro_table.update[{i}].path", () => MacroTableQueue.Update("path", selectedMacro, oldPath));
+                        Debounce(pathInputId, () => MacroTableQueue.Update("path", selectedMacro, oldPath));
                     }
                 }
 
                 var tags = string.Join(',', selectedMacro.Tags);
-                if (ImGui.InputText($"Tags (comma separated)###macros{i}Tags", ref tags, ushort.MaxValue))
+                var tagInputId = $"macros{i}Tags";
+                if (ImGui.InputText($"Tags (comma separated)###{tagInputId}", ref tags, ushort.MaxValue))
                 {
                     selectedMacro.Tags = tags.Split(',').Select(t => t.Trim()).ToArray();
-                    Debouncers.Invoke($"macro_table.update[{i}].tags", () => MacroTableQueue.Update("tags", selectedMacro));
+                    Debounce(tagInputId, () => MacroTableQueue.Update("tags", selectedMacro));
                 }
 
                 var command = selectedMacro.Command;
-                var commandInput = ImGui.InputText($"Command###macros{i}Command", ref command, ushort.MaxValue);
+                var commandInputId = $"macros{i}Command";
+                var commandInput = ImGui.InputText($"Command###{commandInputId}", ref command, ushort.MaxValue);
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip("Example: /shock\n\nExtra calling arguments will replace the content placeholders ({0}, {1}, etc.) dynamically.\nAdditionally placeholders {i} can be escaped by doubling the brackets {{i}} if needed.");
@@ -383,7 +388,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (commandInput)
                 {
                     selectedMacro.Command = command;
-                    Debouncers.Invoke($"macro_table.update[{i}].command", () => MacroTableQueue.Update("command", selectedMacro));
+                    Debounce(commandInputId, () => MacroTableQueue.Update("command", selectedMacro));
                 }
 
                 if (!command.IsNullOrWhitespace())
@@ -398,7 +403,8 @@ public partial class ConfigWindow : Window, IDisposable
                 }
 
                 var args = selectedMacro.Args;
-                var argsInput = ImGui.InputText($"Args###macros{i}Args", ref args, ushort.MaxValue);
+                var argsInputId = $"macros{i}Args";
+                var argsInput = ImGui.InputText($"Args###{argsInputId}", ref args, ushort.MaxValue);
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip("Space separated list of default arguments (quoting optional) used to replace content placeholders ({0}, {1}, etc.)");
@@ -406,11 +412,12 @@ public partial class ConfigWindow : Window, IDisposable
                 if (argsInput)
                 {
                     selectedMacro.Args = args;
-                    Debouncers.Invoke($"macro_table.update[{i}].args", () => MacroTableQueue.Update("args", selectedMacro));
+                    Debounce(argsInputId, () => MacroTableQueue.Update("args", selectedMacro));
                 }
 
                 var content = selectedMacro.Content;
-                var contentInput = ImGui.InputTextMultiline($"Content###macros{i}Content", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 30));
+                var contentInputId = $"macros{i}Content";
+                var contentInput = ImGui.InputTextMultiline($"Content###{contentInputId}", ref content, ushort.MaxValue, new(ImGui.GetWindowWidth() - 200, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 30));
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip("Additional behaviors:\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)");
@@ -418,11 +425,12 @@ public partial class ConfigWindow : Window, IDisposable
                 if (contentInput)
                 {
                     selectedMacro.Content = content;
-                    Debouncers.Invoke($"macro_table.update[{i}].content", () => MacroTableQueue.Update("content", selectedMacro));
+                    Debounce(contentInputId, () => MacroTableQueue.Update("content", selectedMacro));
                 }
 
                 var loop = selectedMacro.Loop;
-                var loopInput = ImGui.Checkbox($"Loop###macros{i}Loop", ref loop);
+                var loopInputId = $"macros{i}Loop";
+                var loopInput = ImGui.Checkbox($"Loop###{loopInputId}", ref loop);
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip("Execution can be stopped using 'Cancel All' button or '/quack cancel' command");
@@ -430,7 +438,7 @@ public partial class ConfigWindow : Window, IDisposable
                 if (loopInput)
                 {
                     selectedMacro.Loop = loop;
-                    Debouncers.Invoke($"macro_table.update[{i}].loop", () => MacroTableQueue.Update("loop", selectedMacro));
+                    Debounce(loopInputId, () => MacroTableQueue.Update("loop", selectedMacro));
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 255);
@@ -731,12 +739,14 @@ public partial class ConfigWindow : Window, IDisposable
         var hash = generatorConfig.GetHashCode();
         if (ImGui.CollapsingHeader($"Definition##generatorConfigs{hash}Definition", ImGuiTreeNodeFlags.DefaultOpen))
         {
-            var name = generatorConfig.Name;
             ImGui.SetCursorPosX(20);
-            if (ImGui.InputText($"Name###generatorConfigs{hash}Name", ref name, ushort.MaxValue))
+
+            var name = generatorConfig.Name;
+            var nameInputId = $"generatorConfigs{hash}Name";
+            if (ImGui.InputText($"Name###{nameInputId}", ref name, ushort.MaxValue))
             {
                 generatorConfig.Name = name;
-                Config.Save();
+                Debounce(nameInputId, Config.Save);
             }
 
             ImGui.SameLine(ImGui.GetWindowWidth() - 115);
@@ -773,10 +783,11 @@ public partial class ConfigWindow : Window, IDisposable
 
                         if (ImGui.BeginTabItem($"#{i}###generatorConfigs{hash}IpcConfigs{i}"))
                         {
-                            var ipcNamesForCombo = ipcOrdered.Select(g => g.Name).Prepend(string.Empty);
-                            var ipcIndexForCombo = ipcNamesForCombo.IndexOf(ipcConfig.Name);
                             ImGui.SetCursorPosX(20);
                             ImGui.PushItemWidth(500);
+
+                            var ipcNamesForCombo = ipcOrdered.Select(g => g.Name).Prepend(string.Empty);
+                            var ipcIndexForCombo = ipcNamesForCombo.IndexOf(ipcConfig.Name);
                             if (ImGui.Combo($"Name###generatorConfigs{hash}IpcConfigs{i}Name", ref ipcIndexForCombo, ipcNamesForCombo.ToArray(), ipcNamesForCombo.Count()))
                             {
                                 ipcConfig.Name = ipcNamesForCombo.ElementAt(ipcIndexForCombo);
@@ -809,13 +820,14 @@ public partial class ConfigWindow : Window, IDisposable
                                         ImGui.SameLine();
                                         ImGui.Text($"In=[{string.Join(", ", genericTypes.Take(genericTypes.Length - 1).Select(a => a.Name))}]");
 
-                                        var ipcArgs = ipcConfig.Args;
                                         ImGui.SetCursorPosX(20);
                                         ImGui.PushItemWidth(500);
-                                        if (ImGui.InputText($"Args###generatorConfigs{hash}IpcConfigs{i}Args", ref ipcArgs, ushort.MaxValue))
+                                        var ipcArgs = ipcConfig.Args;
+                                        var ipcArgsInputId = $"generatorConfigs{hash}IpcConfigs{i}Args";
+                                        if (ImGui.InputText($"Args###{ipcArgsInputId}", ref ipcArgs, ushort.MaxValue))
                                         {
                                             ipcConfig.Args = ipcArgs;
-                                            Config.Save();
+                                            Debounce(ipcArgsInputId, Config.Save);
                                         }
                                         ImGui.PopItemWidth();
                                     }
@@ -839,10 +851,11 @@ public partial class ConfigWindow : Window, IDisposable
             var scriptInputHeight = GeneratorConfigToState[generatorConfig].GeneratedMacros.Any() ? ImGui.GetTextLineHeight() * 13 : ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 40;
 
             var script = generatorConfig.Script;
-            if (ImGui.InputTextMultiline($"Script (js)###generatorConfigs{hash}Script", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, scriptInputHeight)))
+            var scriptInputId = $"generatorConfigs{hash}Script";
+            if (ImGui.InputTextMultiline($"Script (js)###{scriptInputId}", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, scriptInputHeight)))
             {
                 generatorConfig.Script = script;
-                Config.Save();
+                Debounce(scriptInputId, Config.Save);
             }
 
             ImGui.SetCursorPosX(20);
@@ -1139,5 +1152,10 @@ public partial class ConfigWindow : Window, IDisposable
         state.GeneratedMacros.ExceptWith(selectedGeneratedMacros);
         state.FilteredGeneratedMacros.ExceptWith(selectedGeneratedMacros);
         selectedGeneratedMacros.Clear();
+    }
+
+    private void Debounce(string key, Action action)
+    {
+        Debouncers.Invoke(key, action, TimeSpan.FromSeconds(1));
     }
 }
