@@ -2,9 +2,10 @@ using Quack.Macros;
 using Quack.Utils;
 using System.Collections.Generic;
 using System.Linq;
-namespace Quack.Windows.States;
 
-public class MacrosState(HashSet<TreeNode<string>> pathNodes, string? selectedPath, string filter)
+namespace Quack.Windows.Configs.States;
+
+public class MacroState(HashSet<TreeNode<string>> pathNodes, string? selectedPath, string filter)
 {
     public HashSet<TreeNode<string>> PathNodes { get; init; } = pathNodes;
     public string? SelectedPath { get; set; } = selectedPath;

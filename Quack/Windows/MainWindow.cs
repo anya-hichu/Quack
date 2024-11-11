@@ -22,7 +22,7 @@ public class MainWindow : Window, IDisposable
     private HashSet<Macro> FilteredMacros { get; set; } = [];
     private MacroExecutionGui MacroExecutionGui { get; init; }
 
-    public MainWindow(HashSet<Macro> cachedMacros, MacroExecutor macroExecutor, MacroTable macroTable, Config config, IPluginLog pluginLog) : base("Quack##mainWindow")
+    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionGui macroExecutionGui, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -31,12 +31,11 @@ public class MainWindow : Window, IDisposable
         };
 
         CachedMacros = cachedMacros;
+        Config = config;
+        MacroExecutionGui = macroExecutionGui;
         MacroExecutor = macroExecutor;
         MacroTable = macroTable;
-        Config = config;
         PluginLog = pluginLog;
-
-        MacroExecutionGui = new(config, macroExecutor);
 
         UpdateFilteredMacros();
         MacroTable.OnChange += UpdateFilteredMacros;
@@ -55,8 +54,8 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        var filter = Filter;
         ImGui.PushItemWidth(ImGui.GetWindowWidth() - 220);
+        var filter = Filter;
         var filterInput = ImGui.InputTextWithHint($"Filter ({FilteredMacros.Count}/{CachedMacros.Count})###filter", "Search Query (min 3 chars)", ref filter, ushort.MaxValue);
         if (ImGui.IsItemHovered())
         {

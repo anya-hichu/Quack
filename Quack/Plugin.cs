@@ -16,9 +16,9 @@ using Quack.Listeners;
 using Quack.Utils;
 using JavaScriptEngineSwitcher.V8;
 using System.IO;
-using System.Collections.Generic;
 using SQLite;
 using Quack.Chat;
+
 namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
@@ -55,13 +55,11 @@ public sealed class Plugin : IDalamudPlugin
     private KeyBindListener KeyBindListener { get; init; }
     private MacroCommands MacroCommands { get; init; }
     private SQLiteConnection DbConnection { get; init; }
-    private HashSet<Macro> CachedMacros { get; init; }
     private MacroTable MacroTable { get; init; }
-    private MacroTableQueue MacroTableQueue { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
     private ChatSender ChatSender { get; init; }
-    private ActionQueue ActionQueue { get; init; } = new();
     private Debouncers Debouncers { get; init; }
+    private TimeListener TimeListener { get; init; }
 
     public Plugin()
     {
@@ -84,19 +82,21 @@ public sealed class Plugin : IDalamudPlugin
         var migrator = new Migrator(DbConnection, MacroTable);
         migrator.ExecuteMigrations(Config);
 
-        CachedMacros = MacroTable.List();
+        var cachedMacros = MacroTable.List();
 
         MacroSharedLock = new(Framework, PluginLog);
-        ChatSender = new(new(SigScanner), Framework, MacroSharedLock, PluginLog);
+        var chatServer = new ChatServer(SigScanner);
+        ChatSender = new(chatServer, Framework, MacroSharedLock, PluginLog);
+        
         MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
-        MacroTableQueue = new(MacroTable, ActionQueue);
+        var macroExecutionGui = new MacroExecutionGui(Config, MacroExecutor);
         Debouncers = new(PluginLog);
 
-        MainWindow = new(CachedMacros, MacroExecutor, MacroTable, Config, PluginLog)
+        MainWindow = new(cachedMacros, Config, macroExecutionGui, MacroExecutor, MacroTable, PluginLog)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(CachedMacros, Debouncers, MacroExecutor, MacroTable, MacroTableQueue, KeyState, Config, PluginLog)
+        ConfigWindow = new(cachedMacros, ChatSender, Config, Debouncers, KeyState, macroExecutionGui, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
         };
@@ -113,7 +113,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUI;
 
-        CustomMacrosIpc = new(CachedMacros, PluginInterface);
+        CustomMacrosIpc = new(cachedMacros, PluginInterface);
         EmotesIpc = new(PluginInterface, DataManager.GetExcelSheet<Emote>()!);
         DalamudIpc = new(PluginInterface);
         GlamourerIpc = new(PluginInterface, PluginLog);
@@ -122,7 +122,8 @@ public sealed class Plugin : IDalamudPlugin
         PenumbraIpc = new(PluginInterface, PluginLog);
 
         KeyBindListener = new(Framework, Config, ToggleMainUI);
-        MacroCommands = new(CachedMacros, ChatGui, Config, CommandManager, MacroExecutor, MacroTable);
+        MacroCommands = new(cachedMacros, ChatGui, Config, CommandManager, MacroExecutor, MacroTable);
+        TimeListener = new(Config, Framework, chatServer, PluginLog);
     }
 
     public void Dispose()
@@ -148,6 +149,9 @@ public sealed class Plugin : IDalamudPlugin
         DbConnection.Dispose();
         MacroSharedLock.Dispose();
         ChatSender.Dispose();
+        Debouncers.Dispose();
+
+        TimeListener.Dispose();
     }
 
     private void OnCommand(string command, string args)

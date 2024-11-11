@@ -1,7 +1,7 @@
 using Quack.Macros;
 using System.Collections.Generic;
 
-namespace Quack.Windows.States;
+namespace Quack.Windows.Configs.States;
 
 public class GeneratorConfigState
 {

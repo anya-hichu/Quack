@@ -3,6 +3,7 @@ using Dalamud.Game.ClientState.Keys;
 using JavaScriptEngineSwitcher.V8;
 using Quack.Generators;
 using Quack.Macros;
+using Quack.Schedulers;
 using System;
 using System.Collections.Generic;
 
@@ -30,6 +31,8 @@ public class Config : IPluginConfiguration
 
     [ObsoleteAttribute("Macros migrated to sqlite db with full text search in config version 3")]
     public HashSet<Macro> Macros { get; set; } = [];
+
+    public List<SchedulerConfig> SchedulerConfigs { get; set; } = [];
 
     public Config() { 
     }

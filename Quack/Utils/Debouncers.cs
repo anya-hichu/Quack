@@ -7,7 +7,7 @@ using ThrottleDebounce;
 
 namespace Quack.Utils;
 
-public class Debouncers(IPluginLog pluginLog)
+public class Debouncers(IPluginLog pluginLog) : IDisposable
 {
     private IPluginLog PluginLog { get; init; } = pluginLog;
 
@@ -30,5 +30,13 @@ public class Debouncers(IPluginLog pluginLog)
             }, wait, leading: false, trailing: true);
         }
         debouncedAction.Invoke();
+    }
+
+    public void Dispose()
+    {
+        foreach (var debouncedAction in DebouncedActions.Values)
+        {
+            debouncedAction.Dispose();
+        }
     }
 }
