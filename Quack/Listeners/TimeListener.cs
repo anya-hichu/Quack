@@ -1,4 +1,5 @@
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using Quack.Chat;
 using System;
 using System.Linq;
@@ -32,7 +33,7 @@ public class TimeListener : IDisposable
         var nowUtc = DateTime.UtcNow;
         foreach (var schedulerConfig in Config.SchedulerConfigs.Where(c => c.Enabled))
         {
-            foreach (var schedulerCommandConfig in schedulerConfig.SchedulerCommandConfigs)
+            foreach (var schedulerCommandConfig in schedulerConfig.SchedulerCommandConfigs.Where(c => !c.Command.IsNullOrWhitespace()))
             {
                 var nextOccurrence = schedulerCommandConfig.GetNextOccurrence(nowUtc);
                 if (nextOccurrence.HasValue && Framework.UpdateDelta.CompareTo(nextOccurrence.Value - nowUtc) >= 0)

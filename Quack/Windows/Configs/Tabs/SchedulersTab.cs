@@ -147,10 +147,9 @@ public class SchedulersTab : ModelTab
     private void DrawDefinitionHeader(SchedulerConfig schedulerConfig, DateTime nowUtc)
     {
         var hash = schedulerConfig.GetHashCode();
-
-        ImGui.PushStyleVar(ImGuiStyleVar.IndentSpacing, 10);
         if (ImGui.CollapsingHeader($"Definition##schedulerConfigs{hash}Definition", ImGuiTreeNodeFlags.DefaultOpen))
         {
+            ImGui.PushStyleVar(ImGuiStyleVar.IndentSpacing, 10);
             ImGui.Indent();
             var enabled = schedulerConfig.Enabled;
             var enabledInputId = $"schedulerConfigs{hash}Enabled";
@@ -261,8 +260,8 @@ public class SchedulersTab : ModelTab
                 }
             }
             ImGui.Unindent();
+            ImGui.PopStyleVar();
         }
-        ImGui.PopStyleVar();
     }
 
     private void DeleteSchedulerConfig(SchedulerConfig schedulerConfig)
@@ -284,10 +283,10 @@ public class SchedulersTab : ModelTab
                 ImGui.Indent();
                 var state = SchedulerConfigToState[schedulerConfig];
 
-                var daysLimit = state.NextOccurrencesDaysLimit;
-                if (ImGui.InputInt($"Days Limit###schedulerConfigs{hash}StateNextOccurrencesDaysLimit", ref daysLimit))
+                var daysDisplayLimit = state.DaysDisplayLimit;
+                if (ImGui.InputInt($"Days Display Limit###schedulerConfigs{hash}StateDaysDisplayLimit", ref daysDisplayLimit))
                 {
-                    state.NextOccurrencesDaysLimit = daysLimit;
+                    state.DaysDisplayLimit = daysDisplayLimit;
                 }
 
                 if (ImGui.BeginTable($"schedulerConfigs{hash}SchedulerCommandsConfigNextOccurrencesTab", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
@@ -301,7 +300,7 @@ public class SchedulersTab : ModelTab
 
                     var clipper = ImGuiHelper.NewListClipper();
                     var entries = schedulerConfig.SchedulerCommandConfigs.SelectMany(config => {
-                        return config.GetOccurrences(nowUtc, nowUtc.AddDays(state.NextOccurrencesDaysLimit)).Select(occurrence =>
+                        return config.GetOccurrences(nowUtc, nowUtc.AddDays(state.DaysDisplayLimit)).Select(occurrence =>
                         {
                             var remainingTime = occurrence - nowUtc;
                             return (config, remainingTime, occurrence);
@@ -363,15 +362,12 @@ public class SchedulersTab : ModelTab
                             }
                         }
                     }
-
                     clipper.Destroy();
                     ImGui.EndTable();
                 }
-
                 ImGui.Unindent();
             }
+            ImGui.PopStyleVar();
         }
-
-        ImGui.PopStyleVar();
     }
 }

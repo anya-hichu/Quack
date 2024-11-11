@@ -2,5 +2,5 @@ namespace Quack.Windows.Configs.States;
 
 public class SchedulerConfigState
 {
-    public int NextOccurrencesDaysLimit { get; set; } = 7;
+    public int DaysDisplayLimit { get; set; } = 7;
 }

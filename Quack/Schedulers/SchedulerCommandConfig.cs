@@ -52,9 +52,4 @@ public class SchedulerCommandConfig
             return [];
         }
     }
-
-    public bool Valid()
-    {
-        return ParseCronExpression() != null && !Command.IsNullOrWhitespace();
-    }
 }
