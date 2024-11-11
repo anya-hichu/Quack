@@ -1,4 +1,5 @@
 using Quack.Macros;
+using Quack.Schedulers;
 using SQLite;
 using System.Linq;
 
@@ -48,8 +49,24 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
                 MacroTable.Insert(macros);
             }
 
+            if (version < 5)
+            {
+                config.SchedulerConfigs.ForEach(MigrateSchedulerConfigToV5);
+            }
+
             config.Version = Config.CURRENT_VERSION;
             config.Save();
         }
+    }
+
+    public static void MigrateSchedulerConfigToV5(SchedulerConfig schedulerConfig)
+    {
+        schedulerConfig.SchedulerTriggerConfigs = schedulerConfig.SchedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
+        {
+            TimeZone = c.TimeZone,
+            TimeExpression = c.TimeExpression,
+            Command = c.Command
+        }).ToList();
+        schedulerConfig.SchedulerCommandConfigs.Clear();
     }
 }

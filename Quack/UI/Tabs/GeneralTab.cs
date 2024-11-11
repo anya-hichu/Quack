@@ -5,7 +5,7 @@ using ImGuiNET;
 using JavaScriptEngineSwitcher.Core;
 using System.Linq;
 
-namespace Quack.Windows.Configs.Tabs;
+namespace Quack.UI.Tabs;
 
 public class GeneralTab(Config config, IKeyState keyState)
 {

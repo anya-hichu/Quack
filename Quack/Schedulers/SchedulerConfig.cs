@@ -8,5 +8,8 @@ public class SchedulerConfig
 {
     public bool Enabled { get; set; } = true;
     public string Name { get; set; } = string.Empty;
+
+    [ObsoleteAttribute("Renamed to SchedulerTriggerConfigs in config version 5")]
     public List<SchedulerCommandConfig> SchedulerCommandConfigs { get; set; } = [];
+    public List<SchedulerTriggerConfig> SchedulerTriggerConfigs { get; set; } = [];
 }

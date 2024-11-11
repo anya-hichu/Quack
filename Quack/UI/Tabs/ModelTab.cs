@@ -1,7 +1,7 @@
 using Quack.Utils;
 using System;
 
-namespace Quack.Windows.Configs.Tabs;
+namespace Quack.UI.Tabs;
 
 public abstract class ModelTab(Debouncers debouncers)
 {

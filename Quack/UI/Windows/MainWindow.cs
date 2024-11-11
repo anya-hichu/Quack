@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Quack.Macros;
-using Quack.Utils;
+using Quack.UI.Helpers;
 
-namespace Quack.Windows;
+namespace Quack.UI.Windows;
 
 public class MainWindow : Window, IDisposable
 {
@@ -20,9 +21,9 @@ public class MainWindow : Window, IDisposable
     private IPluginLog PluginLog { get; init; }
     private string Filter { get; set; } = string.Empty;
     private HashSet<Macro> FilteredMacros { get; set; } = [];
-    private MacroExecutionGui MacroExecutionGui { get; init; }
+    private MacroExecutionHelper MacroExecutionHelper { get; init; }
 
-    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionGui macroExecutionGui, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack##mainWindow")
+    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionHelper macroExecutionGui, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -32,7 +33,7 @@ public class MainWindow : Window, IDisposable
 
         CachedMacros = cachedMacros;
         Config = config;
-        MacroExecutionGui = macroExecutionGui;
+        MacroExecutionHelper = macroExecutionGui;
         MacroExecutor = macroExecutor;
         MacroTable = macroTable;
         PluginLog = pluginLog;
@@ -44,7 +45,6 @@ public class MainWindow : Window, IDisposable
     public void UpdateFilteredMacros()
     {
         FilteredMacros = MacroTable.Search(Filter);
-        MacroExecutionGui.UpdateExecutions(FilteredMacros);
     }
 
     public void Dispose()
@@ -54,19 +54,20 @@ public class MainWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.PushItemWidth(ImGui.GetWindowWidth() - 220);
-        var filter = Filter;
-        var filterInput = ImGui.InputTextWithHint($"Filter ({FilteredMacros.Count}/{CachedMacros.Count})###filter", "Search Query (min 3 chars)", ref filter, ushort.MaxValue);
-        if (ImGui.IsItemHovered())
+        using (ImRaii.ItemWidth(ImGui.GetWindowWidth() - 225))
         {
-            ImGui.SetTooltip("Indexed columns with trigram: name, path, command, tags\n\nExample queries:\n - PEDRO\n - cute tags:design\n - ^Custom tags:throw NOT cheese\n\nSee FTS5 query documentation for syntax and more examples: https://www.sqlite.org/fts5.html");
+            var filter = Filter;
+            var filterInput = ImGui.InputTextWithHint($"Filter ({FilteredMacros.Count}/{CachedMacros.Count})###filter", "Search Query (min 3 chars)", ref filter, ushort.MaxValue);
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Indexed columns with trigram: name, path, command, tags\n\nExample queries:\n - PEDRO\n - cute tags:design\n - ^Custom tags:throw NOT cheese\n\nSee FTS5 query documentation for syntax and more examples: https://www.sqlite.org/fts5.html");
+            }
+            if (filterInput)
+            {
+                Filter = filter;
+                UpdateFilteredMacros();
+            }
         }
-        if (filterInput)
-        {
-            Filter = filter;
-            UpdateFilteredMacros();
-        }
-        ImGui.PopItemWidth();
 
         ImGui.SameLine();
         if (ImGui.Button("X##filterClear"))
@@ -78,17 +79,16 @@ public class MainWindow : Window, IDisposable
         if (MacroExecutor.HasRunningTasks())
         {
             ImGui.SameLine();
-            ImGui.PushStyleColor(ImGuiCol.Button, ImGuiColors.DalamudOrange);
-            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1));
-            if (ImGui.Button($"Cancel All###macrosCancelAll"))
+            using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
             {
-                MacroExecutor.CancelTasks();
+                if (ImGui.Button($"Cancel All###macrosCancelAll"))
+                {
+                    MacroExecutor.CancelTasks();
+                }
             }
-            ImGui.PopStyleColor();
-            ImGui.PopStyleColor();
         }
 
-        if (ImGui.BeginTable("macros", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
+        using (ImRaii.Table("macros", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
         {
             ImGui.TableSetupColumn($"Name##macroName", ImGuiTableColumnFlags.None, 3);
             ImGui.TableSetupColumn($"Path##macroPath", ImGuiTableColumnFlags.None, 2);
@@ -96,9 +96,9 @@ public class MainWindow : Window, IDisposable
             ImGui.TableSetupColumn($"Actions##macroActions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
 
-            var clipper = ImGuiHelper.NewListClipper();
+            var clipper = ListClipperHelper.Build();
             clipper.Begin(FilteredMacros.Count, 27);
-            while(clipper.Step())
+            while (clipper.Step())
             {
                 for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
@@ -133,17 +133,13 @@ public class MainWindow : Window, IDisposable
 
                     if (ImGui.TableNextColumn())
                     {
-                        MacroExecutionGui.Button(macro);
+                        MacroExecutionHelper.Button(macro);
                     }
 
                     ImGui.TableNextRow();
                 }
             }
             clipper.Destroy();
-
-            ImGui.EndTable();
         }
     }
-
-
 }

@@ -1,17 +1,14 @@
+
 using Quack.Macros;
 using Quack.Utils;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Quack.Windows.Configs.States;
+namespace Quack.UI.Helpers;
 
-public class MacroState(HashSet<TreeNode<string>> pathNodes, string? selectedPath, string filter)
+public static class MacroEditorHelper
 {
-    public HashSet<TreeNode<string>> PathNodes { get; init; } = pathNodes;
-    public string? SelectedPath { get; set; } = selectedPath;
-    public string Filter { get; set; } = filter;
-
-    public static HashSet<TreeNode<string>> GeneratePathNodes(IEnumerable<Macro> macros)
+    public static HashSet<TreeNode<string>> BuildPathNodes(IEnumerable<Macro> macros)
     {
         var pathNodes = new HashSet<TreeNode<string>>(0, new TreeNodeComparer<string>());
         foreach (var macro in macros)

@@ -2,6 +2,7 @@ using Dalamud.Game.Command;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Quack.Utils;
+using Quack.UI.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -110,7 +111,7 @@ public class MacroCommands: IDisposable
             } 
             else
             {
-                ChatGui.PrintError(MacroExecutionGui.GetNonExecutableMessage(macroExecution));
+                ChatGui.PrintError(MacroExecutionHelper.GetNonExecutableMessage(macroExecution));
             }
         };
     }

@@ -1,10 +1,10 @@
 using ImGuiNET;
 
-namespace Quack.Utils;
+namespace Quack.UI.Helpers;
 
-public class ImGuiHelper
+public static class ListClipperHelper
 {
-    public static unsafe ImGuiListClipperPtr NewListClipper()
+    public static unsafe ImGuiListClipperPtr Build()
     {
         return new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
     }

@@ -12,7 +12,7 @@ namespace Quack;
 [Serializable]
 public class Config : IPluginConfiguration
 {
-    public static readonly int CURRENT_VERSION = 4;
+    public static readonly int CURRENT_VERSION = 5;
 
     public static readonly VirtualKey[] MODIFIER_KEYS = [ VirtualKey.NO_KEY, VirtualKey.CONTROL, VirtualKey.SHIFT, VirtualKey.MENU ];
 
@@ -31,7 +31,6 @@ public class Config : IPluginConfiguration
 
     [ObsoleteAttribute("Macros migrated to sqlite db with full text search in config version 3")]
     public HashSet<Macro> Macros { get; set; } = [];
-
     public List<SchedulerConfig> SchedulerConfigs { get; set; } = [];
 
     public Config() { 

@@ -2,7 +2,6 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using Quack.Windows;
 using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.Jint;
 using Quack.Generators;
@@ -18,6 +17,8 @@ using JavaScriptEngineSwitcher.V8;
 using System.IO;
 using SQLite;
 using Quack.Chat;
+using Quack.UI.Helpers;
+using Quack.UI.Windows;
 
 namespace Quack;
 
@@ -89,14 +90,14 @@ public sealed class Plugin : IDalamudPlugin
         ChatSender = new(chatServer, Framework, MacroSharedLock, PluginLog);
         
         MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
-        var macroExecutionGui = new MacroExecutionGui(Config, MacroExecutor);
+        var macroExecutionHelper = new MacroExecutionHelper(Config, MacroExecutor);
         Debouncers = new(PluginLog);
 
-        MainWindow = new(cachedMacros, Config, macroExecutionGui, MacroExecutor, MacroTable, PluginLog)
+        MainWindow = new(cachedMacros, Config, macroExecutionHelper, MacroExecutor, MacroTable, PluginLog)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, ChatSender, Config, Debouncers, KeyState, macroExecutionGui, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog)
+        ConfigWindow = new(cachedMacros, ChatSender, Config, Debouncers, KeyState, macroExecutionHelper, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
         };
@@ -209,7 +210,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             else
             {
-                ChatGui.PrintError(MacroExecutionGui.GetNonExecutableMessage(macroExecution));
+                ChatGui.PrintError(MacroExecutionHelper.GetNonExecutableMessage(macroExecution));
             }
         }
         else if (arguments.Length >= 3)
@@ -267,7 +268,7 @@ public sealed class Plugin : IDalamudPlugin
             } 
             else
             {
-                ChatGui.PrintError(MacroExecutionGui.GetNonExecutableMessage(macroExecution));
+                ChatGui.PrintError(MacroExecutionHelper.GetNonExecutableMessage(macroExecution));
             }
         } 
         else
