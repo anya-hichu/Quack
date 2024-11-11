@@ -131,6 +131,7 @@ public class SchedulersTab : ModelTab
                 var json = reader.ReadToEnd();
                 var importedSchedulerConfigs = JsonConvert.DeserializeObject<List<SchedulerConfig>>(json)!;
                 Config.SchedulerConfigs.AddRange(importedSchedulerConfigs);
+                importedSchedulerConfigs.ForEach(c => SchedulerConfigToState.Add(c, new()));
                 Config.Save();
             }
         });
