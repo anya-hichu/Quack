@@ -61,12 +61,16 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
 
     public static void MigrateSchedulerConfigToV5(SchedulerConfig schedulerConfig)
     {
-        schedulerConfig.SchedulerTriggerConfigs = schedulerConfig.SchedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
+        var schedulerCommandConfigs = schedulerConfig.SchedulerCommandConfigs;
+        if (schedulerCommandConfigs.Any())
         {
-            TimeZone = c.TimeZone,
-            TimeExpression = c.TimeExpression,
-            Command = c.Command
-        }).ToList();
-        schedulerConfig.SchedulerCommandConfigs.Clear();
+            schedulerConfig.SchedulerTriggerConfigs = schedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
+            {
+                TimeZone = c.TimeZone,
+                TimeExpression = c.TimeExpression,
+                Command = c.Command
+            }).ToList();
+            schedulerCommandConfigs.Clear();
+        }
     }
 }
