@@ -32,10 +32,10 @@ public class ConfigWindow : Window, IDisposable
         };
 
         GeneralTab = new(config, keyState);
-        MacrosTab = new(cachedMacros, debouncers, FileDialogManager, macroExecutionHelper, macroExecutor, macroTable, macroTableQueue, pluginLog);
+        MacrosTab = new(cachedMacros, debouncers, FileDialogManager, keyState, macroExecutionHelper, macroExecutor, macroTable, macroTableQueue, pluginLog);
 
-        SchedulersTab = new(chatSender, config, debouncers, FileDialogManager);
-        GeneratorsTab = new(cachedMacros, config, debouncers, FileDialogManager, macroTableQueue, pluginLog);
+        SchedulersTab = new(chatSender, config, debouncers, FileDialogManager, keyState);
+        GeneratorsTab = new(cachedMacros, config, debouncers, FileDialogManager, keyState, macroTableQueue, pluginLog);
     }
 
     public void Dispose()

@@ -11,5 +11,8 @@ public class SchedulerConfig
 
     [ObsoleteAttribute("Renamed to SchedulerTriggerConfigs in config version 5")]
     public List<SchedulerCommandConfig> SchedulerCommandConfigs { get; set; } = [];
+
+    [ObsoleteAttribute("Renamed to TriggerConfigs in config version 6")]
     public List<SchedulerTriggerConfig> SchedulerTriggerConfigs { get; set; } = [];
+    public List<SchedulerTriggerConfig> TriggerConfigs { get; set; } = [];
 }

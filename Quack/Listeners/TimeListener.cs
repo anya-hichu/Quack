@@ -33,13 +33,13 @@ public class TimeListener : IDisposable
         var nowUtc = DateTime.UtcNow;
         foreach (var schedulerConfig in Config.SchedulerConfigs.Where(c => c.Enabled))
         {
-            foreach (var schedulerTriggerConfig in schedulerConfig.SchedulerTriggerConfigs.Where(c => !c.Command.IsNullOrWhitespace()))
+            foreach (var triggerConfig in schedulerConfig.TriggerConfigs.Where(c => !c.Command.IsNullOrWhitespace()))
             {
-                var nextOccurrence = schedulerTriggerConfig.GetNextOccurrence(nowUtc);
+                var nextOccurrence = triggerConfig.GetNextOccurrence(nowUtc);
                 if (nextOccurrence.HasValue && Framework.UpdateDelta.CompareTo(nextOccurrence.Value - nowUtc) >= 0)
                 {
-                    ChatServer.SendMessage(schedulerTriggerConfig.Command);
-                    PluginLog.Info($"Sent configured command '{schedulerTriggerConfig.Command}' from scheduler '{schedulerConfig.Name}' trigger with matching time expression '{schedulerTriggerConfig.TimeExpression}'");
+                    ChatServer.SendMessage(triggerConfig.Command);
+                    PluginLog.Info($"Sent configured command '{triggerConfig.Command}' from scheduler '{schedulerConfig.Name}' trigger with matching time expression '{triggerConfig.TimeExpression}'");
                 }
             }
         }

@@ -9,7 +9,6 @@ using Quack.Macros;
 using Quack.Utils;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using System.IO;
 using System.Linq;
 using System;
 using System.Numerics;
@@ -19,6 +18,7 @@ using Dalamud.Plugin.Services;
 using Quack.UI.Helpers;
 using Quack.UI.States;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Game.ClientState.Keys;
 
 namespace Quack.UI.Tabs;
 
@@ -27,17 +27,17 @@ public class GeneratorsTab : ModelTab
     private HashSet<Macro> CachedMacros { get; init; }
     private IJsEngine? CurrentJsEngine { get; set; }
     private Config Config { get; init; }
-    private FileDialogManager FileDialogManager { get; init; }
     private Dictionary<GeneratorConfig, GeneratorConfigState> GeneratorConfigToState { get; set; }
     private GeneratorException? GeneratorException { get; set; } = null;
+    private IKeyState KeyState { get; init; }
     private MacroTableQueue MacroTableQueue { get; init; }
     private IPluginLog PluginLog { get; init; }
 
-    public GeneratorsTab(HashSet<Macro> cachedMacros, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, MacroTableQueue macroTableQueue, IPluginLog pluginLog) : base(debouncers)
+    public GeneratorsTab(HashSet<Macro> cachedMacros, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, IKeyState keyState, MacroTableQueue macroTableQueue, IPluginLog pluginLog) : base(debouncers, fileDialogManager)
     {
         CachedMacros = cachedMacros;
         Config = config;
-        FileDialogManager = fileDialogManager;
+        KeyState = keyState;
         MacroTableQueue = macroTableQueue;
         PluginLog = pluginLog;
 
@@ -65,15 +65,33 @@ public class GeneratorsTab : ModelTab
         }
 
         ImGui.SameLine(ImGui.GetWindowWidth() - 360);
-        if (ImGui.Button("Export All##generatorConfigsExportAll"))
+        ImGui.Button("Export All##generatorConfigsExportAll");
+        if (ImGui.IsItemHovered())
         {
-            ExportGeneratorConfigs(Config.GeneratorConfigs);
+            ImGui.SetTooltip("Right-click for clipboard base64 export");
+        }
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+        {
+            ExportToFile(Config.GeneratorConfigs, "Export Generators", "generators.json");
+        }
+        else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        {
+            ExportToClipboard(Config.GeneratorConfigs);
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("Import All##generatorConfigsImportAll"))
+        ImGui.Button("Import All##generatorConfigsImportAll");
+        if (ImGui.IsItemHovered())
         {
-            ImportGeneratorConfigs();
+            ImGui.SetTooltip("Right-click for clipboard base64 import");
+        }
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+        {
+            WithFileContent(ImportGeneratorConfigsFromJson, "Import Generators");
+        }
+        else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        {
+            WithDecodedClipboardContent(ImportGeneratorConfigsFromJson);
         }
 
         ImGui.SameLine();
@@ -82,40 +100,17 @@ public class GeneratorsTab : ModelTab
             RecreateDefaultGeneratorConfigs();
         }
 
-        var deleteAllGeneratorConfigsPopup = "deleteAllGeneratorConfigsPopup";
-        using (var popup = ImRaii.Popup(deleteAllGeneratorConfigsPopup))
-        {
-            if (popup.Success)
-            {
-                ImGui.Text($"Confirm deleting {Config.GeneratorConfigs.Count} generators?");
-
-                ImGui.SetCursorPosX(15);
-                using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
-                {
-                    if (ImGui.Button($"Yes##{deleteAllGeneratorConfigsPopup}Yes", new(100, 30)))
-                    {
-                        DeleteGeneratorConfigs();
-                        ImGui.CloseCurrentPopup();
-                    }
-                }
-
-                ImGui.SameLine();
-                if (ImGui.Button($"No##{deleteAllGeneratorConfigsPopup}No", new(100, 30)))
-                {
-                    ImGui.CloseCurrentPopup();
-                }
-            }
-        }
-
         ImGui.SameLine();
         using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
         {
-            if (ImGui.Button("Delete All##generatorConfigsDeleteAll"))
+            var deleteAllPressed = ImGui.Button("Delete All##generatorConfigsDeleteAll");
+            if (ImGui.IsItemHovered())
             {
-                if (Config.GeneratorConfigs.Count > 0)
-                {
-                    ImGui.OpenPopup(deleteAllGeneratorConfigsPopup);
-                }
+                ImGui.SetTooltip("Press <CTRL> while clicking to confirm deleting all generators");
+            }
+            if (deleteAllPressed && KeyState[VirtualKey.CONTROL])
+            {
+                DeleteGeneratorConfigs();
             }
         }
 
@@ -139,33 +134,12 @@ public class GeneratorsTab : ModelTab
         }    
     }
 
-    private void ExportGeneratorConfigs(IEnumerable<GeneratorConfig> generatorConfigs)
+    private void ImportGeneratorConfigsFromJson(string json)
     {
-        FileDialogManager.SaveFileDialog("Export Generators", ".*", "generators.json", ".json", (valid, path) =>
-        {
-            if (valid)
-            {
-                using var file = File.CreateText(path);
-                new JsonSerializer().Serialize(file, generatorConfigs);
-            }
-        });
-    }
-
-    private void ImportGeneratorConfigs()
-    {
-        FileDialogManager.OpenFileDialog("Import Generators", "{.json}", (valid, path) =>
-        {
-            if (valid)
-            {
-                using StreamReader reader = new(path);
-                var json = reader.ReadToEnd();
-                var importedGeneratorConfigs = JsonConvert.DeserializeObject<List<GeneratorConfig>>(json)!;
-                Config.GeneratorConfigs.AddRange(importedGeneratorConfigs);
-                Config.Save();
-
-                importedGeneratorConfigs.ForEach(g => GeneratorConfigToState.Add(g, new()));
-            }
-        });
+        var generatorConfigs = JsonConvert.DeserializeObject<List<GeneratorConfig>>(json)!;
+        generatorConfigs.ForEach(g => GeneratorConfigToState.Add(g, new()));
+        Config.GeneratorConfigs.AddRange(generatorConfigs);
+        Config.Save();
     }
 
     private void DrawDefinitionHeader(GeneratorConfig generatorConfig, IEnumerable<CallGateChannel> funcChannels)
@@ -184,12 +158,21 @@ public class GeneratorsTab : ModelTab
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 115);
-                if (ImGui.Button("Export##generatorConfigsExport"))
+                ImGui.Button("Export##generatorConfigsExport");
+                if (ImGui.IsItemHovered())
                 {
-                    ExportGeneratorConfigs([generatorConfig]);
+                    ImGui.SetTooltip("Right-click for clipboard base64 export");
                 }
-                ImGui.SameLine();
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                {
+                    ExportToFile([generatorConfig], "Export Generator", $"{(generatorConfig.Name.IsNullOrWhitespace() ? "generator" : generatorConfig.Name)}.json");
+                }
+                else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                {
+                    ExportToClipboard([generatorConfig]);
+                }
 
+                ImGui.SameLine();
                 using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                 {
                     if (ImGui.Button($"Delete###generatorConfigs{hash}Delete"))
@@ -234,7 +217,12 @@ public class GeneratorsTab : ModelTab
                                         ImGui.SameLine(600);
                                         using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                                         {
-                                            if (ImGui.Button($"Delete###generatorConfigs{hash}IpcConfigs{i}Delete"))
+                                            var deletePressed = ImGui.Button($"Delete###generatorConfigs{hash}IpcConfigs{i}Delete");
+                                            if (ImGui.IsItemHovered())
+                                            {
+                                                ImGui.SetTooltip("Press <CTRL> while clicking to confirm ipc deletion");
+                                            }
+                                            if (deletePressed && KeyState[VirtualKey.CONTROL])
                                             {
                                                 generatorConfig.IpcConfigs.RemoveAt(i);
                                                 Config.Save();
@@ -344,7 +332,7 @@ public class GeneratorsTab : ModelTab
                             }
 
                             ImGui.SameLine();
-                            if (ImGui.Button("No", new(100, 30)))
+                            if (ImGui.Button("Cancel", new(100, 30)))
                             {
                                 ImGui.CloseCurrentPopup();
                             }

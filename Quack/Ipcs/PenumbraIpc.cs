@@ -2,7 +2,6 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Services;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Quack.Utils;
 using System;
@@ -147,8 +146,8 @@ public class PenumbraIpc : IDisposable
                     return groupSettings;
                 });
 
-                var camelCasedDefaultSettings = NewtonsoftHelper.CamelCaseDictionnary(defaultSettings);
-                camelCasedDefaultSettings.Add("groupSettings", groupSettings.Select(NewtonsoftHelper.CamelCaseDictionnary));
+                var camelCasedDefaultSettings = NewtonsoftUtil.CamelCaseDictionnary(defaultSettings);
+                camelCasedDefaultSettings.Add("groupSettings", groupSettings.Select(NewtonsoftUtil.CamelCaseDictionnary));
                 mod.Add("settings", camelCasedDefaultSettings);
                 return mod;
             }

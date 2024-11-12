@@ -12,7 +12,7 @@ namespace Quack;
 [Serializable]
 public class Config : IPluginConfiguration
 {
-    public static readonly int CURRENT_VERSION = 5;
+    public static readonly int CURRENT_VERSION = 6;
 
     public static readonly VirtualKey[] MODIFIER_KEYS = [ VirtualKey.NO_KEY, VirtualKey.CONTROL, VirtualKey.SHIFT, VirtualKey.MENU ];
 

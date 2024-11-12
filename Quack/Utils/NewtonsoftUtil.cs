@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Quack.Utils;
 
-public static class NewtonsoftHelper
+public static class NewtonsoftUtil
 {
     public static Dictionary<string, object> CamelCaseDictionnary(Dictionary<string, object> dictionnary)
     {

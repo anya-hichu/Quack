@@ -20,7 +20,11 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
             {
                 config.GeneratorConfigs.ForEach(c =>
                 {
-                    c.IpcConfigs.Add(new(c.IpcName, c.IpcArgs));
+                    c.IpcConfigs.Add(new()
+                    {
+                        Name = c.IpcName, 
+                        Args = c.IpcArgs
+                    });
                     c.IpcName = c.IpcArgs = string.Empty;
                 });
             }
@@ -49,9 +53,9 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
                 MacroTable.Insert(macros);
             }
 
-            if (version < 5)
+            if (version < 6)
             {
-                config.SchedulerConfigs.ForEach(MigrateSchedulerConfigToV5);
+                config.SchedulerConfigs.ForEach(MaybeMigrateSchedulerConfigToV6);
             }
 
             config.Version = Config.CURRENT_VERSION;
@@ -59,18 +63,26 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
         }
     }
 
-    public static void MigrateSchedulerConfigToV5(SchedulerConfig schedulerConfig)
+    public static void MaybeMigrateSchedulerConfigToV6(SchedulerConfig schedulerConfig)
     {
+        // V5 migration
         var schedulerCommandConfigs = schedulerConfig.SchedulerCommandConfigs;
         if (schedulerCommandConfigs.Any())
         {
-            schedulerConfig.SchedulerTriggerConfigs = schedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
+            schedulerConfig.TriggerConfigs = schedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
             {
                 TimeZone = c.TimeZone,
                 TimeExpression = c.TimeExpression,
                 Command = c.Command
             }).ToList();
             schedulerCommandConfigs.Clear();
+        }
+
+        var schedulerTriggerConfigs = schedulerConfig.SchedulerTriggerConfigs;
+        if (schedulerTriggerConfigs.Any())
+        {
+            schedulerConfig.TriggerConfigs = schedulerTriggerConfigs;
+            schedulerTriggerConfigs.Clear();
         }
     }
 }

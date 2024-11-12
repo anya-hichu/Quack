@@ -1,3 +1,4 @@
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using Quack.Macros;
 using System.Collections.Generic;
@@ -21,60 +22,58 @@ public class MacroExecutionHelper(Config config, MacroExecutor macroExecutor)
         var hash = macro.GetHashCode();
         var isExecutable = macroExecution.IsExecutable();
         var advancedExecutionPopupId = $"macros{hash}AdvancedExecutionPopup";
-        if (ImGui.BeginPopup(advancedExecutionPopupId))
+
+        using(var popup = ImRaii.Popup(advancedExecutionPopupId))
         {
-            var format = macroExecution.Format;
-            if (ImGui.InputText($"Format###macros{hash}ExecutionFormat", ref format, ushort.MaxValue))
+            if (popup.Success)
             {
-                macroExecution.Format = format;
-            }
-
-            ImGui.SameLine();
-            if (ImGui.Button($"Config###macros{hash}ExecutionUseConfigFormat"))
-            {
-                macroExecution.UseConfigFormat();
-            }
-
-            if (macroExecution.RequiredArgsLength() > 0)
-            {
-                var args = macroExecution.Args;
-                if (ImGui.InputText($"Args###macros{hash}ExecutionArgs", ref args, ushort.MaxValue))
+                var format = macroExecution.Format;
+                if (ImGui.InputText($"Format###macros{hash}ExecutionFormat", ref format, ushort.MaxValue))
                 {
-                    macroExecution.Args = args;
-                    macroExecution.ParseArgs();
+                    macroExecution.Format = format;
                 }
-            }
 
-            if (isExecutable)
-            {
-                if (ImGui.Button($"Execute###macros{hash}ExecutionExecute"))
+                ImGui.SameLine();
+                if (ImGui.Button($"Config###macros{hash}ExecutionUseConfigFormat"))
+                {
+                    macroExecution.UseConfigFormat();
+                }
+
+                var requiredArgsLength = macroExecution.RequiredArgsLength();
+
+                if (requiredArgsLength > 0)
+                {
+                    var args = macroExecution.Args;
+                    if (ImGui.InputText($"Args###macros{hash}ExecutionArgs", ref args, ushort.MaxValue))
+                    {
+                        macroExecution.Args = args;
+                        macroExecution.ParseArgs();
+                    }
+                }
+
+                if (isExecutable && ImGui.Button($"Execute###macros{hash}ExecutionExecute"))
                 {
                     macroExecution.ExecuteTask();
                     ImGui.CloseCurrentPopup();
-                    OpenPopupIds.Remove(advancedExecutionPopupId);
                     MacroExecutionByMacro.Remove(macro);
+                    OpenPopupIds.Remove(advancedExecutionPopupId);
                 }
-            }
-            else
-            {
-                ImGui.Text($"Execution requires {macroExecution.RequiredArgsLength()} argument(s)");
-            }
-            ImGui.EndPopup();
-        }
-        else
-        {
-            // Clear on close
-            if (OpenPopupIds.Contains(advancedExecutionPopupId))
+                else
+                {
+                    ImGui.Text($"Execution requires {requiredArgsLength} argument(s)");
+                }
+            } 
+            else if (OpenPopupIds.Contains(advancedExecutionPopupId))
             {
                 MacroExecutionByMacro.Remove(macro);
                 OpenPopupIds.Remove(advancedExecutionPopupId);
             }
         }
 
-        var executeButton = ImGui.Button($"Execute###macros{hash}Execute");
+        ImGui.Button($"Execute###macros{hash}Execute");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right click for advanced execution options");
+            ImGui.SetTooltip("Right-click for advanced execution options");
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
@@ -87,7 +86,7 @@ public class MacroExecutionHelper(Config config, MacroExecutor macroExecutor)
                 OpenPopup(advancedExecutionPopupId);
             }
         }
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
             OpenPopup(advancedExecutionPopupId);
         }
