@@ -40,17 +40,17 @@ public class EmotesIpc: IDisposable
         return EmoteSheet.SelectMany<Emote, Dictionary<string, object>>(e => {
             if (e.EmoteCategory.IsValid && e.TextCommand.IsValid)
             {
-                var actionTimelineKeys = e.ActionTimeline.SelectMany<RowRef<ActionTimeline>, string>(t => !t.IsValid || t.Value.Key.IsEmpty ? [] : [t.Value.Key.ExtractText()]).ToArray();
+                var actionTimelineKeys = e.ActionTimeline.SelectMany<RowRef<ActionTimeline>, string>(t => !t.IsValid || t.Value.Key.IsEmpty ? [] : [t.Value.Key.ToString()]).ToArray();
 
                 var textCommandValue = e.TextCommand.Value;
-                var shortCommand = textCommandValue.ShortCommand.ExtractText();
-                var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.ExtractText() : shortCommand;
+                var shortCommand = textCommandValue.ShortCommand.ToString();
+                var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.ToString() : shortCommand;
 
                 var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(command, []);
 
                 return [new() {
-                    { "name", e.Name.ExtractText() },
-                    { "category",  e.EmoteCategory.Value.Name.ExtractText() },
+                    { "name", e.Name.ToString() },
+                    { "category",  e.EmoteCategory.Value.Name.ToString() },
                     { "command", command },
                     { "actionTimelineKeys", actionTimelineKeys },
                     { "poseKeys", poseKeys }
