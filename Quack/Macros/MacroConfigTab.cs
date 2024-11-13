@@ -97,11 +97,11 @@ public partial class MacroUITab : ConfigEntityTab, IDisposable
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
-            WithFileExports(ImportMacroExportsFromJson, "Import Macros");
+            ImportFromFile(ImportMacroExportsJson, "Import Macros");
         }
         else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
-            WithClipboardExports(ImportMacroExportsFromJson);
+            ImportFromClipboard(ImportMacroExportsJson);
         }
 
         ImGui.SameLine();
@@ -387,15 +387,15 @@ public partial class MacroUITab : ConfigEntityTab, IDisposable
         MacroConfigTabState.SelectedMacros = [macro];
     }
 
-    private void ImportMacroExportsFromJson(string json)
+    private void ImportMacroExportsJson(string exportsJson)
     {
-        var macroExports = JsonConvert.DeserializeObject<ConfigEntityExports<Macro>>(json);
-        if (macroExports == null)
+        var exports = JsonConvert.DeserializeObject<ConfigEntityExports<Macro>>(exportsJson);
+        if (exports == null)
         {
             PluginLog.Error($"Failed to import macros from json");
             return;
         }
-        var macros = macroExports.Entities;
+        var macros = exports.Entities;
         var conflictingMacros = CachedMacros.Intersect(macros);
         CachedMacros.ExceptWith(macros);
         CachedMacros.UnionWith(macros);

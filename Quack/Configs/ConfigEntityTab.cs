@@ -51,7 +51,7 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
         ImGui.SetClipboardText(encodedCompressedExportsJson);
     }
 
-    protected void WithFileExports(Action<string> callback, string title)
+    protected void ImportFromFile(Action<string> callback, string title)
     {
         FileDialogManager.OpenFileDialog(title, "{.json}", (valid, path) =>
         {
@@ -60,13 +60,12 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                 using StreamReader reader = new(path);
                 var exportsJson = reader.ReadToEnd();
                 #region deprecated
-                // Backward compatibility with old format without versioning
+                // Backward compatibility with non-versionned format before config v6
                 if (exportsJson.TrimStart().StartsWith('['))
                 {
                     var entities = JsonConvert.DeserializeObject<List<object>>(exportsJson);
                     if (entities != null)
                     {
-                        // Assume version 5 even if it might be older
                         var exports = new ConfigEntityExports<object>() { Version = 5, Entities = entities };
                         exportsJson = JsonConvert.SerializeObject(exports);
                     }
@@ -77,7 +76,7 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
         });
     }
 
-    protected static void WithClipboardExports(Action<string> callback)
+    protected static void ImportFromClipboard(Action<string> callback)
     {
         var encodedCompressedExportsJson = ImGui.GetClipboardText();
         var compressedExportsJsonBytes = Convert.FromBase64String(encodedCompressedExportsJson);

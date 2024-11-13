@@ -85,11 +85,11 @@ public class GeneratorConfigTab : ConfigEntityTab
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
-            WithFileExports(ImportGeneratorConfigExportsFromJson, "Import Generators");
+            ImportFromFile(ImportGeneratorConfigExportsJson, "Import Generators");
         }
         else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
-            WithClipboardExports(ImportGeneratorConfigExportsFromJson);
+            ImportFromClipboard(ImportGeneratorConfigExportsJson);
         }
 
         ImGui.SameLine();
@@ -132,15 +132,15 @@ public class GeneratorConfigTab : ConfigEntityTab
         }
     }
 
-    private void ImportGeneratorConfigExportsFromJson(string json)
+    private void ImportGeneratorConfigExportsJson(string exportsJson)
     {
-        var generatorConfigExports = JsonConvert.DeserializeObject<ConfigEntityExports<GeneratorConfig>>(json);
-        if (generatorConfigExports == null)
+        var exports = JsonConvert.DeserializeObject<ConfigEntityExports<GeneratorConfig>>(exportsJson);
+        if (exports == null)
         {
             PluginLog.Error($"Failed to import generators from json");
             return;
         }
-        var generatorConfigs = generatorConfigExports.Entities.ToList();
+        var generatorConfigs = exports.Entities.ToList();
         generatorConfigs.ForEach(g => GeneratorConfigToState.Add(g, new()));
         Config.GeneratorConfigs.AddRange(generatorConfigs);
         Config.Save();

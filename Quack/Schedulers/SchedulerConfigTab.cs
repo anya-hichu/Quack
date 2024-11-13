@@ -66,11 +66,11 @@ public class SchedulerConfigTab : ConfigEntityTab
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
-            WithFileExports(ImportSchedulerConfigExportsFromJson, "Import Schedulers");
+            ImportFromFile(ImportSchedulerConfigExportsJson, "Import Schedulers");
         }
         else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
-            WithClipboardExports(ImportSchedulerConfigExportsFromJson);
+            ImportFromClipboard(ImportSchedulerConfigExportsJson);
         }
 
         ImGui.SameLine();
@@ -111,20 +111,20 @@ public class SchedulerConfigTab : ConfigEntityTab
         Config.Save();
     }
 
-    private void ImportSchedulerConfigExportsFromJson(string json)
+    private void ImportSchedulerConfigExportsJson(string exportsJson)
     {
-        var schedulerConfigExports = JsonConvert.DeserializeObject<ConfigEntityExports<SchedulerConfig>>(json);
-        if (schedulerConfigExports == null)
+        var exports = JsonConvert.DeserializeObject<ConfigEntityExports<SchedulerConfig>>(exportsJson);
+        if (exports == null)
         {
             PluginLog.Error($"Failed to import schedulers from json");
             return;
         }
 
-        var schedulerConfigs = schedulerConfigExports.Entities;
+        var schedulerConfigs = exports.Entities;
         schedulerConfigs.ForEach(schedulerConfig =>
         {
             #region deprecated
-            if (schedulerConfigExports.Version < 6)
+            if (exports.Version < 6)
             {
                 ConfigMigrator.MigrateSchedulerConfigToV6(schedulerConfig);
             }
