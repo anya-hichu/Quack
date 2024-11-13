@@ -8,7 +8,7 @@ using Dalamud.Utility;
 using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.Jint;
 using JavaScriptEngineSwitcher.V8;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using Quack.Chat;
 using Quack.Configs;
 using Quack.Generators;

@@ -2,7 +2,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 using Dalamud.Utility;
 using Lumina.Excel;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,23 +38,19 @@ public class EmotesIpc: IDisposable
     public Dictionary<string, object>[] GetList()
     {
         return EmoteSheet.SelectMany<Emote, Dictionary<string, object>>(e => {
-            if (e.EmoteCategory.Value != null && e.TextCommand.Value != null)
+            if (e.EmoteCategory.IsValid && e.TextCommand.IsValid)
             {
-                var actionTimelineKeys = e.ActionTimeline.SelectMany<LazyRow<ActionTimeline>, string>(t =>
-                {
-                    var key = t.Value?.Key?.RawString;
-                    return key.IsNullOrEmpty() ? [] : [key];
-                }).ToArray();
+                var actionTimelineKeys = e.ActionTimeline.SelectMany<RowRef<ActionTimeline>, string>(t => !t.IsValid || t.Value.Key.IsEmpty ? [] : [t.Value.Key.ToString()]).ToArray();
 
                 var textCommandValue = e.TextCommand.Value;
-                var shortCommand = textCommandValue.ShortCommand.RawString;
-                var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.RawString : shortCommand;
+                var shortCommand = textCommandValue.ShortCommand.ToString();
+                var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.ToString() : shortCommand;
 
                 var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(command, []);
 
                 return [new() {
-                    { "name", e.Name.RawString},
-                    { "category",  e.EmoteCategory.Value!.Name.RawString},
+                    { "name", e.Name.ToString()},
+                    { "category",  e.EmoteCategory.Value.Name.ToString()},
                     { "command", command },
                     { "actionTimelineKeys", actionTimelineKeys},
                     { "poseKeys", poseKeys}

@@ -34,7 +34,7 @@ public class LocalPlayerIpc : IDisposable
         {
             return new() {
                 {"name", localPlayer.Name.TextValue},
-                {"homeWorld", localPlayer.HomeWorld.GameData!.Name}
+                {"homeWorld", localPlayer.HomeWorld.Value.Name}
             };
         } 
         else
