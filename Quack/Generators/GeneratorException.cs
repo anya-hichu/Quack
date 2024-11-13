@@ -1,4 +1,5 @@
 using System;
+
 namespace Quack.Generators;
 
 public class GeneratorException : Exception

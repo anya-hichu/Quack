@@ -19,6 +19,7 @@ public class ChatSender: IDisposable
     private IFramework Framework { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
     public IPluginLog PluginLog { get; init; }
+
     private Queue<Payload> PendingPayloads { get; init; } = [];
 
     public ChatSender(ChatServer chatServer, IFramework framework, MacroSharedLock macroSharedLock, IPluginLog pluginLog)
@@ -47,16 +48,17 @@ public class ChatSender: IDisposable
     {
         while (PendingPayloads.TryDequeue(out var payload))
         {
+            var completion = payload.Completion;
             if (MacroSharedLock.IsAcquired(payload.LockId))
             {
                 ChatServer.SendMessage(payload.Message);
                 PluginLog.Verbose($"Sent chat message: '{payload.Message}' (lock #{payload.LockId})");
-                payload.Completion.SetResult(true);
+                completion.SetResult(true);
             } 
             else
             {
                 PluginLog.Verbose($"Discarded chat message: '{payload.Message}' (lock #{payload.LockId} was released)");
-                payload.Completion.SetResult(false);
+                completion.SetResult(false);
             }
         }
     }

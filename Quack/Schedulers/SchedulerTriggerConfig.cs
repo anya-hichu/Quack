@@ -1,5 +1,4 @@
 using Cronos;
-using Dalamud.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,43 +12,44 @@ public class SchedulerTriggerConfig
     public string TimeExpression { get; set; } = string.Empty;
     public string Command { get; set; } = string.Empty;
 
-    public CronExpression? ParseCronExpression()
+    public bool TryParseCronExpression(out CronExpression cronExpression)
     {
-        if (!TimeExpression.IsNullOrEmpty() && CronExpression.TryParse(TimeExpression, out var cronExpression))
-        {
-            return cronExpression;
-        } 
-        else
-        {
-            return null;
-        }
+        return CronExpression.TryParse(TimeExpression, out cronExpression);
     }
 
     public DateTime? GetNextOccurrence(DateTime fromUtc)
     {
-        var cronExpression = ParseCronExpression();
-        if (cronExpression != null)
-        {
-            var nextOccurrence = cronExpression.GetNextOccurrence(fromUtc.Add(TimeZone.BaseUtcOffset));
-            return nextOccurrence.HasValue ? nextOccurrence.Value.Add(-TimeZone.BaseUtcOffset) : null;
-        } 
-        else
+        if (!TryParseCronExpression(out var cronExpression))
         {
             return null;
         }
+        var nextOccurrence = cronExpression.GetNextOccurrence(AddOffset(fromUtc));
+        return nextOccurrence.HasValue ? RemoveOffset(nextOccurrence.Value) : null;
     }
 
     public IEnumerable<DateTime> GetOccurrences(DateTime fromUtc, DateTime toUtc)
     {
-        var cronExpression = ParseCronExpression();
-        if (cronExpression != null)
-        {
-            var nextOccurrences = cronExpression.GetOccurrences(fromUtc.Add(TimeZone.BaseUtcOffset), toUtc.Add(TimeZone.BaseUtcOffset));
-            return nextOccurrences.Select(o => o.Add(-TimeZone.BaseUtcOffset));
-        }
-        else
+        if (!TryParseCronExpression(out var cronExpression))
         {
             return [];
         }
+        var nextOccurrences = cronExpression.GetOccurrences(AddOffset(fromUtc), AddOffset(toUtc));
+        return nextOccurrences.Select(RemoveOffset);
+    }
+
+    // Chronos expects UTC
+    private DateTime AddOffset(DateTime utc)
+    {
+        return utc.Add(TimeZone.BaseUtcOffset);
+    }
+
+    private DateTime RemoveOffset(DateTime utc)
+    {
+        return utc.Add(-TimeZone.BaseUtcOffset);
+    }
+
+    public SchedulerTriggerConfig Clone()
+    {
+        return (SchedulerTriggerConfig)MemberwiseClone();
     }
 }

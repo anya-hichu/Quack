@@ -1,12 +1,12 @@
 // Source: https://git.anna.lgbt/anna/XivCommon/src/branch/main/XivCommon/Functions/Chat.cs
 
+using Dalamud.Game;
+using FFXIVClientStructs.FFXIV.Client.System.Memory;
+using FFXIVClientStructs.FFXIV.Client.System.String;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
-using Dalamud.Game;
-using FFXIVClientStructs.FFXIV.Client.System.Memory;
-using FFXIVClientStructs.FFXIV.Client.System.String;
 using Framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework;
 
 namespace Quack.Chat;

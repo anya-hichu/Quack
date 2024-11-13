@@ -1,9 +1,9 @@
 using Quack.Macros;
 using System.Collections.Generic;
 
-namespace Quack.UI.States;
+namespace Quack.Generators;
 
-public class GeneratorConfigState
+public class GeneratorConfigTabState
 {
     public HashSet<Macro> GeneratedMacros { get; set; } = new(0, MacroComparer.INSTANCE);
     public HashSet<Macro> SelectedGeneratedMacros { get; set; } = new(0, MacroComparer.INSTANCE);

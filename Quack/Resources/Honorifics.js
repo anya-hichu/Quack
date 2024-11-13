@@ -3,7 +3,7 @@
 function main(titlesJson) {
     const titles = JSON.parse(titlesJson);
 
-    const disablehonorificsMacro = {
+    const disableHonorificsMacro = {
         name: `Disable Honorifics`,
         path: 'Macros/Customs/Disable Honorifics',
         tags: ['honorifics', 'titles', 'disable'],
@@ -13,7 +13,7 @@ function main(titlesJson) {
 
     const titleMacros = titles.map(t => {
         const contentLines = [
-            `${disablehonorificsMacro.command} <wait.macro>`,
+            `${disableHonorificsMacro.command} <wait.macro>`,
             `/honorific title enable ${t.Title}`
         ];
         return {

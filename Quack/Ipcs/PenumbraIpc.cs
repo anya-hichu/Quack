@@ -2,8 +2,8 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 using Dalamud.Plugin.Services;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using Quack.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -146,8 +146,8 @@ public class PenumbraIpc : IDisposable
                     return groupSettings;
                 });
 
-                var camelCasedDefaultSettings = NewtonsoftUtil.CamelCaseDictionnary(defaultSettings);
-                camelCasedDefaultSettings.Add("groupSettings", groupSettings.Select(NewtonsoftUtil.CamelCaseDictionnary));
+                var camelCasedDefaultSettings = CamelCaseDictionnary(defaultSettings);
+                camelCasedDefaultSettings.Add("groupSettings", groupSettings.Select(CamelCaseDictionnary));
                 mod.Add("settings", camelCasedDefaultSettings);
                 return mod;
             }
@@ -156,6 +156,48 @@ public class PenumbraIpc : IDisposable
                 throw new FileNotFoundException($"Failed to find penumbra settings file at #{defaultSettingsPath}");
             }
         }).ToArray();
+    }
+
+    private static Dictionary<string, object> CamelCaseDictionnary(Dictionary<string, object> dictionnary)
+    {
+        return dictionnary.ToDictionary(CamelCaseKey, MaybeCamelCaseValueKeys);
+    }
+
+    private static string CamelCaseKey(KeyValuePair<string, object> pair)
+    {
+        return char.ToLowerInvariant(pair.Key[0]) + pair.Key.Substring(1);
+    }
+
+    private static object MaybeCamelCaseValueKeys(KeyValuePair<string, object> pair)
+    {
+        if (pair.Value is JObject jObject)
+        {
+            var nestedDict = jObject.ToObject<Dictionary<string, object>>();
+            if (nestedDict != null)
+            {
+                return nestedDict.ToDictionary(CamelCaseKey, MaybeCamelCaseValueKeys);
+            }
+            else
+            {
+                return pair.Value;
+            }
+        }
+        else if (pair.Value is JArray jArray)
+        {
+            var maybeNestedDicts = jArray.ToObject<List<Dictionary<string, object>>>();
+            if (maybeNestedDicts != null)
+            {
+                return maybeNestedDicts.Select(d => d.ToDictionary(CamelCaseKey, MaybeCamelCaseValueKeys));
+            }
+            else
+            {
+                return pair.Value;
+            }
+        }
+        else
+        {
+            return pair.Value;
+        }
     }
 }
 

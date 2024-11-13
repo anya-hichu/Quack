@@ -32,13 +32,13 @@ public class CustomMacrosIpc : IDisposable
         return CachedMacros.Select(m =>
         {
             return new Dictionary<string, object>() {
-                {"name", m.Name },
-                {"path", m.Path },
-                {"command", m.Command },
-                {"args", m.Args },
-                {"tags", m.Tags },
-                {"content", m.Content },
-                {"loop", m.Loop },
+                { "name", m.Name },
+                { "path", m.Path },
+                { "command", m.Command },
+                { "args", m.Args },
+                { "tags", m.Tags },
+                { "content", m.Content },
+                { "loop", m.Loop },
             };
         }).ToArray();
     }

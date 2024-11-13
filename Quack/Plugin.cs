@@ -1,24 +1,24 @@
+using Dalamud.Game;
+using Dalamud.Interface;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.Jint;
-using Quack.Generators;
-using Lumina.Excel.GeneratedSheets2;
-using Quack.Ipcs;
-using Dalamud.Game;
-using Quack.Macros;
-using Dalamud.Utility;
-using Dalamud.Interface;
-using Quack.Listeners;
-using Quack.Utils;
 using JavaScriptEngineSwitcher.V8;
-using System.IO;
-using SQLite;
+using Lumina.Excel.GeneratedSheets2;
 using Quack.Chat;
-using Quack.UI.Helpers;
-using Quack.UI.Windows;
+using Quack.Configs;
+using Quack.Generators;
+using Quack.Ipcs;
+using Quack.Macros;
+using Quack.Mains;
+using Quack.Schedulers;
+using Quack.Utils;
+using SQLite;
+using System.IO;
 
 namespace Quack;
 
@@ -53,14 +53,14 @@ public sealed class Plugin : IDalamudPlugin
     private PenumbraIpc PenumbraIpc { get; init; }
 
     private MacroExecutor MacroExecutor { get; init; }
-    private KeyBindListener KeyBindListener { get; init; }
+    private MainKeyBind MainKeyBind { get; init; }
     private MacroCommands MacroCommands { get; init; }
     private SQLiteConnection DbConnection { get; init; }
     private MacroTable MacroTable { get; init; }
     private MacroSharedLock MacroSharedLock { get; init; }
     private ChatSender ChatSender { get; init; }
     private Debouncers Debouncers { get; init; }
-    private TimeListener TimeListener { get; init; }
+    private SchedulerTriggers SchedulerTriggers { get; init; }
 
     public Plugin()
     {
@@ -78,9 +78,12 @@ public sealed class Plugin : IDalamudPlugin
             StrictMode = true
         }));
         
-        Config = PluginInterface.GetPluginConfig() as Config ?? new(GeneratorConfig.GetDefaults());
+        Config = PluginInterface.GetPluginConfig() as Config ?? new()
+        {
+            GeneratorConfigs = GeneratorConfig.GetDefaults()
+        };
 
-        var migrator = new Migrator(DbConnection, MacroTable);
+        var migrator = new ConfigMigrator(DbConnection, MacroTable);
         migrator.ExecuteMigrations(Config);
 
         var cachedMacros = MacroTable.List();
@@ -90,14 +93,14 @@ public sealed class Plugin : IDalamudPlugin
         ChatSender = new(chatServer, Framework, MacroSharedLock, PluginLog);
         
         MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
-        var macroExecutionHelper = new MacroExecutionHelper(Config, MacroExecutor);
+        var macroExecutionButton = new MacroExecutionButton(Config, MacroExecutor);
         Debouncers = new(PluginLog);
 
-        MainWindow = new(cachedMacros, Config, macroExecutionHelper, MacroExecutor, MacroTable, PluginLog)
+        MainWindow = new(cachedMacros, Config, macroExecutionButton, MacroExecutor, MacroTable, PluginLog)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, ChatSender, Config, Debouncers, KeyState, macroExecutionHelper, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog)
+        ConfigWindow = new(cachedMacros, ChatSender, Config, Debouncers, KeyState, macroExecutionButton, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
         };
@@ -122,9 +125,9 @@ public sealed class Plugin : IDalamudPlugin
         MacrosIpc = new(PluginInterface);
         PenumbraIpc = new(PluginInterface, PluginLog);
 
-        KeyBindListener = new(Framework, Config, ToggleMainUI);
+        MainKeyBind = new(Framework, Config, ToggleMainUI);
         MacroCommands = new(cachedMacros, ChatGui, Config, CommandManager, MacroExecutor, MacroTable);
-        TimeListener = new(Config, Framework, chatServer, PluginLog);
+        SchedulerTriggers = new(Config, Framework, chatServer, PluginLog);
     }
 
     public void Dispose()
@@ -144,7 +147,7 @@ public sealed class Plugin : IDalamudPlugin
         MacrosIpc.Dispose();
         PenumbraIpc.Dispose();
 
-        KeyBindListener.Dispose();
+        MainKeyBind.Dispose();
         MacroCommands.Dispose();
 
         DbConnection.Dispose();
@@ -152,7 +155,7 @@ public sealed class Plugin : IDalamudPlugin
         ChatSender.Dispose();
         Debouncers.Dispose();
 
-        TimeListener.Dispose();
+        SchedulerTriggers.Dispose();
     }
 
     private void OnCommand(string command, string args)
@@ -190,18 +193,12 @@ public sealed class Plugin : IDalamudPlugin
                 return;
             }
 
-            var macroLookup = arguments[1];
-            var macro = MacroTable.FindBy("path", macroLookup);
-            macro = macro ?? MacroTable.FindBy("name", macroLookup);
-            macro = macro ?? MacroTable.FindBy("command", macroLookup);
-
-            if (macro == null)
+            if (!TryFindMacro(arguments[1], out var macro))
             {
-                ChatGui.Print($"No macro found with lookup '{macroLookup}'");
                 return;
             }
 
-            var macroExecution = new MacroExecution(macro, Config, MacroExecutor);
+            var macroExecution = new MacroExecution(macro!, Config, MacroExecutor);
             macroExecution.ParseArgs();
 
             if (macroExecution.IsExecutable())
@@ -210,7 +207,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             else
             {
-                ChatGui.PrintError(MacroExecutionHelper.GetNonExecutableMessage(macroExecution));
+                ChatGui.PrintError(macroExecution.GetNonExecutableMessage());
             }
         }
         else if (arguments.Length >= 3)
@@ -221,19 +218,13 @@ public sealed class Plugin : IDalamudPlugin
                 return;
             }
 
-            var macroLookup = arguments[1];
-            var macro = MacroTable.FindBy("path", macroLookup);
-            macro = macro ?? MacroTable.FindBy("name", macroLookup);
-            macro = macro ?? MacroTable.FindBy("command", macroLookup);
-
-            if (macro == null)
+            if (!TryFindMacro(arguments[1], out var macro))
             {
-                ChatGui.PrintError($"No macro found with lookup '{macroLookup}'");
                 return;
             }
 
             var formatting = arguments[2];
-            var macroExecution = new MacroExecution(macro, Config, MacroExecutor);
+            var macroExecution = new MacroExecution(macro!, Config, MacroExecutor);
             if (arguments.Length > 3)
             {
                 macroExecution.ParsedArgs = arguments[3..];
@@ -243,7 +234,7 @@ public sealed class Plugin : IDalamudPlugin
                 // Default args from macro
                 macroExecution.ParseArgs();
             }
-                    
+
             if (formatting == "true")
             {
                 macroExecution.UseConfigFormat();
@@ -268,9 +259,9 @@ public sealed class Plugin : IDalamudPlugin
             } 
             else
             {
-                ChatGui.PrintError(MacroExecutionHelper.GetNonExecutableMessage(macroExecution));
+                ChatGui.PrintError(macroExecution.GetNonExecutableMessage());
             }
-        } 
+        }
         else
         {
             ChatGui.Print(CommandHelpMessage);
@@ -280,4 +271,14 @@ public sealed class Plugin : IDalamudPlugin
     private void DrawUI() => WindowSystem.Draw();
     private void ToggleConfigUI() => ConfigWindow.Toggle();
     private void ToggleMainUI() => MainWindow.Toggle();
+
+    private bool TryFindMacro(string term, out Macro? macro)
+    {
+        if (!MacroTable.TryFindByTerm(term, out macro))
+        {
+            ChatGui.PrintError($"No macro found with name, path or command matching '{term}'");
+            return false;
+        }
+        return true;
+    }
 }

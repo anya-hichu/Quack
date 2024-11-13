@@ -74,23 +74,30 @@ public class GeneratorConfig
 
     public static List<GeneratorConfig> GetDefaults()
     {
-        return DEFAULTS.Select(c => c.Clone()).ToList();
+        return new(DEFAULTS.Select(c => c.Clone()));
     }
 
     public string Name { get; set; } = string.Empty;
 
-    public List<GeneratorIpcConfig> IpcConfigs { get; set; } = [];
-
+    #region deprecated
     [ObsoleteAttribute($"IpcName deprecated to support multiple ipcs in config version 1")]
     public string IpcName { get; set; } = string.Empty;
 
     [ObsoleteAttribute($"IpcArgs deprecated to support multiple ipcs in config version 1")]
     public string IpcArgs { get; set; } = string.Empty;
+    #endregion
+
+    public List<GeneratorIpcConfig> IpcConfigs { get; set; } = [];
 
     public string Script { get; set; } = string.Empty;
 
     public GeneratorConfig Clone()
     {
-        return (GeneratorConfig)MemberwiseClone();
+        return new()
+        {
+            Name = Name,
+            IpcConfigs = new(IpcConfigs.Select(c => c.Clone())),
+            Script = Script
+        };
     }
 }

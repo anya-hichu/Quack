@@ -48,12 +48,8 @@ function main(customMacrosJson, modsJson) {
             }
         });
 
-        return isJsonEqual(macro, transformedMacro) ? [] : [transformedMacro];
+        return JSON.stringify(macro) === JSON.stringify(transformedMacro) ? [] : [transformedMacro];
     });
 
     return JSON.stringify(transformedMacros);
-}
-
-function isJsonEqual(lhs, rhs) {
-    return JSON.stringify(lhs) === JSON.stringify(rhs);
 }

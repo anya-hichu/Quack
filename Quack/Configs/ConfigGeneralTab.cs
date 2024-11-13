@@ -5,9 +5,9 @@ using ImGuiNET;
 using JavaScriptEngineSwitcher.Core;
 using System.Linq;
 
-namespace Quack.UI.Tabs;
+namespace Quack.Configs;
 
-public class GeneralTab(Config config, IKeyState keyState)
+public class ConfigGeneralTab(Config config, IKeyState keyState)
 {
     private Config Config { get; init; } = config;
     private IKeyState KeyState { get; init; } = keyState;
@@ -20,7 +20,7 @@ public class GeneralTab(Config config, IKeyState keyState)
 
             var keyBind = Config.KeyBind;
             var keyBindIndex = validVirtualKeys.IndexOf(keyBind);
-            if (ImGui.Combo($"Key Bind###keyBind", ref keyBindIndex, validVirtualKeys.Select(k => k.GetFancyName()).ToArray(), validVirtualKeys.Count()))
+            if (ImGui.Combo($"Key Bind##keyBind", ref keyBindIndex, validVirtualKeys.Select(k => k.GetFancyName()).ToArray(), validVirtualKeys.Count()))
             {
                 Config.KeyBind = validVirtualKeys.ElementAt(keyBindIndex);
                 Config.Save();
@@ -29,7 +29,7 @@ public class GeneralTab(Config config, IKeyState keyState)
             var modifierVirtualKeys = validVirtualKeys.Where(k => Config.MODIFIER_KEYS.Contains(k));
             var keybindExtraModifier = Config.KeyBindExtraModifier;
             var keybindExtraModifierIndex = modifierVirtualKeys.IndexOf(keybindExtraModifier);
-            if (ImGui.Combo($"Key Bind Extra Modifier###keyBindExtraModifier", ref keybindExtraModifierIndex, modifierVirtualKeys.Select(k => k.GetFancyName()).ToArray(), modifierVirtualKeys.Count()))
+            if (ImGui.Combo($"Key Bind Extra Modifier##keyBindExtraModifier", ref keybindExtraModifierIndex, modifierVirtualKeys.Select(k => k.GetFancyName()).ToArray(), modifierVirtualKeys.Count()))
             {
                 Config.KeyBindExtraModifier = modifierVirtualKeys.ElementAt(keybindExtraModifierIndex);
                 Config.Save();

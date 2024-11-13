@@ -50,7 +50,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
 
     public void RecreateTable()
     {
-        // Virtual tables do not support ALTER TABLE so recreating it is required
+        // Can't alter a virtual table
         MaybeDropTable();
         MaybeCreateTable();
     }
@@ -69,6 +69,14 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
         var records = DbConnection.Query<MacroRecord>(query, args);
         LogQuery(query, records.Count, args);
         return records.Count > 0 ? ToEntity(records.First()) : null;
+    }
+
+    public bool TryFindByTerm(string term, out Macro? macro)
+    {
+        macro = FindBy("path", term);
+        macro ??= FindBy("name", term);
+        macro ??= FindBy("command", term);
+        return macro != null;
     }
 
     public HashSet<Macro> Search(string expression)

@@ -3,9 +3,9 @@ using Quack.Schedulers;
 using SQLite;
 using System.Linq;
 
-namespace Quack;
+namespace Quack.Configs;
 
-public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
+public class ConfigMigrator(SQLiteConnection dbConnection, MacroTable macroTable)
 {
     private SQLiteConnection DbConnection { get; init; } = dbConnection;
     private MacroTable MacroTable { get; init; } = macroTable;
@@ -22,7 +22,7 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
                 {
                     c.IpcConfigs.Add(new()
                     {
-                        Name = c.IpcName, 
+                        Name = c.IpcName,
                         Args = c.IpcArgs
                     });
                     c.IpcName = c.IpcArgs = string.Empty;
@@ -55,7 +55,7 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
 
             if (version < 6)
             {
-                config.SchedulerConfigs.ForEach(MaybeMigrateSchedulerConfigToV6);
+                config.SchedulerConfigs.ForEach(MigrateSchedulerConfigToV6);
             }
 
             config.Version = Config.CURRENT_VERSION;
@@ -63,26 +63,28 @@ public class Migrator(SQLiteConnection dbConnection, MacroTable macroTable)
         }
     }
 
-    public static void MaybeMigrateSchedulerConfigToV6(SchedulerConfig schedulerConfig)
+    public static void MigrateSchedulerConfigToV6(SchedulerConfig schedulerConfig)
     {
-        // V5 migration
         var schedulerCommandConfigs = schedulerConfig.SchedulerCommandConfigs;
-        if (schedulerCommandConfigs.Any())
+        if (schedulerCommandConfigs.Count > 0)
         {
-            schedulerConfig.TriggerConfigs = schedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
+            // Optimized V5 migration
+            schedulerConfig.TriggerConfigs = new(schedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
             {
                 TimeZone = c.TimeZone,
                 TimeExpression = c.TimeExpression,
                 Command = c.Command
-            }).ToList();
+            }));
             schedulerCommandConfigs.Clear();
-        }
-
-        var schedulerTriggerConfigs = schedulerConfig.SchedulerTriggerConfigs;
-        if (schedulerTriggerConfigs.Any())
+        } 
+        else
         {
-            schedulerConfig.TriggerConfigs = schedulerTriggerConfigs;
-            schedulerTriggerConfigs.Clear();
+            var schedulerTriggerConfigs = schedulerConfig.SchedulerTriggerConfigs;
+            if (schedulerTriggerConfigs.Count > 0)
+            {
+                schedulerConfig.TriggerConfigs = schedulerTriggerConfigs;
+                schedulerTriggerConfigs.Clear();
+            }
         }
     }
 }

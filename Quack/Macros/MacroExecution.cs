@@ -1,3 +1,4 @@
+using Quack.Configs;
 using Quack.Utils;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -22,7 +23,7 @@ public partial class MacroExecution(Macro macro, Config config, MacroExecutor ma
     public int RequiredArgsLength()
     {
         var matches = ContentPlaceholderGeneratedRegex().Matches(Macro.Content);
-        return matches.Count > 0 ? matches.Select(m => int.Parse(m.Groups["index"].Value)).Max() + 1 : 0;
+        return matches.Count > 0 ? matches.Max(m => int.Parse(m.Groups["index"].Value)) + 1 : 0;
     }
 
     public void ParseArgs()
@@ -43,5 +44,10 @@ public partial class MacroExecution(Macro macro, Config config, MacroExecutor ma
     public void ExecuteTask()
     {
         MacroExecutor.ExecuteTask(Macro, Format, ParsedArgs);
+    }
+
+    public string GetNonExecutableMessage()
+    {
+        return $"Expected {RequiredArgsLength()} argument(s) for macro '{Macro.Name}' (parsed {ParsedArgs.Length})";
     }
 }

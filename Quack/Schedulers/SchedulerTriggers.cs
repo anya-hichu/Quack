@@ -1,19 +1,20 @@
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Quack.Chat;
+using Quack.Configs;
 using System;
 using System.Linq;
 
-namespace Quack.Listeners;
+namespace Quack.Schedulers;
 
-public class TimeListener : IDisposable
+public class SchedulerTriggers : IDisposable
 {
     private Config Config { get; init; }
     private IFramework Framework { get; init; }
     private ChatServer ChatServer { get; init; }
     private IPluginLog PluginLog { get; init; }
 
-    public TimeListener(Config config, IFramework framework, ChatServer chatServer, IPluginLog pluginLog)
+    public SchedulerTriggers(Config config, IFramework framework, ChatServer chatServer, IPluginLog pluginLog)
     {
         Config = config;
         Framework = framework;

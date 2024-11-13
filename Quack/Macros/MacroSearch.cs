@@ -1,12 +1,14 @@
-using System.Collections.Generic;
-using System;
-using System.Linq;
 using Dalamud.Utility;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Quack.Macros;
+
 public class MacroSearch
 {
     private static readonly StringComparison MATCH_FLAGS = StringComparison.InvariantCultureIgnoreCase;
+
     public static List<Macro> Lookup(IEnumerable<Macro> macros, string filter)
     {
         return new(macros.Where(m => tokenMatches(m, filter)).OrderBy(m => matchLengthRatio(m, filter)));

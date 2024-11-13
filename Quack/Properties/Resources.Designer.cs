@@ -22,7 +22,7 @@ namespace Quack.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace Quack.Properties {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Quack.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace Quack.Properties {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -74,7 +74,7 @@ namespace Quack.Properties {
         ///    actionTimelineKeys: [],
         ///    poseKeys: [&apos;emote/pose00_loop&apos;, &apos;emote/pose01_loop&apos;, &apos;emote/pose02_loop&apos;, &apos;emote/pose03_loop&apos;, &apos;emote [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string CustomEmotesJsContent {
+        public static string CustomEmotesJsContent {
             get {
                 return ResourceManager.GetString("CustomEmotesJsContent", resourceCulture);
             }
@@ -97,7 +97,7 @@ namespace Quack.Properties {
         ///            name: `Disable Profile [${p.Item2}]`,
         ///            path:  [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string CustomizeProfilesJsContent {
+        public static string CustomizeProfilesJsContent {
             get {
                 return ResourceManager.GetString("CustomizeProfilesJsContent", resourceCulture);
             }
@@ -117,7 +117,7 @@ namespace Quack.Properties {
         ///            name: `Emote [${e.name}] [Motion]`,
         ///            path: `Emotes/${c [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string EmotesJsContent {
+        public static string EmotesJsContent {
             get {
                 return ResourceManager.GetString("EmotesJsContent", resourceCulture);
             }
@@ -140,7 +140,7 @@ namespace Quack.Properties {
         ///        return {
         ///         [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string GlamoursJsContent {
+        public static string GlamoursJsContent {
             get {
                 return ResourceManager.GetString("GlamoursJsContent", resourceCulture);
             }
@@ -162,7 +162,7 @@ namespace Quack.Properties {
         ///
         ///    cons [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string HonorificsJsContent {
+        public static string HonorificsJsContent {
             get {
                 return ResourceManager.GetString("HonorificsJsContent", resourceCulture);
             }
@@ -183,7 +183,7 @@ namespace Quack.Properties {
         ///        return {
         ///            name: `Equip Job [${ [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string JobsJsContent {
+        public static string JobsJsContent {
             get {
                 return ResourceManager.GetString("JobsJsContent", resourceCulture);
             }
@@ -203,7 +203,7 @@ namespace Quack.Properties {
         ///                path: `Macros/Individual/${localPlayerInfo.name}/${m.index}/${m.name}`,
         ///                 [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string MacrosJsContent {
+        public static string MacrosJsContent {
             get {
                 return ResourceManager.GetString("MacrosJsContent", resourceCulture);
             }
@@ -225,7 +225,7 @@ namespace Quack.Properties {
         ///                name: `Clear Option Group [${s.name}]`,
         ///                path: `Mods/${m.path}/Settings/${escape(s [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string ModOptionsJsContent {
+        public static string ModOptionsJsContent {
             get {
                 return ResourceManager.GetString("ModOptionsJsContent", resourceCulture);
             }
@@ -248,7 +248,7 @@ namespace Quack.Properties {
         ///            content: `/penumbra mod enable {0} | ${m.dir}`
         ///  [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string ModsJsContent {
+        public static string ModsJsContent {
             get {
                 return ResourceManager.GetString("ModsJsContent", resourceCulture);
             }
@@ -273,7 +273,7 @@ namespace Quack.Properties {
         ///}
         ///.
         /// </summary>
-        internal static string MoodlesJsContent {
+        public static string MoodlesJsContent {
             get {
                 return ResourceManager.GetString("MoodlesJsContent", resourceCulture);
             }
@@ -286,7 +286,7 @@ namespace Quack.Properties {
         ///    {match: m =&gt; m.path.includes(&apos;Remote Shock Collar [Mittens]&apos;) &amp;&amp; m.tags.includes(&apos;option&apos;) &amp;&amp; m.tags.includes(&apos;emote&apos;), mutate: m =&gt; m.command = `/shock${[&apos;/upset&apos;, &apos;/shocked&apos;, &apos;/sulk&apos;, &apos;/kneel&apos;].indexOf(m.tags.find(t =&gt; t.startsWith(&apos;/&apos;))) + 1}`},
         ///    {match: m =&gt; m.path.includes(&apos;Remote Vibrator [Mittens]&apos;) &amp;&amp; m.tags.includes(&apos;option&apos;) &amp;&amp; m.tags.includes(&apos;emote&apos;), mutate: m =&gt; m.command = `/vibrate${[&apos;/blus [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string OverridesJsContent {
+        public static string OverridesJsContent {
             get {
                 return ResourceManager.GetString("OverridesJsContent", resourceCulture);
             }
@@ -306,7 +306,7 @@ namespace Quack.Properties {
         ///            path: `Plugins/Collections/${n}/Disable`,
         ///       [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string PluginCollectionsJsContent {
+        public static string PluginCollectionsJsContent {
             get {
                 return ResourceManager.GetString("PluginCollectionsJsContent", resourceCulture);
             }

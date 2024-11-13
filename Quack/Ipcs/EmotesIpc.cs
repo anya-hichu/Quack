@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 using Dalamud.Utility;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets2;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Quack.Ipcs; 
 
@@ -53,11 +53,11 @@ public class EmotesIpc: IDisposable
                 var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(command, []);
 
                 return [new() {
-                    {"name", e.Name.RawString},
-                    {"category",  e.EmoteCategory.Value!.Name.RawString},
-                    {"command", command },
-                    {"actionTimelineKeys", actionTimelineKeys},
-                    {"poseKeys", poseKeys}
+                    { "name", e.Name.RawString},
+                    { "category",  e.EmoteCategory.Value!.Name.RawString},
+                    { "command", command },
+                    { "actionTimelineKeys", actionTimelineKeys},
+                    { "poseKeys", poseKeys}
                 }];
             }
             else

@@ -8,9 +8,9 @@ public class TreeNodeComparer<T> : IEqualityComparer<TreeNode<T>>
     {
         if (lfs != null && rhs != null)
         {
-            if (lfs.Item != null && rhs.Item != null)
+            if (lfs.Node != null && rhs.Node != null)
             {
-                return lfs.Item.Equals(rhs.Item);
+                return lfs.Node.Equals(rhs.Node);
             }
             else
             {
@@ -27,9 +27,9 @@ public class TreeNodeComparer<T> : IEqualityComparer<TreeNode<T>>
     {
         if (obj != null)
         {
-            if (obj.Item != null)
+            if (obj.Node != null)
             {
-                return obj.Item.GetHashCode();
+                return obj.Node.GetHashCode();
             }
             else
             {
