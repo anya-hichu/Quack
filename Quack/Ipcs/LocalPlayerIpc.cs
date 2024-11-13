@@ -33,8 +33,8 @@ public class LocalPlayerIpc : IDisposable
         if (localPlayer != null)
         {
             return new() {
-                {"name", localPlayer.Name.TextValue},
-                {"homeWorld", localPlayer.HomeWorld.Value.Name}
+                { "name", localPlayer.Name.TextValue },
+                { "homeWorld", localPlayer.HomeWorld.Value.Name.ExtractText() }
             };
         } 
         else
