@@ -1,4 +1,3 @@
-using Dalamud;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -23,40 +22,26 @@ namespace Quack.Generators;
 public class GeneratorConfigTab : ConfigEntityTab
 {
     private HashSet<Macro> CachedMacros { get; init; }
-    private IJsEngine? CurrentJsEngine { get; set; }
+    private CallGate CallGate { get; init; }
     private Config Config { get; init; }
-    private Dictionary<GeneratorConfig, GeneratorConfigTabState> GeneratorConfigToState { get; set; }
-    private GeneratorException? GeneratorException { get; set; } = null;
+    private Dictionary<GeneratorConfig, GeneratorConfigTabState> GeneratorConfigToState { get; set; } = [];
     private IKeyState KeyState { get; init; }
     private MacroTableQueue MacroTableQueue { get; init; }
     private IPluginLog PluginLog { get; init; }
 
-    public GeneratorConfigTab(HashSet<Macro> cachedMacros, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, IKeyState keyState, MacroTableQueue macroTableQueue, IPluginLog pluginLog) : base(debouncers, fileDialogManager)
+    public GeneratorConfigTab(HashSet<Macro> cachedMacros, CallGate callGate, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, IKeyState keyState, MacroTableQueue macroTableQueue, IPluginLog pluginLog) : base(debouncers, fileDialogManager)
     {
         CachedMacros = cachedMacros;
+        CallGate = callGate;
         Config = config;
         KeyState = keyState;
         MacroTableQueue = macroTableQueue;
         PluginLog = pluginLog;
-
-        GeneratorConfigToState = Config.GeneratorConfigs.ToDictionary(c => c, c => new GeneratorConfigTabState());
+        AddDefaultStates(Config.GeneratorConfigs);
     }
 
     public void Draw()
     {
-        if (GeneratorException != null)
-        {
-            using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed))
-            {
-                ImGui.Text(GeneratorException.ToString());
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("X##clearException"))
-            {
-                GeneratorException = null;
-            }
-        }
-
         if (ImGui.Button("New##generatorConfigsNew"))
         {
             NewGeneratorConfig();
@@ -112,7 +97,7 @@ public class GeneratorConfigTab : ConfigEntityTab
         }
 
         var generatorConfigs = Config.GeneratorConfigs;
-        var funcChannels = Service<CallGate>.Get().Gates.Values.Where(g => g.Func != null);
+        var funcChannels = CallGate.Gates.Values.Where(g => g.Func != null);
         using (ImRaii.TabBar("generatorConfigsTabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
         {
             foreach (var generatorConfig in generatorConfigs)
@@ -120,13 +105,12 @@ public class GeneratorConfigTab : ConfigEntityTab
                 var hash = generatorConfig.GetHashCode();
                 using (var tab = ImRaii.TabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}#generatorConfigs{hash}Tab"))
                 {
-                    if (!tab.Success)
+                    if (tab)
                     {
-                        continue;
+                        ImGui.NewLine();
+                        DrawDefinitionHeader(generatorConfig, funcChannels);
+                        DrawOutputHeader(generatorConfig);
                     }
-                    ImGui.NewLine();
-                    DrawDefinitionHeader(generatorConfig, funcChannels);
-                    DrawOutputHeader(generatorConfig);
                 }
             }
         }
@@ -141,15 +125,32 @@ public class GeneratorConfigTab : ConfigEntityTab
             return;
         }
         var generatorConfigs = exports.Entities.ToList();
-        generatorConfigs.ForEach(g => GeneratorConfigToState.Add(g, new()));
+        AddDefaultStates(generatorConfigs);
         Config.GeneratorConfigs.AddRange(generatorConfigs);
         Config.Save();
     }
 
     private void DrawDefinitionHeader(GeneratorConfig generatorConfig, IEnumerable<CallGateChannel> funcChannels)
     {
+        var state = GeneratorConfigToState[generatorConfig];
         var generatorConfigId = $"generatorConfigs{generatorConfig.GetHashCode()}";
-        if (ImGui.CollapsingHeader($"Definition##{generatorConfigId}Definition", ImGuiTreeNodeFlags.DefaultOpen))
+
+        var generateMacrosId = $"{generatorConfigId}GenerateMacros";
+        var maybeGeneratorException = state.MaybeGeneratorException;
+        if (maybeGeneratorException != null)
+        {
+            using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed))
+            {
+                ImGui.Text(maybeGeneratorException.ToString());
+            }
+            ImGui.SameLine();
+            if (ImGui.Button($"X##{generateMacrosId}ExceptionClear"))
+            {
+                state.MaybeGeneratorException = null;
+            }
+        }
+
+        if (ImGui.CollapsingHeader($"Definition##{generatorConfigId}DefinitionHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
             using (ImRaii.PushIndent())
             {
@@ -191,7 +192,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                     }
                 }
                 
-                var ipcConfigsId = $"{generatorConfigId}IpcConfigs";
+                var ipcConfigsId = $"{generatorConfigId}IpcConfigsHeader";
                 if (ImGui.CollapsingHeader($"IPCs##{ipcConfigsId}"))
                 {
                     using (ImRaii.PushIndent())
@@ -212,7 +213,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                             {
                                 using (var tab = ImRaii.TabItem($"#{i}##{ipcConfigsId}Tab"))
                                 {
-                                    if (!tab.Success)
+                                    if (!tab)
                                     {
                                         continue;
                                     }
@@ -285,18 +286,43 @@ public class GeneratorConfigTab : ConfigEntityTab
                     }
                 }
 
-                var scriptInputHeight = GeneratorConfigToState[generatorConfig].GeneratedMacros.Count > 0 ? ImGui.GetTextLineHeight() * 13 : ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 40;
+                var debuggingId = $"{generatorConfigId}Debugging";
+                if (ImGui.CollapsingHeader($"Debugging##{debuggingId}Header"))
+                {
+                    using (ImRaii.PushIndent())
+                    {
+                        var debuggingEnabled = generatorConfig.DebuggingEnabled;
+                        if (ImGui.Checkbox($"Enabled##{debuggingId}Enabled", ref debuggingEnabled))
+                        {
+                            generatorConfig.DebuggingEnabled = debuggingEnabled;
+                            Config.Save();
+                        }
+
+                        ImGui.SameLine();
+                        var debuggingPort = (int)generatorConfig.DebuggingPort;
+                        var debuggingPortInputId = $"{debuggingId}Port";
+                        if (ImGui.DragInt($"Port##{debuggingPortInputId}", ref debuggingPort, ushort.MaxValue))
+                        {
+                            generatorConfig.DebuggingPort = (ushort)debuggingPort;
+                            Debounce(debuggingPortInputId, Config.Save);
+                        }
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip($"Attach chrome debugger by accessing localhost:{debuggingPort} url");
+                        }
+                    }  
+                }
 
                 var script = generatorConfig.Script;
                 var scriptInputId = $"{generatorConfigId}Script";
-                if (ImGui.InputTextMultiline($"Script (JS)##{scriptInputId}", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, scriptInputHeight)))
+                if (ImGui.InputTextMultiline($"Script (JS)##{scriptInputId}", ref script, ushort.MaxValue, new(ImGui.GetWindowWidth() - 100, state.GeneratedMacros.Count > 0 ? ImGui.GetTextLineHeight() * 13 : ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 40)))
                 {
                     generatorConfig.Script = script;
                     Debounce(scriptInputId, Config.Save);
                 }
 
-                var generateMacrosId = $"{generatorConfigId}GenerateMacros";
-                if (CurrentJsEngine == null)
+                var generator = state.Generator;
+                if (generator.IsStopped())
                 {
                     if (ImGui.Button($"Execute##{generateMacrosId}"))
                     {
@@ -307,14 +333,19 @@ public class GeneratorConfigTab : ConfigEntityTab
                 {
                     using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
                     {
-                        if (ImGui.Button($"Cancel Execution##{generateMacrosId}Cancel"))
+                        if (ImGui.Button($"Cancel##{generateMacrosId}Cancel"))
                         {
-                            CurrentJsEngine.Interrupt();
+                            generator.Cancel();
                         }
                     }
                 }
             }
         }
+    }
+
+    private void AddDefaultStates(List<GeneratorConfig> generatorConfigs)
+    {
+        generatorConfigs.ForEach(generatorConfig => GeneratorConfigToState.Add(generatorConfig, new(generatorConfig, PluginLog)));
     }
 
     private void DrawOutputHeader(GeneratorConfig generatorConfig)
@@ -324,19 +355,20 @@ public class GeneratorConfigTab : ConfigEntityTab
         var generatedMacros = state.GeneratedMacros;
         if (generatedMacros.Count > 0)
         {
-            if (ImGui.CollapsingHeader($"Output##generatorConfigs{hash}GeneratedMacros", ImGuiTreeNodeFlags.DefaultOpen))
+            var generatedMacrosId = $"generatorConfigs{hash}GeneratedMacros";
+            if (ImGui.CollapsingHeader($"Output##{generatedMacrosId}Header", ImGuiTreeNodeFlags.DefaultOpen))
             {
                 var selectedGeneratedMacros = state.SelectedGeneratedMacros;
                 var filteredGeneratedMacros = state.FilteredGeneratedMacros;
                 var generatedMacrosFilter = state.GeneratedMacrosFilter;
 
                 var filteredConflictingMacros = CachedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE);
-                var generatedMacrosConflictsPopupId = $"##generatorConfigs{hash}GeneratedMacrosConflictsPopup";
+                var generatedMacrosConflictsPopupId = $"##{generatedMacrosId}ConflictsPopup";
                 if (filteredConflictingMacros.Any())
                 {
                     using (var popup = ImRaii.Popup(generatedMacrosConflictsPopupId))
                     {
-                        if (popup.Success)
+                        if (popup)
                         {
                             ImGui.Text($"Override {filteredConflictingMacros.Count()} macros?");
 
@@ -361,7 +393,7 @@ public class GeneratorConfigTab : ConfigEntityTab
 
                 using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.HealerGreen), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
                 {
-                    if (ImGui.Button($"Save Selected##generatorConfigs{hash}GeneratedMacrosSaveSelected"))
+                    if (ImGui.Button($"Save Selected##{generatedMacrosId}SaveSelected"))
                     {
                         if (filteredConflictingMacros.Any())
                         {
@@ -375,19 +407,19 @@ public class GeneratorConfigTab : ConfigEntityTab
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button($"Invert Selection##generatorConfigs{hash}GeneratedMacrosInvertSelection"))
+                if (ImGui.Button($"Invert Selection##{generatedMacrosId}InvertSelection"))
                 {
                     state.SelectedGeneratedMacros = new(generatedMacros.Except(selectedGeneratedMacros, MacroComparer.INSTANCE), MacroComparer.INSTANCE);
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button($"Select All Filtered##generatorConfigs{hash}GeneratedMacrosSelectAllFiltered"))
+                if (ImGui.Button($"Select All Filtered##{generatedMacrosId}SelectAllFiltered"))
                 {
                     state.SelectedGeneratedMacros = filteredGeneratedMacros;
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button($"Select All Conflicting##generatorConfigs{hash}GeneratedMacrosSelectAllConflicting"))
+                if (ImGui.Button($"Select All Conflicting##{generatedMacrosId}SelectAllConflicting"))
                 {
                     state.SelectedGeneratedMacros = new(CachedMacros.Intersect(generatedMacros, MacroComparer.INSTANCE), MacroComparer.INSTANCE);
                 }
@@ -395,7 +427,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 ImGui.SameLine();
                 using (ImRaii.ItemWidth(250))
                 {
-                    if (ImGui.InputText($"Filter ({filteredGeneratedMacros.Count}/{generatedMacros.Count})##generatorConfigs{hash}GeneratedMacrosFilter", ref generatedMacrosFilter, ushort.MaxValue))
+                    if (ImGui.InputText($"Filter ({filteredGeneratedMacros.Count}/{generatedMacros.Count})##{generatedMacrosId}Filter", ref generatedMacrosFilter, ushort.MaxValue))
                     {
                         state.GeneratedMacrosFilter = generatedMacrosFilter;
                         state.FilteredGeneratedMacros = new(MacroSearch.Lookup(generatedMacros, generatedMacrosFilter), MacroComparer.INSTANCE);
@@ -403,7 +435,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button($"X##generatorConfigs{hash}GeneratedMacrosClearFilter"))
+                if (ImGui.Button($"X##{generatedMacrosId}ClearFilter"))
                 {
                     state.GeneratedMacrosFilter = string.Empty;
                     state.FilteredGeneratedMacros = generatedMacros;
@@ -411,7 +443,7 @@ public class GeneratorConfigTab : ConfigEntityTab
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 232);
                 var showSelectedOnly = state.ShowSelectedOnly;
-                if (ImGui.Checkbox($"Show Selected Only##generatorConfigs{hash}GeneratedMacrosShowSelectedOnly", ref showSelectedOnly))
+                if (ImGui.Checkbox($"Show Selected Only##{generatedMacrosId}ShowSelectedOnly", ref showSelectedOnly))
                 {
                     state.ShowSelectedOnly = showSelectedOnly;
                 }
@@ -419,14 +451,14 @@ public class GeneratorConfigTab : ConfigEntityTab
                 ImGui.SameLine();
                 using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                 {
-                    if (ImGui.Button($"Delete All##generatorConfigs{hash}GeneratedMacrosDeleteAll"))
+                    if (ImGui.Button($"Delete All##{generatedMacrosId}DeleteAll"))
                     {
                         generatedMacros.Clear();
                         selectedGeneratedMacros.Clear();
                     }
                 }
 
-                var generatedMacrosTableId = $"generatorConfigs{hash}GeneratedMacrosTable";
+                var generatedMacrosTableId = $"{generatedMacrosId}Table";
                 using (ImRaii.Table(generatedMacrosTableId, 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
                 {
                     ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.None, 0.05f);
@@ -519,23 +551,23 @@ public class GeneratorConfigTab : ConfigEntityTab
     {
         var generatorConfig = new GeneratorConfig();
         Config.GeneratorConfigs.Add(generatorConfig);
-        GeneratorConfigToState.Add(generatorConfig, new());
+        AddDefaultStates([generatorConfig]);
         Config.Save();
     }
 
     private void RecreateDefaultGeneratorConfigs()
     {
-        var defaultGeneratorConfigs = GeneratorConfig.GetDefaults();
-        Config.GeneratorConfigs.AddRange(defaultGeneratorConfigs);
+        var defaults = GeneratorConfig.GetDefaults();
+        Config.GeneratorConfigs.AddRange(defaults);
+        AddDefaultStates(defaults);
         Config.Save();
-        defaultGeneratorConfigs.ForEach(c => GeneratorConfigToState.Add(c, new()));
     }
 
     private void DuplicateGeneratorConfig(GeneratorConfig generatorConfig)
     {
-        var clone = generatorConfig.Clone();
-        GeneratorConfigToState.Add(clone, new());
-        Config.GeneratorConfigs.Add(clone);
+        var duplicate = generatorConfig.Clone();
+        AddDefaultStates([duplicate]);
+        Config.GeneratorConfigs.Add(duplicate);
         Config.Save();
     }
 
@@ -557,24 +589,18 @@ public class GeneratorConfigTab : ConfigEntityTab
     {
         Task.Run(() =>
         {
+            var state = GeneratorConfigToState[generatorConfig];
             try
             {
-                CurrentJsEngine = JsEngineSwitcher.Current.CreateEngine(Config.GeneratorEngineName);
-                var generatedMacros = new Generator(generatorConfig, CurrentJsEngine, PluginLog).Execute();
-
-                var state = GeneratorConfigToState[generatorConfig];
+                var generatedMacros = state.Generator.GenerateMacros();
+                state.MaybeGeneratorException = null;
                 state.GeneratedMacros = generatedMacros;
                 state.SelectedGeneratedMacros = new(generatedMacros, MacroComparer.INSTANCE);
                 state.FilteredGeneratedMacros = new(MacroSearch.Lookup(generatedMacros, state.GeneratedMacrosFilter), MacroComparer.INSTANCE);
-                GeneratorException = null;
             }
             catch (GeneratorException e) when (e.InnerException is not JsInterruptedException)
             {
-                GeneratorException = e;
-            }
-            finally
-            {
-                CurrentJsEngine = null;
+                state.MaybeGeneratorException = e;
             }
         });
 

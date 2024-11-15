@@ -1,7 +1,6 @@
 using Quack.Ipcs;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 
 namespace Quack.Generators;
@@ -10,7 +9,7 @@ namespace Quack.Generators;
 public class GeneratorConfig
 {
     public static readonly int DEFAULTS_VERSION = 5;
-    private static readonly ImmutableList<GeneratorConfig> DEFAULTS = [
+    private static readonly List<GeneratorConfig> DEFAULTS = [
         new() {
             Name = $"Customize Profiles (V{DEFAULTS_VERSION})", 
             IpcConfigs = [new() { Name = "CustomizePlus.Profile.GetList" }],
@@ -91,13 +90,18 @@ public class GeneratorConfig
 
     public string Script { get; set; } = string.Empty;
 
+    public bool DebuggingEnabled { get; set; } = false;
+    public ushort DebuggingPort { get; set; } = 9222;
+
     public GeneratorConfig Clone()
     {
         return new()
         {
             Name = Name,
             IpcConfigs = new(IpcConfigs.Select(c => c.Clone())),
-            Script = Script
+            Script = Script,
+            DebuggingEnabled = DebuggingEnabled,
+            DebuggingPort = DebuggingPort
         };
     }
 }

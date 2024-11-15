@@ -10,6 +10,8 @@ using System.Linq;
 namespace Quack.Macros;
 public class MacroCommands: IDisposable
 {
+    public static readonly string HELP_MESSAGE_PREFIX = "Execute quack macro";
+
     private HashSet<string> RegisteredCommands { get; init; } = [];
 
     private HashSet<Macro> CachedMacros { get; init; }
@@ -83,7 +85,7 @@ public class MacroCommands: IDisposable
     {
         return new(BuildCommand(macro))
         {
-            HelpMessage = $"Execute macro '{macro.Name}' ({macro.Path}) using '{macro.Command}'",
+            HelpMessage = $"{HELP_MESSAGE_PREFIX} '{macro.Name}' ({macro.Path})",
             ShowInHelp = false
         };
     }

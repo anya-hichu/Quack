@@ -11,8 +11,9 @@ namespace Quack.Macros;
 
 public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroSharedLock, IPluginLog pluginLog) : IDisposable
 {
-    public static readonly int DEFAULT_MESSAGE_INTERVAL_MS = 60;
+    public static readonly int DEFAULT_SLEEP_INTERVAL_MS = 60;
     public const string DEFAULT_FORMAT = "{0}";
+    private static readonly string COMMENT_PREFIX = "//";
 
     [GeneratedRegexAttribute(@"<wait\.(?<wait>\d+|macro|cancel)>")]
     private static partial Regex WaitPlaceholderGeneratedRegex();
@@ -56,7 +57,7 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
         for (var i = 0; i < lines.Length && MacroSharedLock.IsAcquired(taskId); i++)
         {
             var line = lines[i];
-            if (line.IsNullOrWhitespace() || line.StartsWith('#'))
+            if (line.IsNullOrWhitespace() || line.StartsWith(COMMENT_PREFIX))
             {
                 break;
             }
@@ -94,9 +95,9 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
                         }
 
                         PluginLog.Verbose($"Pausing execution #{taskId} inside macro '{macro.Name}' ({macro.Path}) for <wait.{value}> at line #{i + 1}");
-                        while (!MacroSharedLock.HasAcquiredLast(taskId))
+                        while (!MacroSharedLock.IsTail(taskId))
                         {
-                            Thread.Sleep(DEFAULT_MESSAGE_INTERVAL_MS);
+                            Thread.Sleep(DEFAULT_SLEEP_INTERVAL_MS);
                         }
                         PluginLog.Verbose($"Resuming execution #{taskId}");
                     }
@@ -112,7 +113,7 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
             }
             else if (!waitCommandMatch.Success)
             {
-                Thread.Sleep(DEFAULT_MESSAGE_INTERVAL_MS);
+                Thread.Sleep(DEFAULT_SLEEP_INTERVAL_MS);
             }
         }
 

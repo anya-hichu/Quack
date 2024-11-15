@@ -35,16 +35,6 @@
           "AdvancedStringBuilder": "0.1.1"
         }
       },
-      "JavaScriptEngineSwitcher.Jint": {
-        "type": "Direct",
-        "requested": "[3.27.2, )",
-        "resolved": "3.27.2",
-        "contentHash": "ZXN4uVW91Gm3QGbZ6FHw/8a6Bpraxg0WBKIYjf+d4sHFda+uPqAzS8xZloe6My94shRMt2rrNXC0vzBRq7/exQ==",
-        "dependencies": {
-          "JavaScriptEngineSwitcher.Core": "3.24.1",
-          "Jint": "4.0.2"
-        }
-      },
       "JavaScriptEngineSwitcher.V8": {
         "type": "Direct",
         "requested": "[3.24.2, )",
@@ -105,23 +95,10 @@
         "resolved": "2.0.0",
         "contentHash": "/lt2PLUjE1bXCkPDVXXhZDzqaK3SmKwJ2EOq/a6ZbsgAWnRz3TqkqU0VyUncbh8bUIJQHCoPUxbwmjWeAbeIbw=="
       },
-      "Acornima": {
-        "type": "Transitive",
-        "resolved": "1.1.0",
-        "contentHash": "MFK/GNp09PF8H6uSkAZght553TddOejD9P1InvKWlGw6ILhmZjI+Y2xiIjGoJ73sbkeZzxwnCWZioK5Wed/J2g=="
-      },
       "AdvancedStringBuilder": {
         "type": "Transitive",
         "resolved": "0.1.1",
         "contentHash": "32IrlspOA59ewotQ4tlKP27QhKxMKGB7oncqlwVHn/hAz+j/r3HvLr6/W9ni9Mnyktlcg6kt7QZS8rEgur1+4Q=="
-      },
-      "Jint": {
-        "type": "Transitive",
-        "resolved": "4.0.2",
-        "contentHash": "/4fSpBn8b+l6f1z5ZrxoUUG9D3Tn8dX3xNXCORL9BCb5FHjoxNSluOuRVy4q/uvCm/FGIQl0F2SkIdDk8tnO0Q==",
-        "dependencies": {
-          "Acornima": "1.1.0"
-        }
       },
       "Microsoft.ClearScript.Core": {
         "type": "Transitive",

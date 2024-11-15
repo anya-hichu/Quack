@@ -1,24 +1,26 @@
+using Dalamud.Plugin;
 using Quack.Macros;
 using Quack.Schedulers;
 using SQLite;
+using System.IO;
 using System.Linq;
 
 namespace Quack.Configs;
 
-public class ConfigMigrator(SQLiteConnection dbConnection, MacroTable macroTable)
+public class ConfigMigrator(Config config, SQLiteConnection dbConnection, MacroTable macroTable)
 {
+    private Config Config { get; init; } = config;
     private SQLiteConnection DbConnection { get; init; } = dbConnection;
     private MacroTable MacroTable { get; init; } = macroTable;
 
-    public void ExecuteMigrations(Config config)
+    public void ExecuteMigrations()
     {
-        var version = config.Version;
-
+        var version = Config.Version;
         if (version < Config.CURRENT_VERSION)
         {
             if (version < 1)
             {
-                config.GeneratorConfigs.ForEach(c =>
+                Config.GeneratorConfigs.ForEach(c =>
                 {
                     c.IpcConfigs.Add(new()
                     {
@@ -31,14 +33,14 @@ public class ConfigMigrator(SQLiteConnection dbConnection, MacroTable macroTable
 
             if (version < 2)
             {
-                config.ExtraCommandFormat = config.CommandFormat;
-                config.CommandFormat = string.Empty;
+                Config.ExtraCommandFormat = Config.CommandFormat;
+                Config.CommandFormat = string.Empty;
             }
 
             if (version < 3)
             {
-                MacroTable.Insert(config.Macros);
-                config.Macros.Clear();
+                MacroTable.Insert(Config.Macros);
+                Config.Macros.Clear();
             }
 
             if (version < 4)
@@ -55,11 +57,11 @@ public class ConfigMigrator(SQLiteConnection dbConnection, MacroTable macroTable
 
             if (version < 6)
             {
-                config.SchedulerConfigs.ForEach(MigrateSchedulerConfigToV6);
+                Config.SchedulerConfigs.ForEach(MigrateSchedulerConfigToV6);
             }
 
-            config.Version = Config.CURRENT_VERSION;
-            config.Save();
+            Config.Version = Config.CURRENT_VERSION;
+            Config.Save();
         }
     }
 
@@ -85,6 +87,17 @@ public class ConfigMigrator(SQLiteConnection dbConnection, MacroTable macroTable
                 schedulerConfig.TriggerConfigs = schedulerTriggerConfigs;
                 schedulerTriggerConfigs.Clear();
             }
+        }
+    }
+
+    public static void MigrateDatabasePathToV6(IDalamudPluginInterface pluginInterface)
+    {
+        // Fix location since Loc means localization...
+        var databaseFileName = $"{pluginInterface.InternalName}.db";
+        var oldDatabasePath = Path.Combine(pluginInterface.GetPluginLocDirectory(), databaseFileName);
+        if (File.Exists(oldDatabasePath))
+        {
+            File.Move(oldDatabasePath, Path.Combine(pluginInterface.GetPluginConfigDirectory(), databaseFileName));
         }
     }
 }

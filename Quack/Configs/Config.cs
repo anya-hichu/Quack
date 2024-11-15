@@ -1,6 +1,5 @@
 using Dalamud.Configuration;
 using Dalamud.Game.ClientState.Keys;
-using JavaScriptEngineSwitcher.V8;
 using Quack.Generators;
 using Quack.Macros;
 using Quack.Schedulers;
@@ -14,18 +13,14 @@ public class Config : IPluginConfiguration
 {
     public static readonly int CURRENT_VERSION = 6;
 
-    public static readonly VirtualKey[] MODIFIER_KEYS = [VirtualKey.NO_KEY, VirtualKey.CONTROL, VirtualKey.SHIFT, VirtualKey.MENU];
-
     public int Version { get; set; } = CURRENT_VERSION;
 
     public VirtualKey KeyBind { get; set; } = VirtualKey.INSERT;
     public VirtualKey KeyBindExtraModifier { get; set; } = VirtualKey.NO_KEY;
 
-    public string GeneratorEngineName { get; set; } = V8JsEngine.EngineName;
-
     public string ExtraCommandFormat { get; set; } = "/echo {0}";
 
-    public List<GeneratorConfig> GeneratorConfigs { get; set; } = [];
+    public List<GeneratorConfig> GeneratorConfigs { get; set; } = GeneratorConfig.GetDefaults();
 
     public List<SchedulerConfig> SchedulerConfigs { get; set; } = [];
 

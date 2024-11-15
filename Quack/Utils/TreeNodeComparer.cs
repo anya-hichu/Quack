@@ -4,6 +4,11 @@ namespace Quack.Utils;
 
 public class TreeNodeComparer<T> : IEqualityComparer<TreeNode<T>>
 {
+    public static readonly TreeNodeComparer<T> INSTANCE = new();
+    private TreeNodeComparer()
+    {
+    }
+
     public bool Equals(TreeNode<T>? lfs, TreeNode<T>? rhs)
     {
         if (lfs != null && rhs != null)

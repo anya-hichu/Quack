@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Quack.Macros;
 
-public class MacroExecutionButton(Config config, MacroExecutor macroExecutor)
+public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
 {
     private Config Config { get; init; } = config;
     private MacroExecutor MacroExecutor { get; init; } = macroExecutor;
     private Dictionary<Macro, MacroExecution> MacroExecutionByMacro { get; set; } = [];
     private HashSet<string> OpenPopupIds { get; init; } = [];
 
-    public void Draw(Macro macro)
+    public void Button(string baseId, Macro macro)
     {
         if (!MacroExecutionByMacro.TryGetValue(macro, out var macroExecution))
         {
@@ -21,20 +21,21 @@ public class MacroExecutionButton(Config config, MacroExecutor macroExecutor)
 
         var hash = macro.GetHashCode();
         var isExecutable = macroExecution.IsExecutable();
-        var advancedExecutionPopupId = $"macros{hash}AdvancedExecutionPopup";
+
+        var advancedExecutionPopupId = $"{baseId}AdvancedPopup";
 
         using (var popup = ImRaii.Popup(advancedExecutionPopupId))
         {
-            if (popup.Success)
+            if (popup)
             {
                 var format = macroExecution.Format;
-                if (ImGui.InputText($"Format##macros{hash}ExecutionFormat", ref format, ushort.MaxValue))
+                if (ImGui.InputText($"Format##{baseId}Format", ref format, ushort.MaxValue))
                 {
                     macroExecution.Format = format;
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button($"Config##macros{hash}ExecutionUseConfigFormat"))
+                if (ImGui.Button($"Config##{baseId}UseConfigFormat"))
                 {
                     macroExecution.UseConfigFormat();
                 }
@@ -44,14 +45,14 @@ public class MacroExecutionButton(Config config, MacroExecutor macroExecutor)
                 if (requiredArgsLength > 0)
                 {
                     var args = macroExecution.Args;
-                    if (ImGui.InputText($"Args##macros{hash}ExecutionArgs", ref args, ushort.MaxValue))
+                    if (ImGui.InputText($"Args##{baseId}Args", ref args, ushort.MaxValue))
                     {
                         macroExecution.Args = args;
                         macroExecution.ParseArgs();
                     }
                 }
 
-                if (isExecutable && ImGui.Button($"Execute##macros{hash}ExecutionExecute"))
+                if (isExecutable && ImGui.Button($"Execute##{baseId}Execute"))
                 {
                     macroExecution.ExecuteTask();
                     ImGui.CloseCurrentPopup();
@@ -70,7 +71,7 @@ public class MacroExecutionButton(Config config, MacroExecutor macroExecutor)
             }
         }
 
-        ImGui.Button($"Execute##macros{hash}Execute");
+        ImGui.Button($"Execute##{baseId}Execute");
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip("Right-click for advanced execution options");

@@ -92,7 +92,7 @@ public class SchedulerConfigTab : ConfigEntityTab
             {
                 using (var tab = ImRaii.TabItem($"{(schedulerConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : schedulerConfig.Name)}##schedulerConfigs{schedulerConfig.GetHashCode()}Tab"))
                 {
-                    if (tab.Success)
+                    if (tab)
                     {
                         ImGui.NewLine();
                         DrawDefinitionHeader(schedulerConfig, nowUtc);
@@ -145,7 +145,7 @@ public class SchedulerConfigTab : ConfigEntityTab
     private void DrawDefinitionHeader(SchedulerConfig schedulerConfig, DateTime nowUtc)
     {
         var schedulerConfigsId = $"schedulerConfigs{schedulerConfig.GetHashCode()}";
-        if (ImGui.CollapsingHeader($"Definition##{schedulerConfigsId}Definition", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader($"Definition##{schedulerConfigsId}DefinitionHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
             using (ImRaii.PushIndent())
             {
@@ -199,7 +199,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                 }
 
                 var triggerConfigsId = $"{schedulerConfigsId}TriggerConfigs";
-                if (ImGui.CollapsingHeader($"Triggers##{triggerConfigsId}", ImGuiTreeNodeFlags.DefaultOpen))
+                if (ImGui.CollapsingHeader($"Triggers##{triggerConfigsId}Header", ImGuiTreeNodeFlags.DefaultOpen))
                 {
 
                     if (ImGui.Button($"+##{triggerConfigsId}New"))
@@ -217,7 +217,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                             var triggerConfigId = $"{triggerConfigsId}{i}";
                             using (var tab = ImRaii.TabItem($"#{i}##{triggerConfigId}Tab"))
                             {
-                                if (!tab.Success)
+                                if (!tab)
                                 {
                                     continue;
                                 }
@@ -306,10 +306,10 @@ public class SchedulerConfigTab : ConfigEntityTab
 
     private void DuplicateSchedulerConfig(SchedulerConfig schedulerConfig)
     {
-        var clone = schedulerConfig.Clone();
-        clone.Name = $"{schedulerConfig.Name} (Copy)";
-        SchedulerConfigToState.Add(clone, new());
-        Config.SchedulerConfigs.Add(clone);
+        var duplicate = schedulerConfig.Clone();
+        duplicate.Name = $"{schedulerConfig.Name} (Copy)";
+        SchedulerConfigToState.Add(duplicate, new());
+        Config.SchedulerConfigs.Add(duplicate);
         Config.Save();
     }
 
@@ -330,7 +330,6 @@ public class SchedulerConfigTab : ConfigEntityTab
                 using (ImRaii.PushIndent())
                 {
                     var state = SchedulerConfigToState[schedulerConfig];
-
                     var maxDays = state.MaxDays;
                     if (ImGui.InputInt($"Max Days##{nextOccurrencesId}StateMaxDays", ref maxDays))
                     {
