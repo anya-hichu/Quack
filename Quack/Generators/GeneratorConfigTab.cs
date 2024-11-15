@@ -29,7 +29,8 @@ public class GeneratorConfigTab : ConfigEntityTab
     private MacroTableQueue MacroTableQueue { get; init; }
     private IPluginLog PluginLog { get; init; }
 
-    public GeneratorConfigTab(HashSet<Macro> cachedMacros, CallGate callGate, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, IKeyState keyState, MacroTableQueue macroTableQueue, IPluginLog pluginLog) : base(debouncers, fileDialogManager)
+    public GeneratorConfigTab(HashSet<Macro> cachedMacros, CallGate callGate, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, 
+        IKeyState keyState, MacroTableQueue macroTableQueue, IPluginLog pluginLog, IToastGui toastGui) : base(debouncers, fileDialogManager, toastGui)
     {
         CachedMacros = cachedMacros;
         CallGate = callGate;
@@ -51,7 +52,7 @@ public class GeneratorConfigTab : ConfigEntityTab
         ImGui.Button("Export All##generatorConfigsExportAll");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right-click for clipboard base64 export");
+            ImGui.SetTooltip(EXPORT_HINT);
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
@@ -66,7 +67,7 @@ public class GeneratorConfigTab : ConfigEntityTab
         ImGui.Button("Import All##generatorConfigsImportAll");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right-click for clipboard base64 import");
+            ImGui.SetTooltip(IMPORT_HINT);
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
@@ -92,7 +93,7 @@ public class GeneratorConfigTab : ConfigEntityTab
             }
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Press <CTRL> while clicking to confirm deleting all generators");
+                ImGui.SetTooltip(CONFIRM_DELETE_HINT);
             }
         }
 
@@ -103,7 +104,7 @@ public class GeneratorConfigTab : ConfigEntityTab
             foreach (var generatorConfig in generatorConfigs)
             {
                 var hash = generatorConfig.GetHashCode();
-                using (var tab = ImRaii.TabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}#generatorConfigs{hash}Tab"))
+                using (var tab = ImRaii.TabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}###generatorConfigs{hash}Tab"))
                 {
                     if (tab)
                     {
@@ -162,7 +163,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                     Debounce(nameInputId, Config.Save);
                 }
 
-                ImGui.SameLine(ImGui.GetWindowWidth() - 115);
+                ImGui.SameLine(ImGui.GetWindowWidth() - 180);
                 if (ImGui.Button($"Duplicate##{generatorConfigId}Duplicate"))
                 {
                     DuplicateGeneratorConfig(generatorConfig);
@@ -172,7 +173,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 ImGui.Button($"Export##{generatorConfigId}Export");
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("Right-click for clipboard base64 export");
+                    ImGui.SetTooltip(EXPORT_HINT);
                 }
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 {
@@ -186,12 +187,27 @@ public class GeneratorConfigTab : ConfigEntityTab
                 ImGui.SameLine();
                 using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                 {
-                    if (ImGui.Button($"Delete##{generatorConfigId}Delete"))
+                    if (ImGui.Button($"Delete##{generatorConfigId}Delete") && KeyState[VirtualKey.CONTROL])
                     {
                         DeleteGeneratorConfig(generatorConfig);
                     }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip(CONFIRM_DELETE_HINT);
+                    }
                 }
-                
+
+                var awaitDebugger = generatorConfig.AwaitDebugger;
+                if (ImGui.Checkbox($"Await Debugger##{generatorConfigId}AwaitDebugger", ref awaitDebugger))
+                {
+                    generatorConfig.AwaitDebugger = awaitDebugger;
+                    Config.Save();
+                }
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip($"Attach chrome debugger by accessing 'chrome://inspect' url");
+                }
+
                 var ipcConfigsId = $"{generatorConfigId}IpcConfigsHeader";
                 if (ImGui.CollapsingHeader($"IPCs##{ipcConfigsId}"))
                 {
@@ -239,7 +255,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                                         }
                                         if (ImGui.IsItemHovered())
                                         {
-                                            ImGui.SetTooltip("Press <CTRL> while clicking to confirm ipc deletion");
+                                            ImGui.SetTooltip(CONFIRM_DELETE_HINT);
                                         }
                                     }
 
@@ -284,33 +300,6 @@ public class GeneratorConfigTab : ConfigEntityTab
                             }
                         }
                     }
-                }
-
-                var debuggingId = $"{generatorConfigId}Debugging";
-                if (ImGui.CollapsingHeader($"Debugging##{debuggingId}Header"))
-                {
-                    using (ImRaii.PushIndent())
-                    {
-                        var debuggingEnabled = generatorConfig.DebuggingEnabled;
-                        if (ImGui.Checkbox($"Enabled##{debuggingId}Enabled", ref debuggingEnabled))
-                        {
-                            generatorConfig.DebuggingEnabled = debuggingEnabled;
-                            Config.Save();
-                        }
-
-                        ImGui.SameLine();
-                        var debuggingPort = (int)generatorConfig.DebuggingPort;
-                        var debuggingPortInputId = $"{debuggingId}Port";
-                        if (ImGui.DragInt($"Port##{debuggingPortInputId}", ref debuggingPort, ushort.MaxValue))
-                        {
-                            generatorConfig.DebuggingPort = (ushort)debuggingPort;
-                            Debounce(debuggingPortInputId, Config.Save);
-                        }
-                        if (ImGui.IsItemHovered())
-                        {
-                            ImGui.SetTooltip($"Attach chrome debugger by accessing localhost:{debuggingPort} url");
-                        }
-                    }  
                 }
 
                 var script = generatorConfig.Script;

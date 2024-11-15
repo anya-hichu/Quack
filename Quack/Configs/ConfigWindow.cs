@@ -1,3 +1,4 @@
+using Dalamud.Game.Gui.Toast;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
@@ -25,7 +26,7 @@ public class ConfigWindow : Window, IDisposable
 
     public ConfigWindow(HashSet<Macro> cachedMacros, CallGate callGate, ChatSender chatSender, Config config, ICommandManager commandManager, Debouncers debouncers, 
                         IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, MacroTableQueue macroTableQueue, 
-                        IPluginLog pluginLog) : base("Quack Config##configWindow")
+                        IPluginLog pluginLog, IToastGui toastGui) : base("Quack Config##configWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -34,9 +35,9 @@ public class ConfigWindow : Window, IDisposable
         };
 
         GeneralTab = new(config, keyState);
-        MacroConfigTab = new(cachedMacros, config, commandManager, debouncers, FileDialogManager, keyState, macroExecutionState, macroExecutor, macroTable, macroTableQueue, pluginLog);
-        SchedulerTab = new(chatSender, config, debouncers, FileDialogManager, keyState, pluginLog);
-        GeneratorTab = new(cachedMacros, callGate, config, debouncers, FileDialogManager, keyState, macroTableQueue, pluginLog);
+        MacroConfigTab = new(cachedMacros, config, commandManager, debouncers, FileDialogManager, keyState, macroExecutionState, macroExecutor, macroTable, macroTableQueue, pluginLog, toastGui);
+        SchedulerTab = new(chatSender, config, debouncers, FileDialogManager, keyState, pluginLog, toastGui);
+        GeneratorTab = new(cachedMacros, callGate, config, debouncers, FileDialogManager, keyState, macroTableQueue, pluginLog, toastGui);
     }
 
     public void Dispose()

@@ -20,7 +20,7 @@ public class Config : IPluginConfiguration
 
     public string ExtraCommandFormat { get; set; } = "/echo {0}";
 
-    public List<GeneratorConfig> GeneratorConfigs { get; set; } = GeneratorConfig.GetDefaults();
+    public List<GeneratorConfig> GeneratorConfigs { get; set; } = [];
 
     public List<SchedulerConfig> SchedulerConfigs { get; set; } = [];
 

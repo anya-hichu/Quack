@@ -10,6 +10,7 @@ using Dalamud.Utility;
 using Lumina.Excel.Sheets;
 using Quack.Chat;
 using Quack.Configs;
+using Quack.Generators;
 using Quack.Ipcs;
 using Quack.Macros;
 using Quack.Mains;
@@ -35,6 +36,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
+    [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
 
     public readonly WindowSystem WindowSystem = new("Quack");
     private ConfigWindow ConfigWindow { get; init; }
@@ -62,7 +64,10 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
-        Config = PluginInterface.GetPluginConfig() as Config ?? new();
+        Config = PluginInterface.GetPluginConfig() as Config ?? new()
+        {
+            GeneratorConfigs = GeneratorConfig.GetDefaults()
+        };
         #region deprecated
         ConfigMigrator.MigrateDatabasePathToV6(PluginInterface);
         #endregion
@@ -89,7 +94,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog)
+        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, ToastGui)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
         };

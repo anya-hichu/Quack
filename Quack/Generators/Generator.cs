@@ -81,10 +81,8 @@ public class Generator
     {
         return new()
         {
-            EnableDebugging = GeneratorConfig.DebuggingEnabled,
-            EnableRemoteDebugging = GeneratorConfig.DebuggingEnabled,
-            AwaitDebuggerAndPauseOnStart = GeneratorConfig.DebuggingEnabled,
-            DebugPort = GeneratorConfig.DebuggingPort
+            EnableDebugging = GeneratorConfig.AwaitDebugger, 
+            AwaitDebuggerAndPauseOnStart = GeneratorConfig.AwaitDebugger
         };
     }
 

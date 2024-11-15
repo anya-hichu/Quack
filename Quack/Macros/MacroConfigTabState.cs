@@ -36,7 +36,7 @@ public class MacroConfigTabState : IDisposable
         foreach (var macro in MacroSearch.Lookup(CachedMacros, Filter))
         {
             var current = pathNodes;
-            var parts = macro.Path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+            var parts = macro.Path.Split(PATH_SEPARATOR);
             for (var take = 1; take <= parts.Length; take++)
             {
                 var newNode = new TreeNode<string>(string.Join(PATH_SEPARATOR, parts.Take(take)));

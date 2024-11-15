@@ -89,9 +89,7 @@ public class GeneratorConfig
     public List<GeneratorIpcConfig> IpcConfigs { get; set; } = [];
 
     public string Script { get; set; } = string.Empty;
-
-    public bool DebuggingEnabled { get; set; } = false;
-    public ushort DebuggingPort { get; set; } = 9222;
+    public bool AwaitDebugger { get; set; } = false;
 
     public GeneratorConfig Clone()
     {
@@ -100,8 +98,7 @@ public class GeneratorConfig
             Name = Name,
             IpcConfigs = new(IpcConfigs.Select(c => c.Clone())),
             Script = Script,
-            DebuggingEnabled = DebuggingEnabled,
-            DebuggingPort = DebuggingPort
+            AwaitDebugger = AwaitDebugger
         };
     }
 }

@@ -34,8 +34,8 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
     private IPluginLog PluginLog { get; init; }
 
     public MacroConfigTab(HashSet<Macro> cachedMacros, Config config, ICommandManager commandManager, Debouncers debouncers, 
-                          FileDialogManager fileDialogManager, IKeyState keyState, MacroExecutionState macroExecutionState, 
-                          MacroExecutor macroExecutor, MacroTable macroTable, MacroTableQueue macroTableQueue, IPluginLog pluginLog) : base(debouncers, fileDialogManager)
+                          FileDialogManager fileDialogManager, IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, 
+                          MacroTable macroTable, MacroTableQueue macroTableQueue, IPluginLog pluginLog, IToastGui toastGui) : base(debouncers, fileDialogManager, toastGui)
     {
         CachedMacros = cachedMacros;
         CommandManager = commandManager;
@@ -74,11 +74,11 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             ImGui.SameLine();
         }
 
-        ImGui.SameLine(ImGui.GetWindowWidth() - 300);
+        ImGui.SameLine(ImGui.GetWindowWidth() - 217);
         ImGui.Button("Export All##macrosExport");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right-click for clipboard base64 export");
+            ImGui.SetTooltip(EXPORT_HINT);
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
@@ -93,7 +93,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         ImGui.Button("Import All##macrosImport");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right-click for clipboard base64 import");
+            ImGui.SetTooltip(IMPORT_HINT);
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
@@ -113,7 +113,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             }
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Press <CTRL> while clicking to confirm deleting all macros");
+                ImGui.SetTooltip(CONFIRM_DELETE_HINT);
             }
         }
 
@@ -159,11 +159,11 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     Debounce(nameInputId, () => MacroTableQueue.Update("name", selectedMacro));
                 }
 
-                ImGui.SameLine(ImGui.GetWindowWidth() - 200);
+                ImGui.SameLine(ImGui.GetWindowWidth() - 197);
                 ImGui.Button($"Export##{macroConfigId}Export");
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("Right-click for clipboard base64 export");
+                    ImGui.SetTooltip(EXPORT_HINT);
                 }
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 {
@@ -189,7 +189,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     }
                     if (ImGui.IsItemHovered())
                     {
-                        ImGui.SetTooltip("Press <CTRL> while clicking to confirm macro deletion");
+                        ImGui.SetTooltip(CONFIRM_DELETE_HINT);
                     }
                 }
 
@@ -292,12 +292,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     selectedMacro.Args = args;
                     Debounce(argsInputId, () => MacroTableQueue.Update("args", selectedMacro));
                 }
-                ImGui.SameLine();
-                ImGui.Text("[?]");
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Space separated list of default arguments (supports double quoting) used to replace content placeholders ({0}, {1}, etc.)");
-                }
+                Hint("Space separated list of default arguments (supports double quoting) used to replace content placeholders ({0}, {1}, etc.)");
 
                 var content = selectedMacro.Content;
                 var contentInputId = $"{macroConfigId}Content";
@@ -306,12 +301,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     selectedMacro.Content = content;
                     Debounce(contentInputId, () => MacroTableQueue.Update("content", selectedMacro));
                 }
-                ImGui.SameLine();
-                ImGui.Text("[?]");
-                if (ImGui.IsItemHovered())
-                {
-                    ImGui.SetTooltip("Additional behaviors:\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)\n - Supports commenting out lines by adding '//' at the beginning without leading space");
-                }
+                Hint("Additional behaviors:\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)\n - Supports commenting out lines by adding '//' at the beginning without leading space");
 
                 var loop = selectedMacro.Loop;
                 var loopInputId = $"{macroConfigId}Loop";
@@ -336,7 +326,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                 ImGui.Button($"Export Selected##selectedMacrosExport");
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("Right-click for clipboard base64 export");
+                    ImGui.SetTooltip(EXPORT_HINT);
                 }
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 {
@@ -378,7 +368,8 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             }
             else
             {
-                ImGui.Text("No macro selected\n\nHelp:\n - Click on the left panel to select one and hold <CTRL> for multi selection\n - Open context menu using right-click");
+                ImGui.Text("No macro selected");
+                Hint("Click on the left panel to select one and hold <CTRL> for multi-selection\nClick <RIGHT> to open the context menu on panel items");
             }
         }
     }
@@ -470,7 +461,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                             ImGui.MenuItem($"Export##{popupId}Export");
                             if (ImGui.IsItemHovered())
                             {
-                                ImGui.SetTooltip("Right-click for clipboard base64 export");
+                                ImGui.SetTooltip(EXPORT_HINT);
                             }
                             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                             {
@@ -487,7 +478,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                             }
                             if (ImGui.IsItemHovered())
                             {
-                                ImGui.SetTooltip("Press <CTRL> while clicking to confirm deleting folder macros");
+                                ImGui.SetTooltip(CONFIRM_DELETE_HINT);
                             }
                         }
                     }
@@ -502,25 +493,24 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             {
                 var state = MacroConfigTabState;
                 using (ImRaii.TreeNode($"{(name.IsNullOrWhitespace() ? BLANK_NAME : name)}##pathNode{hash}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | (state.SelectedMacros.Any(m => m.Path == treeNode.Node) ? ImGuiTreeNodeFlags.Selected : ImGuiTreeNodeFlags.None))) {
-                    var treeNodeClicked = ImGui.IsItemClicked();
+                    var nodeClicked = ImGui.IsItemClicked();
 
-                    var selectedMacros = state.SelectedMacros.ToList();
-
+                    var selectedMacros = state.SelectedMacros;
                     var popupId = $"pathNode{hash}Popup";
                     using (var contextPopup = ImRaii.ContextPopupItem(popupId))
                     {
                         if (contextPopup)
                         {
                             var selectedMacro = selectedMacros.FirstOrDefault();
+                            var selectedMacroList = selectedMacros.ToList();
                             if (ImGui.MenuItem($"Duplicate##{popupId}Duplicate"))
                             {
-                                selectedMacros.ForEach(DuplicateMacro);
+                                selectedMacroList.ForEach(DuplicateMacro);
                             }
-
                             ImGui.MenuItem($"Export##{popupId}Export");
                             if (ImGui.IsItemHovered())
                             {
-                                ImGui.SetTooltip("Right-click for clipboard base64 export");
+                                ImGui.SetTooltip(EXPORT_HINT);
                             }
                             if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                             {
@@ -533,16 +523,16 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
 
                             if (ImGui.MenuItem($"Delete##{popupId}Delete") && KeyState[VirtualKey.CONTROL])
                             {
-                                selectedMacros.ForEach(DeleteMacro);
+                                selectedMacroList.ForEach(DeleteMacro);
                             }
                             if (ImGui.IsItemHovered())
                             {
-                                ImGui.SetTooltip("Press <CTRL> while clicking to confirm macro(s) deletion");
+                                ImGui.SetTooltip(CONFIRM_DELETE_HINT);
                             }
                         }
                     }
 
-                    if (!treeNodeClicked || !CachedMacros.FindFirst(m => m.Path == treeNode.Node, out var clickedMacro))
+                    if (!nodeClicked || !CachedMacros.FindFirst(m => m.Path == treeNode.Node, out var clickedMacro))
                     {
                         continue;
                     }
@@ -556,7 +546,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     if (!selectedMacros.Remove(clickedMacro))
                     {
                         selectedMacros.Add(clickedMacro);
-                    }
+                    }    
                 }
             }
         }

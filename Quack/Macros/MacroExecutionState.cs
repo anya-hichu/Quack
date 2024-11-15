@@ -74,7 +74,7 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
         ImGui.Button($"Execute##{baseId}Execute");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right-click for advanced execution options");
+            ImGui.SetTooltip("Click <RIGHT> for advanced execution options");
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
