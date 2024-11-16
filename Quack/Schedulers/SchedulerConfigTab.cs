@@ -1,5 +1,6 @@
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
@@ -25,7 +26,7 @@ public class SchedulerConfigTab : ConfigEntityTab
     private Dictionary<SchedulerConfig, SchedulerConfigTabState> SchedulerConfigToState { get; set; }
 
     public SchedulerConfigTab(ChatSender chatSender, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, 
-                              IKeyState keyState, IPluginLog pluginLog, IToastGui toastGui) : base(debouncers, fileDialogManager, toastGui)
+                              IKeyState keyState, IPluginLog pluginLog, INotificationManager notificationManager) : base(debouncers, fileDialogManager, notificationManager)
     {
         ChatSender = chatSender;
         Config = config;
@@ -112,13 +113,13 @@ public class SchedulerConfigTab : ConfigEntityTab
         Config.Save();
     }
 
-    private void ImportSchedulerConfigExportsJson(string exportsJson)
+    private int ImportSchedulerConfigExportsJson(string exportsJson)
     {
         var exports = JsonConvert.DeserializeObject<ConfigEntityExports<SchedulerConfig>>(exportsJson);
         if (exports == null)
         {
-            PluginLog.Error($"Failed to import schedulers from json");
-            return;
+            PluginLog.Verbose($"Failed to import schedulers from json: {exportsJson}");
+            return -1;
         }
 
         var schedulerConfigs = exports.Entities;
@@ -134,6 +135,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         });
         Config.SchedulerConfigs.AddRange(schedulerConfigs);
         Config.Save();
+        return schedulerConfigs.Count;
     }
 
     private void DeleteSchedulerConfigs()
@@ -233,7 +235,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                                         triggerConfig.TimeExpression = timeExpression;
                                         Debounce(timeExpressionInputId, Config.Save);
                                     }
-                                    Hint("* * * * *\n |  |  |  |  |\n |  |  |  |  day of the week (0–6) or (MON to SUN) \n |  |  |  month (1–12)\n |  |  day of the month (1–31)\n |  hour (0–23)\nminute (0–59)\n\nWildcard (*): represents 'all'. For example, using '* * * * *' will run every minute. Using '* * * * 1' will run every minute only on Monday. Using six asterisks means every second when seconds are supported.\nComma (,): used to separate items of a list. For example, using 'MON,WED,FRI' in the 5th field (day of week) means Mondays, Wednesdays and Fridays.\nHyphen (-): defines ranges. For example, '2000-2010' indicates every year between 2000 and 2010, inclusive.");
+                                    ImGuiComponents.HelpMarker("* * * * *\n |  |  |  |  |\n |  |  |  |  day of the week (0–6) or (MON to SUN) \n |  |  |  month (1–12)\n |  |  day of the month (1–31)\n |  hour (0–23)\nminute (0–59)\n\nWildcard (*): represents 'all'. For example, using '* * * * *' will run every minute. Using '* * * * 1' will run every minute only on Monday. Using six asterisks means every second when seconds are supported.\nComma (,): used to separate items of a list. For example, using 'MON,WED,FRI' in the 5th field (day of week) means Mondays, Wednesdays and Fridays.\nHyphen (-): defines ranges. For example, '2000-2010' indicates every year between 2000 and 2010, inclusive.");
 
                                     ImGui.SameLine(ImGui.GetWindowWidth() - 125);
                                     if (ImGui.Button($"Duplicate###{triggerConfigId}Duplicate"))

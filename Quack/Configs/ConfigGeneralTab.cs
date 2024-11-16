@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Keys;
+using Dalamud.Interface.Components;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -46,7 +47,7 @@ public class ConfigGeneralTab(Config config, IKeyState keyState)
                 Config.ExtraCommandFormat = extraCommandFormat;
                 Config.Save();
             }
-            ImGui.Text("PM format supported via {0:P} placeholder for example: \"/cwl2 puppet now ({0:P})\"");
+            ImGuiComponents.HelpMarker("Usable in advanced execution mode\nPM format supported via {0:P} placeholder for example: \"/cwl2 puppet now ({0:P})\"");
         }
     }
 }

@@ -36,7 +36,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
-    [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
+    [PluginService] internal static INotificationManager NotificationManager { get; private set; } = null!;
 
     public readonly WindowSystem WindowSystem = new("Quack");
     private ConfigWindow ConfigWindow { get; init; }
@@ -94,7 +94,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, ToastGui)
+        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
         };

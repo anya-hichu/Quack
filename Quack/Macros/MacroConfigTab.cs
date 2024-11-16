@@ -1,6 +1,8 @@
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiFileDialog;
+using Dalamud.Interface.ImGuiNotification.Internal;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
@@ -15,6 +17,8 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using static FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureMacroModule;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Quack.Macros;
 
@@ -34,8 +38,8 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
     private IPluginLog PluginLog { get; init; }
 
     public MacroConfigTab(HashSet<Macro> cachedMacros, Config config, ICommandManager commandManager, Debouncers debouncers, 
-                          FileDialogManager fileDialogManager, IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, 
-                          MacroTable macroTable, MacroTableQueue macroTableQueue, IPluginLog pluginLog, IToastGui toastGui) : base(debouncers, fileDialogManager, toastGui)
+                          FileDialogManager fileDialogManager, IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, 
+                          MacroTableQueue macroTableQueue, IPluginLog pluginLog, INotificationManager notificationManager) : base(debouncers, fileDialogManager, notificationManager)
     {
         CachedMacros = cachedMacros;
         CommandManager = commandManager;
@@ -298,7 +302,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     selectedMacro.Args = args;
                     Debounce(argsInputId, () => MacroTableQueue.Update("args", selectedMacro));
                 }
-                Hint("Space separated list of default arguments (supports double quoting) used to replace content placeholders ({0}, {1}, etc.)");
+                ImGuiComponents.HelpMarker("Space separated list of default arguments (supports double quoting) used to replace content placeholders ({0}, {1}, etc.)");
 
                 var content = selectedMacro.Content;
                 var contentInputId = $"{macroConfigId}Content";
@@ -307,7 +311,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     selectedMacro.Content = content;
                     Debounce(contentInputId, () => MacroTableQueue.Update("content", selectedMacro));
                 }
-                Hint("Additional behaviors:\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)\n - Supports commenting out lines by adding '//' at the beginning without leading space");
+                ImGuiComponents.HelpMarker("Additional behaviors:\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)\n - Supports commenting out lines by adding '//' at the beginning without leading space");
 
                 var loop = selectedMacro.Loop;
                 var loopInputId = $"{macroConfigId}Loop";
@@ -389,7 +393,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             else
             {
                 ImGui.Text("No macro selected");
-                Hint("Click on the left panel to select one and hold <CTRL> for multi-selection\nClick <RIGHT> to open the context menu on panel items");
+                ImGuiComponents.HelpMarker("Click on the left panel to select one and hold <CTRL> for multi-selection\nClick <RIGHT> to open the context menu on panel items");
             }
         }
     }
@@ -416,13 +420,13 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         MacroConfigTabState.SelectedMacros = [macro];
     }
 
-    private void ImportMacroExportsJson(string exportsJson)
+    private int ImportMacroExportsJson(string exportsJson)
     {
         var exports = JsonConvert.DeserializeObject<ConfigEntityExports<Macro>>(exportsJson);
         if (exports == null)
         {
-            PluginLog.Error($"Failed to import macros from json");
-            return;
+            PluginLog.Verbose($"Failed to import macros from json: {exportsJson}");
+            return -1;
         }
         var macros = exports.Entities;
         var conflictingMacros = CachedMacros.Intersect(macros);
@@ -431,18 +435,21 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
 
         MacroTableQueue.Delete(conflictingMacros);
         MacroTableQueue.Insert(macros);
+        return macros.Count;
     }
 
     private void DeleteAllMacros()
     {
         CachedMacros.Clear();
         MacroTableQueue.DeleteAll();
+        MacroConfigTabState.SelectedMacros.Clear();
     }
 
     private void DeleteMacro(Macro macro)
     {
         CachedMacros.Remove(macro);
         MacroTableQueue.Delete(macro);
+        MacroConfigTabState.SelectedMacros.Remove(macro);
     }
 
     private void DeleteMacros(IEnumerable<Macro> macros)
@@ -450,6 +457,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         var list = macros.ToList();
         CachedMacros.ExceptWith(list);
         MacroTableQueue.Delete(list);
+        MacroConfigTabState.SelectedMacros.ExceptWith(macros);
     }
 
     private void DrawPathNodes(HashSet<TreeNode<string>> nodes)

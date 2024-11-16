@@ -1,5 +1,7 @@
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiFileDialog;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
@@ -9,12 +11,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Quack.Configs;
 
-public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager fileDialogManager, IToastGui toastGui)
+public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager fileDialogManager, INotificationManager notificationManager)
 {
     protected static readonly string BLANK_NAME = "(Blank)";
     protected static readonly string CONFIRM_DELETE_HINT = "Press <CTRL> while clicking to confirm";
@@ -23,7 +26,7 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
 
     protected Debouncers Debouncers { get; init; } = debouncers;
     protected FileDialogManager FileDialogManager { get; init; } = fileDialogManager;
-    protected IToastGui ToastGui { get; init; } = toastGui;
+    protected INotificationManager NotificationManager { get; init; } = notificationManager;
 
     protected void Debounce(string key, Action action)
     {
@@ -61,11 +64,15 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
             }
             var encodedCompressedExportsJson = Convert.ToBase64String(compressedExportsJsonStream.ToArray());
             ImGui.SetClipboardText(encodedCompressedExportsJson);
-            ToastGui.ShowNormal("Imported to clipboard");
+            var count = entities.Count();
+            NotificationManager.AddNotification(new() {
+                Type = NotificationType.Success,
+                Content = $"Exported {count} entit{(count > 1 ? "ies" : "y")} to clipboard"
+            });
         });
     }
 
-    protected void ImportFromFile(Action<string> callback, string title)
+    protected void ImportFromFile(Func<string, int> callback, string title)
     {
         FileDialogManager.OpenFileDialog(title, "{.json}", (valid, path) =>
         {
@@ -85,12 +92,17 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                     }
                 }
                 #endregion
-                callback(exportsJson);
+                var count = callback(exportsJson);
+                NotificationManager.AddNotification(new()
+                {
+                    Type = count > -1 ? NotificationType.Success : NotificationType.Error,
+                    Content = $"Imported {count} entit{(count > 1 ? "ies" : "y")} from file"
+                });
             }
         });
     }
 
-    protected Task ImportFromClipboard(Action<string> callback)
+    protected Task ImportFromClipboard(Func<string, int> callback)
     {
         return Task.Run(() =>
         {
@@ -103,21 +115,12 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
             }
             var exportsJson = Encoding.UTF8.GetString(exportsJsonStream.ToArray());
             // TODO: Fix toast
-            callback(exportsJson);
-            ToastGui.ShowNormal("Imported from clipboard");
+            var count = callback(exportsJson);
+            NotificationManager.AddNotification(new()
+            {
+                Type = count > -1 ? NotificationType.Success : NotificationType.Error,
+                Content = $"Imported {count} entit{(count > 1 ? "ies" : "y")} from clipboard"
+            });
         });
-    }
-
-    protected static void Hint(string text)
-    {
-        ImGui.SameLine();
-        using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.HealerGreen))
-        {
-            ImGui.Text("(?)");
-        }
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip(text);
-        }
     }
 }

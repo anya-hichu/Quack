@@ -30,7 +30,7 @@ public class GeneratorConfigTab : ConfigEntityTab
     private IPluginLog PluginLog { get; init; }
 
     public GeneratorConfigTab(HashSet<Macro> cachedMacros, CallGate callGate, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, 
-        IKeyState keyState, MacroTableQueue macroTableQueue, IPluginLog pluginLog, IToastGui toastGui) : base(debouncers, fileDialogManager, toastGui)
+        IKeyState keyState, MacroTableQueue macroTableQueue, IPluginLog pluginLog, INotificationManager notificationManager) : base(debouncers, fileDialogManager, notificationManager)
     {
         CachedMacros = cachedMacros;
         CallGate = callGate;
@@ -117,18 +117,19 @@ public class GeneratorConfigTab : ConfigEntityTab
         }
     }
 
-    private void ImportGeneratorConfigExportsJson(string exportsJson)
+    private int ImportGeneratorConfigExportsJson(string exportsJson)
     {
         var exports = JsonConvert.DeserializeObject<ConfigEntityExports<GeneratorConfig>>(exportsJson);
         if (exports == null)
         {
-            PluginLog.Error($"Failed to import generators from json");
-            return;
+            PluginLog.Verbose($"Failed to import generators from json: {exportsJson}");
+            return -1;
         }
         var generatorConfigs = exports.Entities.ToList();
         AddDefaultStates(generatorConfigs);
         Config.GeneratorConfigs.AddRange(generatorConfigs);
         Config.Save();
+        return generatorConfigs.Count;
     }
 
     private void DrawDefinitionHeader(GeneratorConfig generatorConfig, IEnumerable<CallGateChannel> funcChannels)
