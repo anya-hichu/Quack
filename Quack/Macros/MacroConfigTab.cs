@@ -457,7 +457,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         // Pad with zeros to improve sorting with numbers
         foreach (var treeNode in nodes.OrderBy(n => NumberGeneratedRegex().Replace(n.Node, m => m.Value.PadLeft(10, '0'))))
         {
-            var hash = treeNode.GetHashCode();
+            var hash = treeNode.Node.GetHashCode();
 
             var name = Path.GetFileName(treeNode.Node);
             if (treeNode.ChildNodes.Count > 0)
