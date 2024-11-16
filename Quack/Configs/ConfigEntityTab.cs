@@ -101,12 +101,12 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                 {
                     Type = NotificationType.Success,
                     Minimized = false,
-                    Content = $"Import {maybeEntities.Count} {(maybeEntities.Count > 1 ? readableType.Pluralize() : readableType)} from clipboard"
+                    Content = $"Import {maybeEntities.Count} {(maybeEntities.Count > 1 ? readableType.Pluralize() : readableType)} from file"
                 } : new()
                 {
                     Type = NotificationType.Error,
                     Minimized = false,
-                    Content = $"Failed to import {readableType} from clipboard"
+                    Content = $"Failed to import {readableType} from file"
                 });
             }
         });
