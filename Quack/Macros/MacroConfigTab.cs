@@ -61,6 +61,26 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             MaybeAddMacro(new());
         }
 
+        ImGui.SameLine();
+        var leftChildWidth = ImGui.GetWindowWidth() * 0.3f;
+        var state = MacroConfigTabState;
+        var filter = state.Filter;
+        using (ImRaii.ItemWidth(leftChildWidth - 65))
+        {
+            if (ImGui.InputTextWithHint("##macrosFilter", "Filter", ref filter, ushort.MaxValue))
+            {
+                state.Filter = filter;
+                state.Update();
+            }
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("x##macrosFilterClear"))
+        {
+            state.Filter = string.Empty;
+            state.Update();
+        }
+
+
         ImGui.SameLine(ImGui.GetWindowWidth() - 387);
         if (MacroExecutor.HasRunningTasks())
         {
@@ -114,20 +134,6 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             if (ImGui.IsItemHovered())
             {
                 ImGui.SetTooltip(CONFIRM_DELETE_HINT);
-            }
-        }
-
-        var leftChildWidth = ImGui.GetWindowWidth() * 0.3f;
-
-        var state = MacroConfigTabState;
-
-        var filter = state.Filter;
-        using (ImRaii.ItemWidth(leftChildWidth))
-        {
-            if (ImGui.InputText("##macrosFilter", ref filter, ushort.MaxValue))
-            {
-                state.Filter = filter;
-                state.Update();
             }
         }
 
@@ -322,8 +328,8 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             {
                 ImGui.Text($"{selectedMacros.Count} macros selected");
 
-                ImGui.SameLine(ImGui.GetWindowWidth() - 200);
-                ImGui.Button($"Export Selected##selectedMacrosExport");
+                ImGui.SameLine(ImGui.GetWindowWidth() - 127);
+                ImGui.Button($"Export##selectedMacrosExport");
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip(EXPORT_HINT);
@@ -337,6 +343,19 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     ExportToClipboard(selectedMacros);
                 }
 
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
+                {
+                    if (ImGui.Button($"Delete##selectedMacrosDelete") && KeyState[VirtualKey.CONTROL])
+                    {
+                        DeleteMacros(selectedMacros);
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.SetTooltip(CONFIRM_DELETE_HINT);
+                    }
+                }
+
                 var macroTableId = $"{macroConfigsId}Table";
                 using (ImRaii.Table(macroTableId, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
                 {
@@ -348,10 +367,11 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     {
                         if (ImGui.TableNextColumn())
                         {
-                            ImGui.Text(selectedMacro.Name);
+                            var name = selectedMacro.Name.IsNullOrWhitespace() ? BLANK_NAME : selectedMacro.Name;
+                            ImGui.Text(name);
                             if (ImGui.IsItemHovered())
                             {
-                                ImGui.SetTooltip(selectedMacro.Name);
+                                ImGui.SetTooltip(name);
                             }
                         }
 

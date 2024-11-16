@@ -64,7 +64,7 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("X##queryClear"))
+        if (ImGui.Button("x##queryClear"))
         {
             state.Query = string.Empty;
             state.Update();

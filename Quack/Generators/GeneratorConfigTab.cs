@@ -145,7 +145,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 ImGui.Text(maybeGeneratorException.ToString());
             }
             ImGui.SameLine();
-            if (ImGui.Button($"X##{generateMacrosId}ExceptionClear"))
+            if (ImGui.Button($"x##{generateMacrosId}ExceptionClear"))
             {
                 state.MaybeGeneratorException = null;
             }
@@ -424,7 +424,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button($"X##{generatedMacrosId}ClearFilter"))
+                if (ImGui.Button($"x##{generatedMacrosId}FilterClear"))
                 {
                     state.GeneratedMacrosFilter = string.Empty;
                     state.FilteredGeneratedMacros = generatedMacros;

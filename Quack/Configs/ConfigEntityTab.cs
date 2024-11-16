@@ -102,6 +102,7 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                 decompressor.CopyTo(exportsJsonStream);
             }
             var exportsJson = Encoding.UTF8.GetString(exportsJsonStream.ToArray());
+            // TODO: Fix toast
             callback(exportsJson);
             ToastGui.ShowNormal("Imported from clipboard");
         });
@@ -113,10 +114,10 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
         using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.HealerGreen))
         {
             ImGui.Text("(?)");
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.SetTooltip(text);
-            }
+        }
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(text);
         }
     }
 }
