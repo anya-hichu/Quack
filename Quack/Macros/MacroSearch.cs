@@ -11,7 +11,7 @@ public class MacroSearch
 
     public static List<Macro> Lookup(IEnumerable<Macro> macros, string filter)
     {
-        return new(macros.Where(m => tokenMatches(m, filter)).OrderBy(m => matchLengthRatio(m, filter)));
+        return new(filter.IsNullOrWhitespace()? macros : macros.Where(m => tokenMatches(m, filter)).OrderBy(m => matchLengthRatio(m, filter)));
     }
 
     private static bool tokenMatches(Macro macro, string filter)

@@ -24,7 +24,8 @@ public class SchedulerConfigTab : ConfigEntityTab
     private IPluginLog PluginLog { get; init; }
     private Dictionary<SchedulerConfig, SchedulerConfigTabState> SchedulerConfigToState { get; set; }
 
-    public SchedulerConfigTab(ChatSender chatSender, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, IKeyState keyState, IPluginLog pluginLog) : base(debouncers, fileDialogManager)
+    public SchedulerConfigTab(ChatSender chatSender, Config config, Debouncers debouncers, FileDialogManager fileDialogManager, 
+                              IKeyState keyState, IPluginLog pluginLog, IToastGui toastGui) : base(debouncers, fileDialogManager, toastGui)
     {
         ChatSender = chatSender;
         Config = config;
@@ -47,7 +48,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         ImGui.Button("Export All##schedulerConfigsExportAll");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right-click for clipboard base64 export");
+            ImGui.SetTooltip(EXPORT_HINT);
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
@@ -62,7 +63,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         ImGui.Button("Import All##schedulerConfigsImportAll");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Right-click for clipboard base64 import");
+            ImGui.SetTooltip(IMPORT_HINT);
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
@@ -82,7 +83,7 @@ public class SchedulerConfigTab : ConfigEntityTab
             }
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Press <CTRL> while clicking to confirm deleting all schedulers");
+                ImGui.SetTooltip(CONFIRM_DELETE_HINT);
             }
         }
 
@@ -90,9 +91,9 @@ public class SchedulerConfigTab : ConfigEntityTab
         {
             foreach (var schedulerConfig in Config.SchedulerConfigs)
             {
-                using (var tab = ImRaii.TabItem($"{(schedulerConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : schedulerConfig.Name)}##schedulerConfigs{schedulerConfig.GetHashCode()}Tab"))
+                using (var tab = ImRaii.TabItem($"{(schedulerConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : schedulerConfig.Name)}###schedulerConfigs{schedulerConfig.GetHashCode()}Tab"))
                 {
-                    if (tab.Success)
+                    if (tab)
                     {
                         ImGui.NewLine();
                         DrawDefinitionHeader(schedulerConfig, nowUtc);
@@ -145,7 +146,7 @@ public class SchedulerConfigTab : ConfigEntityTab
     private void DrawDefinitionHeader(SchedulerConfig schedulerConfig, DateTime nowUtc)
     {
         var schedulerConfigsId = $"schedulerConfigs{schedulerConfig.GetHashCode()}";
-        if (ImGui.CollapsingHeader($"Definition##{schedulerConfigsId}Definition", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader($"Definition##{schedulerConfigsId}DefinitionHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
             using (ImRaii.PushIndent())
             {
@@ -157,7 +158,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                     Debounce(enabledInputId, Config.Save);
                 }
 
-                ImGui.SameLine(ImGui.GetWindowWidth() - 115);
+                ImGui.SameLine(ImGui.GetWindowWidth() - 180);
                 if (ImGui.Button($"Duplicate##{schedulerConfigsId}Duplicate"))
                 {
                     DuplicateSchedulerConfig(schedulerConfig);
@@ -166,7 +167,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                 ImGui.Button($"Export##{schedulerConfigsId}Export");
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("Right-click for clipboard base64 export");
+                    ImGui.SetTooltip(EXPORT_HINT);
                 }
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 {
@@ -186,7 +187,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                     }
                     if (ImGui.IsItemHovered())
                     {
-                        ImGui.SetTooltip("Press <CTRL> while clicking to confirm scheduler deletion");
+                        ImGui.SetTooltip(CONFIRM_DELETE_HINT);
                     }
                 }
 
@@ -199,7 +200,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                 }
 
                 var triggerConfigsId = $"{schedulerConfigsId}TriggerConfigs";
-                if (ImGui.CollapsingHeader($"Triggers##{triggerConfigsId}", ImGuiTreeNodeFlags.DefaultOpen))
+                if (ImGui.CollapsingHeader($"Triggers##{triggerConfigsId}Header", ImGuiTreeNodeFlags.DefaultOpen))
                 {
 
                     if (ImGui.Button($"+##{triggerConfigsId}New"))
@@ -217,7 +218,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                             var triggerConfigId = $"{triggerConfigsId}{i}";
                             using (var tab = ImRaii.TabItem($"#{i}##{triggerConfigId}Tab"))
                             {
-                                if (!tab.Success)
+                                if (!tab)
                                 {
                                     continue;
                                 }
@@ -232,23 +233,25 @@ public class SchedulerConfigTab : ConfigEntityTab
                                         triggerConfig.TimeExpression = timeExpression;
                                         Debounce(timeExpressionInputId, Config.Save);
                                     }
-                                    if (ImGui.IsItemHovered())
-                                    {
-                                        ImGui.SetTooltip("* * * * *\n| | | | |\n| | | | day of the week (0–6) or (MON to SUN; \n| | | month (1–12)\n| | day of the month (1–31)\n| hour (0–23)\nminute (0–59)\n\nWildcard (*): represents 'all'. For example, using '* * * * *' will run every minute. Using '* * * * 1' will run every minute only on Monday. Using six asterisks means every second when seconds are supported.\nComma (,): used to separate items of a list. For example, using 'MON,WED,FRI' in the 5th field (day of week) means Mondays, Wednesdays and Fridays.\nHyphen (-): defines ranges. For example, '2000-2010' indicates every year between 2000 and 2010, inclusive.");
-                                    }
+                                    Hint("* * * * *\n |  |  |  |  |\n |  |  |  |  day of the week (0–6) or (MON to SUN) \n |  |  |  month (1–12)\n |  |  day of the month (1–31)\n |  hour (0–23)\nminute (0–59)\n\nWildcard (*): represents 'all'. For example, using '* * * * *' will run every minute. Using '* * * * 1' will run every minute only on Monday. Using six asterisks means every second when seconds are supported.\nComma (,): used to separate items of a list. For example, using 'MON,WED,FRI' in the 5th field (day of week) means Mondays, Wednesdays and Fridays.\nHyphen (-): defines ranges. For example, '2000-2010' indicates every year between 2000 and 2010, inclusive.");
 
-                                    ImGui.SameLine(ImGui.GetWindowWidth() - 60);
+                                    ImGui.SameLine(ImGui.GetWindowWidth() - 125);
                                     if (ImGui.Button($"Duplicate##{triggerConfigId}Duplicate"))
                                     {
                                         triggerConfigs.Add(triggerConfig.Clone());
                                         Config.Save();
                                     }
+                                    ImGui.SameLine();
                                     using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                                     {
-                                        if (ImGui.Button($"Delete##{triggerConfigId}Delete"))
+                                        if (ImGui.Button($"Delete##{triggerConfigId}Delete") && KeyState[VirtualKey.CONTROL])
                                         {
                                             triggerConfigs.RemoveAt(i);
                                             Config.Save();
+                                        }
+                                        if (ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip(CONFIRM_DELETE_HINT);
                                         }
                                     }
 
@@ -306,10 +309,10 @@ public class SchedulerConfigTab : ConfigEntityTab
 
     private void DuplicateSchedulerConfig(SchedulerConfig schedulerConfig)
     {
-        var clone = schedulerConfig.Clone();
-        clone.Name = $"{schedulerConfig.Name} (Copy)";
-        SchedulerConfigToState.Add(clone, new());
-        Config.SchedulerConfigs.Add(clone);
+        var duplicate = schedulerConfig.Clone();
+        duplicate.Name = $"{schedulerConfig.Name} (Copy)";
+        SchedulerConfigToState.Add(duplicate, new());
+        Config.SchedulerConfigs.Add(duplicate);
         Config.Save();
     }
 
@@ -330,7 +333,6 @@ public class SchedulerConfigTab : ConfigEntityTab
                 using (ImRaii.PushIndent())
                 {
                     var state = SchedulerConfigToState[schedulerConfig];
-
                     var maxDays = state.MaxDays;
                     if (ImGui.InputInt($"Max Days##{nextOccurrencesId}StateMaxDays", ref maxDays))
                     {

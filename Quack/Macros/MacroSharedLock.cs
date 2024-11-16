@@ -68,7 +68,7 @@ public unsafe class MacroSharedLock : IDisposable
         return Ids.Count > 0;
     }
 
-    public bool HasAcquiredLast(int id)
+    public bool IsTail(int id)
     {
         return Ids.Last() == id;
     }

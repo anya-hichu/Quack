@@ -5,5 +5,5 @@ namespace Quack.Utils;
 public class TreeNode<T>(T node)
 {
     public T Node { get; init; } = node;
-    public HashSet<TreeNode<T>> ChildNodes { get; init; } = new(0, new TreeNodeComparer<T>());
+    public HashSet<TreeNode<T>> ChildNodes { get; init; } = new(0, TreeNodeComparer<T>.INSTANCE);
 }

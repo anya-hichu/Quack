@@ -1,25 +1,31 @@
 using Dalamud;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
-using Dalamud.Utility;
-using JavaScriptEngineSwitcher.Core;
+using JavaScriptEngineSwitcher.V8;
 using Newtonsoft.Json;
 using Quack.Macros;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Schema;
 
 namespace Quack.Generators;
 
-public class Generator(GeneratorConfig generatorConfig, IJsEngine jsEngine, IPluginLog pluginLog)
+public class Generator
 {
     private static readonly string ENTRY_POINT = "main";
 
-    private GeneratorConfig GeneratorConfig { get; init; } = generatorConfig;
-    private IJsEngine JsEngine { get; init; } = jsEngine;
-    private IPluginLog PluginLog { get; init; } = pluginLog;
+    private GeneratorConfig GeneratorConfig { get; init; }
+    private IPluginLog PluginLog { get; init; }
+    private V8JsEngine? MaybeEngine { get; set; }
 
-    public HashSet<Macro> Execute()
+    public Generator(GeneratorConfig generatorConfig, IPluginLog pluginLog)
+    {
+        GeneratorConfig = generatorConfig;
+        PluginLog = pluginLog;
+    }
+
+    public HashSet<Macro> GenerateMacros()
     {
         var args = CallIpcs();
         var macros = CallFunction<Macro>(ENTRY_POINT, args);
@@ -47,14 +53,11 @@ public class Generator(GeneratorConfig generatorConfig, IJsEngine jsEngine, IPlu
     {
         try
         {
-            if (GeneratorConfig.Script.IsNullOrWhitespace())
-            {
-                throw new GeneratorException($"Empty script for {GeneratorConfig.Name} generator");
-            }
-            PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script");
-            JsEngine.Execute(GeneratorConfig.Script);
+            MaybeEngine = new V8JsEngine(GetEngineSettings());
+            PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script with engine {MaybeEngine.Name} ({MaybeEngine.Version})");
+            MaybeEngine.Execute(GeneratorConfig.Script);
             PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} {ENTRY_POINT} function with: {string.Join(", ", args)}");
-            var entitiesJson = JsEngine.CallFunction<string>(name, args);
+            var entitiesJson = MaybeEngine.CallFunction<string>(name, args);
             var entities = JsonConvert.DeserializeObject<T[]>(entitiesJson);
             if (entities == null)
             {
@@ -67,5 +70,29 @@ public class Generator(GeneratorConfig generatorConfig, IJsEngine jsEngine, IPlu
         {
             throw new GeneratorException($"Exception occured while executing {GeneratorConfig.Name} generator script", e);
         }
+        finally
+        {
+            MaybeEngine?.Dispose();
+            MaybeEngine = null;
+        }
+    }
+
+    private V8Settings GetEngineSettings()
+    {
+        return new()
+        {
+            EnableDebugging = GeneratorConfig.AwaitDebugger, 
+            AwaitDebuggerAndPauseOnStart = GeneratorConfig.AwaitDebugger
+        };
+    }
+
+    public bool IsStopped()
+    {
+       return MaybeEngine == null;
+    }
+
+    public void Cancel()
+    {
+        MaybeEngine?.Interrupt();
     }
 }

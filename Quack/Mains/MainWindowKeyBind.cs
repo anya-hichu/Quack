@@ -1,4 +1,3 @@
-using Dalamud;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Plugin.Services;
 using Quack.Configs;
@@ -6,18 +5,21 @@ using System;
 
 namespace Quack.Mains;
 
-public class MainKeyBind : IDisposable
+public class MainWindowKeyBind : IDisposable
 {
-    private IFramework Framework { get; init; }
-    private Config Config { get; init; }
     private Action Action { get; init; }
+    private Config Config { get; init; }
+    private IFramework Framework { get; init; }
+    private IKeyState KeyState { get; init; }
+
     private bool IsHolding { get; set; } = false;
 
-    public MainKeyBind(IFramework framework, Config config, Action action)
+    public MainWindowKeyBind(Action action, Config config, IFramework framework, IKeyState keyState)
     {
-        Framework = framework;
-        Config = config;
         Action = action;
+        Config = config;
+        Framework = framework;
+        KeyState = keyState;
 
         Framework.Update += OnFrameworkUpdate;
     }
@@ -31,8 +33,7 @@ public class MainKeyBind : IDisposable
     {
         if (Config.KeyBind != VirtualKey.NO_KEY)
         {
-            var keyState = Service<KeyState>.Get();
-            var pressing = keyState[Config.KeyBind] && (Config.KeyBindExtraModifier == VirtualKey.NO_KEY || keyState[Config.KeyBindExtraModifier]);
+            var pressing = KeyState[Config.KeyBind] && (Config.KeyBindExtraModifier == VirtualKey.NO_KEY || KeyState[Config.KeyBindExtraModifier]);
             if (pressing && !IsHolding)
             {
                 Action();

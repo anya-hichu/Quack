@@ -1,4 +1,7 @@
+using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiFileDialog;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Newtonsoft.Json;
 using Quack.Utils;
@@ -7,14 +10,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Quack.Configs;
 
-public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager fileDialogManager)
+public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager fileDialogManager, IToastGui toastGui)
 {
     protected static readonly string BLANK_NAME = "(Blank)";
+    protected static readonly string CONFIRM_DELETE_HINT = "Press <CTRL> while clicking to confirm";
+    protected static readonly string EXPORT_HINT = "Click <RIGHT> for file export\nClick <LEFT> for clipboard export";
+    protected static readonly string IMPORT_HINT = "Click <RIGHT> for file import\nClick <LEFT> for clipboard import";
+
     protected Debouncers Debouncers { get; init; } = debouncers;
     protected FileDialogManager FileDialogManager { get; init; } = fileDialogManager;
+    protected IToastGui ToastGui { get; init; } = toastGui;
 
     protected void Debounce(string key, Action action)
     {
@@ -38,17 +47,22 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
         });
     }
 
-    protected static void ExportToClipboard<T>(IEnumerable<T> entities)
+    protected Task ExportToClipboard<T>(IEnumerable<T> entities)
     {
-        var exports = new ConfigEntityExports<T>() { Entities = new(entities) };
-        var exportsJson = JsonConvert.SerializeObject(exports);
-        var exportsJsonBytes = Encoding.UTF8.GetBytes(exportsJson);
-        using MemoryStream exportsJsonStream = new(exportsJsonBytes), compressedExportsJsonStream = new();
-        using var compressor = new DeflateStream(exportsJsonStream, CompressionMode.Compress);
-        compressor.CopyTo(compressedExportsJsonStream);
-        compressor.Close();
-        var encodedCompressedExportsJson = Convert.ToBase64String(compressedExportsJsonStream.ToArray());
-        ImGui.SetClipboardText(encodedCompressedExportsJson);
+        return Task.Run(() =>
+        {
+            var exports = new ConfigEntityExports<T>() { Entities = new(entities) };
+            var exportsJson = JsonConvert.SerializeObject(exports);
+            var exportsJsonBytes = Encoding.UTF8.GetBytes(exportsJson);
+            using MemoryStream exportsJsonStream = new(exportsJsonBytes), compressedExportsJsonStream = new();
+            using (var compressor = new DeflateStream(compressedExportsJsonStream, CompressionMode.Compress))
+            {
+                exportsJsonStream.CopyTo(compressor);
+            }
+            var encodedCompressedExportsJson = Convert.ToBase64String(compressedExportsJsonStream.ToArray());
+            ImGui.SetClipboardText(encodedCompressedExportsJson);
+            ToastGui.ShowNormal("Imported to clipboard");
+        });
     }
 
     protected void ImportFromFile(Action<string> callback, string title)
@@ -76,15 +90,34 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
         });
     }
 
-    protected static void ImportFromClipboard(Action<string> callback)
+    protected Task ImportFromClipboard(Action<string> callback)
     {
-        var encodedCompressedExportsJson = ImGui.GetClipboardText();
-        var compressedExportsJsonBytes = Convert.FromBase64String(encodedCompressedExportsJson);
-        using MemoryStream compressedExportsJsonStream = new(compressedExportsJsonBytes), exportsJsonStream = new();
-        using var decompressor = new DeflateStream(compressedExportsJsonStream, CompressionMode.Decompress);
-        decompressor.CopyTo(exportsJsonStream);
-        decompressor.Close();
-        var exportsJson = Encoding.UTF8.GetString(exportsJsonStream.ToArray());
-        callback(exportsJson);
+        return Task.Run(() =>
+        {
+            var encodedCompressedExportsJson = ImGui.GetClipboardText();
+            var compressedExportsJsonBytes = Convert.FromBase64String(encodedCompressedExportsJson);
+            using MemoryStream compressedExportsJsonStream = new(compressedExportsJsonBytes), exportsJsonStream = new();
+            using (var decompressor = new DeflateStream(compressedExportsJsonStream, CompressionMode.Decompress))
+            {
+                decompressor.CopyTo(exportsJsonStream);
+            }
+            var exportsJson = Encoding.UTF8.GetString(exportsJsonStream.ToArray());
+            // TODO: Fix toast
+            callback(exportsJson);
+            ToastGui.ShowNormal("Imported from clipboard");
+        });
+    }
+
+    protected static void Hint(string text)
+    {
+        ImGui.SameLine();
+        using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.HealerGreen))
+        {
+            ImGui.Text("(?)");
+        }
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(text);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using Cronos;
+using Dalamud.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,15 @@ public class SchedulerTriggerConfig
 
     public bool TryParseCronExpression(out CronExpression cronExpression)
     {
-        return CronExpression.TryParse(TimeExpression, out cronExpression);
+        if (!TimeExpression.IsNullOrWhitespace())
+        {
+            return CronExpression.TryParse(TimeExpression, out cronExpression);
+        }
+        else
+        {
+            cronExpression = null!;
+            return false;
+        }
     }
 
     public DateTime? GetNextOccurrence(DateTime fromUtc)

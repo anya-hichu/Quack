@@ -1,14 +1,13 @@
+using Dalamud;
 using Dalamud.Game;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
-using JavaScriptEngineSwitcher.Core;
-using JavaScriptEngineSwitcher.Jint;
-using JavaScriptEngineSwitcher.V8;
-using Lumina.Excel.GeneratedSheets2;
+using Lumina.Excel.Sheets;
 using Quack.Chat;
 using Quack.Configs;
 using Quack.Generators;
@@ -37,6 +36,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
     [PluginService] internal static IClientState ClientState { get; private set; } = null!;
+    [PluginService] internal static IToastGui ToastGui { get; private set; } = null!;
 
     public readonly WindowSystem WindowSystem = new("Quack");
     private ConfigWindow ConfigWindow { get; init; }
@@ -53,7 +53,7 @@ public sealed class Plugin : IDalamudPlugin
     private PenumbraIpc PenumbraIpc { get; init; }
 
     private MacroExecutor MacroExecutor { get; init; }
-    private MainKeyBind MainKeyBind { get; init; }
+    private MainWindowKeyBind MainWindowKeyBind { get; init; }
     private MacroCommands MacroCommands { get; init; }
     private SQLiteConnection DbConnection { get; init; }
     private MacroTable MacroTable { get; init; }
@@ -64,43 +64,37 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
-        var databasePath = Path.Combine(PluginInterface.GetPluginLocDirectory(), $"{PluginInterface.InternalName}.db");
+        Config = PluginInterface.GetPluginConfig() as Config ?? new()
+        {
+            GeneratorConfigs = GeneratorConfig.GetDefaults()
+        };
+        #region deprecated
+        ConfigMigrator.MigrateDatabasePathToV6(PluginInterface);
+        #endregion
+        var databasePath = Path.Combine(PluginInterface.GetPluginConfigDirectory(), $"{PluginInterface.InternalName}.db");
         DbConnection = new SQLiteConnection(databasePath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex);
 
         MacroTable = new(DbConnection, PluginLog);
         MacroTable.MaybeCreateTable();
 
-        var engineFactories = JsEngineSwitcher.Current.EngineFactories;
-        engineFactories.Add(new V8JsEngineFactory());
-        engineFactories.Add(new JintJsEngineFactory(new()
-        {
-            DisableEval = true,
-            StrictMode = true
-        }));
-        
-        Config = PluginInterface.GetPluginConfig() as Config ?? new()
-        {
-            GeneratorConfigs = GeneratorConfig.GetDefaults()
-        };
-
-        var migrator = new ConfigMigrator(DbConnection, MacroTable);
-        migrator.ExecuteMigrations(Config);
+        var configMigrator = new ConfigMigrator(Config, DbConnection, MacroTable);
+        configMigrator.ExecuteMigrations();
 
         var cachedMacros = MacroTable.List();
 
         MacroSharedLock = new(Framework, PluginLog);
         var chatServer = new ChatServer(SigScanner);
         ChatSender = new(chatServer, Framework, MacroSharedLock, PluginLog);
-        
-        MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
-        var macroExecutionButton = new MacroExecutionButton(Config, MacroExecutor);
         Debouncers = new(PluginLog);
 
-        MainWindow = new(cachedMacros, Config, macroExecutionButton, MacroExecutor, MacroTable, PluginLog)
+        MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
+        var macroExecutionState = new MacroExecutionState(Config, MacroExecutor);
+
+        MainWindow = new(cachedMacros, Config, macroExecutionState, MacroExecutor, MacroTable, PluginLog)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, ChatSender, Config, Debouncers, KeyState, macroExecutionButton, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog)
+        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, ToastGui)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
         };
@@ -125,7 +119,7 @@ public sealed class Plugin : IDalamudPlugin
         MacrosIpc = new(PluginInterface);
         PenumbraIpc = new(PluginInterface, PluginLog);
 
-        MainKeyBind = new(Framework, Config, ToggleMainUI);
+        MainWindowKeyBind = new(ToggleMainUI, Config, Framework, KeyState);
         MacroCommands = new(cachedMacros, ChatGui, Config, CommandManager, MacroExecutor, MacroTable);
         SchedulerTriggers = new(Config, Framework, chatServer, PluginLog);
     }
@@ -147,7 +141,7 @@ public sealed class Plugin : IDalamudPlugin
         MacrosIpc.Dispose();
         PenumbraIpc.Dispose();
 
-        MainKeyBind.Dispose();
+        MainWindowKeyBind.Dispose();
         MacroCommands.Dispose();
 
         DbConnection.Dispose();

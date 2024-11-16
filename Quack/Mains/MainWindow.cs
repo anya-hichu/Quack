@@ -16,15 +16,14 @@ namespace Quack.Mains;
 public class MainWindow : Window, IDisposable
 {
     private HashSet<Macro> CachedMacros { get; init; }
+    private MacroExecutionState MacroExecutionState { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
     private MacroTable MacroTable { get; init; }
     private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
-    private string Query { get; set; } = string.Empty;
-    private HashSet<Macro> FilteredMacros { get; set; } = [];
-    private MacroExecutionButton MacroExecutionHelper { get; init; }
+    private MainWindowState MainWindowState { get; init; }
 
-    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionButton macroExecutionGui, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack##mainWindow")
+    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack##mainWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -34,34 +33,29 @@ public class MainWindow : Window, IDisposable
 
         CachedMacros = cachedMacros;
         Config = config;
-        MacroExecutionHelper = macroExecutionGui;
         MacroExecutor = macroExecutor;
+        MacroExecutionState = macroExecutionState;
         MacroTable = macroTable;
         PluginLog = pluginLog;
 
-        UpdateFilteredMacros();
-        MacroTable.OnChange += UpdateFilteredMacros;
-    }
-
-    public void UpdateFilteredMacros()
-    {
-        FilteredMacros = MacroTable.Search(Query);
+        MainWindowState = new(MacroTable);
     }
 
     public void Dispose()
     {
-        MacroTable.OnChange -= UpdateFilteredMacros;
+        MainWindowState.Dispose();
     }
 
     public override void Draw()
     {
+        var state = MainWindowState;
         using (ImRaii.ItemWidth(ImGui.GetWindowWidth() - 225))
         {
-            var query = Query;
-            if (ImGui.InputTextWithHint($"Query ({FilteredMacros.Count}/{CachedMacros.Count})##filter", "Search Query (min 3 chars)", ref query, ushort.MaxValue))
+            var query = state.Query;
+            if (ImGui.InputTextWithHint($"Query ({state.FilteredMacros.Count}/{CachedMacros.Count})##filter", "Search Query (min 3 chars)", ref query, ushort.MaxValue))
             {
-                Query = query;
-                UpdateFilteredMacros();
+                state.Query = query;
+                state.Update();
             }
             if (ImGui.IsItemHovered())
             {
@@ -70,10 +64,10 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("X##queryClear"))
+        if (ImGui.Button("x##queryClear"))
         {
-            Query = string.Empty;
-            UpdateFilteredMacros();
+            state.Query = string.Empty;
+            state.Update();
         }
 
         if (MacroExecutor.HasRunningTasks())
@@ -88,22 +82,22 @@ public class MainWindow : Window, IDisposable
             }
         }
 
-        var macroTableId = "queriedMacrosTableId";
-        using (ImRaii.Table(macroTableId, 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
+        var queriedMacrosId = "queriedMacros";
+        using (ImRaii.Table($"{queriedMacrosId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
         {
-            ImGui.TableSetupColumn($"Name##{macroTableId}Name", ImGuiTableColumnFlags.None, 3);
-            ImGui.TableSetupColumn($"Path##{macroTableId}Path", ImGuiTableColumnFlags.None, 2);
-            ImGui.TableSetupColumn($"Tags##{macroTableId}Tags", ImGuiTableColumnFlags.None, 1);
-            ImGui.TableSetupColumn($"Actions##{macroTableId}Actions", ImGuiTableColumnFlags.None, 2);
+            ImGui.TableSetupColumn($"Name##{queriedMacrosId}Name", ImGuiTableColumnFlags.None, 3);
+            ImGui.TableSetupColumn($"Path##{queriedMacrosId}Path", ImGuiTableColumnFlags.None, 2);
+            ImGui.TableSetupColumn($"Tags##{queriedMacrosId}Tags", ImGuiTableColumnFlags.None, 1);
+            ImGui.TableSetupColumn($"Actions##{queriedMacrosId}Actions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
 
             var clipper = ListClipper.Build();
-            clipper.Begin(FilteredMacros.Count, 27);
+            clipper.Begin(state.FilteredMacros.Count, 27);
             while (clipper.Step())
             {
                 for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
-                    var macro = FilteredMacros.ElementAt(i);
+                    var macro = state.FilteredMacros.ElementAt(i);
                     if (ImGui.TableNextColumn())
                     {
                         ImGui.Text(macro.Name);
@@ -134,7 +128,7 @@ public class MainWindow : Window, IDisposable
 
                     if (ImGui.TableNextColumn())
                     {
-                        MacroExecutionHelper.Draw(macro);
+                        MacroExecutionState.Button($"{queriedMacrosId}{i}Execution", macro);
                     }
 
                     ImGui.TableNextRow();

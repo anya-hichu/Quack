@@ -2,13 +2,14 @@ using Dalamud.Game.ClientState.Keys;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
-using JavaScriptEngineSwitcher.Core;
 using System.Linq;
 
 namespace Quack.Configs;
 
 public class ConfigGeneralTab(Config config, IKeyState keyState)
 {
+    public static readonly VirtualKey[] MODIFIER_KEYS = [VirtualKey.NO_KEY, VirtualKey.CONTROL, VirtualKey.SHIFT, VirtualKey.MENU];
+
     private Config Config { get; init; } = config;
     private IKeyState KeyState { get; init; } = keyState;
 
@@ -26,7 +27,7 @@ public class ConfigGeneralTab(Config config, IKeyState keyState)
                 Config.Save();
             }
 
-            var modifierVirtualKeys = validVirtualKeys.Where(k => Config.MODIFIER_KEYS.Contains(k));
+            var modifierVirtualKeys = validVirtualKeys.Where(k => MODIFIER_KEYS.Contains(k));
             var keybindExtraModifier = Config.KeyBindExtraModifier;
             var keybindExtraModifierIndex = modifierVirtualKeys.IndexOf(keybindExtraModifier);
             if (ImGui.Combo($"Key Bind Extra Modifier##keyBindExtraModifier", ref keybindExtraModifierIndex, modifierVirtualKeys.Select(k => k.GetFancyName()).ToArray(), modifierVirtualKeys.Count()))
@@ -34,20 +35,6 @@ public class ConfigGeneralTab(Config config, IKeyState keyState)
                 Config.KeyBindExtraModifier = modifierVirtualKeys.ElementAt(keybindExtraModifierIndex);
                 Config.Save();
             }
-        }
-
-        ImGui.NewLine();
-        if (ImGui.CollapsingHeader("Generator##generatorHeader", ImGuiTreeNodeFlags.DefaultOpen))
-        {
-            var generatorEngineName = Config.GeneratorEngineName;
-            var generatorEngineNames = JsEngineSwitcher.Current.EngineFactories.Select(f => f.EngineName).ToArray();
-
-            var currentIndex = generatorEngineNames.IndexOf(generatorEngineName);
-            if (ImGui.Combo("Engine##generatorEngineName", ref currentIndex, generatorEngineNames, generatorEngineNames.Length))
-            {
-                Config.GeneratorEngineName = generatorEngineNames.ElementAt(currentIndex);
-                Config.Save();
-            };
         }
 
         ImGui.NewLine();

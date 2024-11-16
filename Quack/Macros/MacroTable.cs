@@ -126,7 +126,8 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
 
     public int Update(string column, Macro macro, string path)
     {
-        var value = ToValues(macro).ElementAt(COLUMNS.IndexOf(column));
+        var columnIndex = COLUMNS.IndexOf(column);
+        var value = ToValues(macro).ElementAt(columnIndex);
         object[] args = [value, path];
         var query = UPDATE_QUERY.Format(column);
         var result = DbConnection.Execute(query, args);
