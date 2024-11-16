@@ -113,13 +113,13 @@ public class SchedulerConfigTab : ConfigEntityTab
         Config.Save();
     }
 
-    private int ImportSchedulerConfigExportsJson(string exportsJson)
+    private List<SchedulerConfig>? ImportSchedulerConfigExportsJson(string exportsJson)
     {
         var exports = JsonConvert.DeserializeObject<ConfigEntityExports<SchedulerConfig>>(exportsJson);
-        if (exports == null)
+        if (exports == null || exports.Type != typeof(SchedulerConfig).Name)
         {
-            PluginLog.Verbose($"Failed to import schedulers from json: {exportsJson}");
-            return -1;
+            PluginLog.Verbose($"Failed to import scheduler config from json: {exportsJson}");
+            return null;
         }
 
         var schedulerConfigs = exports.Entities;
@@ -135,7 +135,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         });
         Config.SchedulerConfigs.AddRange(schedulerConfigs);
         Config.Save();
-        return schedulerConfigs.Count;
+        return schedulerConfigs;
     }
 
     private void DeleteSchedulerConfigs()

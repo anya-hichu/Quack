@@ -420,13 +420,13 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         MacroConfigTabState.SelectedMacros = [macro];
     }
 
-    private int ImportMacroExportsJson(string exportsJson)
+    private List<Macro>? ImportMacroExportsJson(string exportsJson)
     {
         var exports = JsonConvert.DeserializeObject<ConfigEntityExports<Macro>>(exportsJson);
-        if (exports == null)
+        if (exports == null || exports.Type != typeof(Macro).Name)
         {
-            PluginLog.Verbose($"Failed to import macros from json: {exportsJson}");
-            return -1;
+            PluginLog.Verbose($"Failed to import macro from json: {exportsJson}");
+            return null;
         }
         var macros = exports.Entities;
         var conflictingMacros = CachedMacros.Intersect(macros);
@@ -435,7 +435,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
 
         MacroTableQueue.Delete(conflictingMacros);
         MacroTableQueue.Insert(macros);
-        return macros.Count;
+        return macros;
     }
 
     private void DeleteAllMacros()

@@ -4,6 +4,7 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
+using Humanizer;
 using ImGuiNET;
 using Newtonsoft.Json;
 using Quack.Utils;
@@ -65,14 +66,16 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
             var encodedCompressedExportsJson = Convert.ToBase64String(compressedExportsJsonStream.ToArray());
             ImGui.SetClipboardText(encodedCompressedExportsJson);
             var count = entities.Count();
+            var readableType = typeof(T).Name.Titleize().ToLower();
             NotificationManager.AddNotification(new() {
                 Type = NotificationType.Success,
-                Content = $"Exported {count} entit{(count > 1 ? "ies" : "y")} to clipboard"
+                Minimized = false,
+                Content = $"Exported {count} {(count > 1 ? readableType.Pluralize() : readableType)} to clipboard"
             });
         });
     }
 
-    protected void ImportFromFile(Func<string, int> callback, string title)
+    protected void ImportFromFile<T>(Func<string, List<T>?> callback, string title)
     {
         FileDialogManager.OpenFileDialog(title, "{.json}", (valid, path) =>
         {
@@ -92,17 +95,24 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                     }
                 }
                 #endregion
-                var count = callback(exportsJson);
-                NotificationManager.AddNotification(new()
+                var maybeEntities = callback(exportsJson);
+                var readableType = typeof(T).Name.Titleize().ToLower();
+                NotificationManager.AddNotification(maybeEntities != null ? new()
                 {
-                    Type = count > -1 ? NotificationType.Success : NotificationType.Error,
-                    Content = $"Imported {count} entit{(count > 1 ? "ies" : "y")} from file"
+                    Type = NotificationType.Success,
+                    Minimized = false,
+                    Content = $"Import {maybeEntities.Count} {(maybeEntities.Count > 1 ? readableType.Pluralize() : readableType)} from clipboard"
+                } : new()
+                {
+                    Type = NotificationType.Error,
+                    Minimized = false,
+                    Content = $"Failed to import {readableType} from clipboard"
                 });
             }
         });
     }
 
-    protected Task ImportFromClipboard(Func<string, int> callback)
+    protected Task ImportFromClipboard<T>(Func<string, List<T>?> callback)
     {
         return Task.Run(() =>
         {
@@ -114,12 +124,18 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                 decompressor.CopyTo(exportsJsonStream);
             }
             var exportsJson = Encoding.UTF8.GetString(exportsJsonStream.ToArray());
-            // TODO: Fix toast
-            var count = callback(exportsJson);
-            NotificationManager.AddNotification(new()
+            var maybeEntities = callback(exportsJson);
+            var readableType = typeof(T).Name.Titleize().ToLower();
+            NotificationManager.AddNotification(maybeEntities != null ? new()
             {
-                Type = count > -1 ? NotificationType.Success : NotificationType.Error,
-                Content = $"Imported {count} entit{(count > 1 ? "ies" : "y")} from clipboard"
+                Type = NotificationType.Success,
+                Minimized = false,
+                Content = $"Import {maybeEntities.Count} {(maybeEntities.Count > 1 ? readableType.Pluralize() : readableType)} from clipboard"
+            } : new()
+            {
+                Type = NotificationType.Error,
+                Minimized = false,
+                Content = $"Failed to import {readableType} from clipboard"
             });
         });
     }

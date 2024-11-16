@@ -117,19 +117,20 @@ public class GeneratorConfigTab : ConfigEntityTab
         }
     }
 
-    private int ImportGeneratorConfigExportsJson(string exportsJson)
+    private List<GeneratorConfig>? ImportGeneratorConfigExportsJson(string exportsJson)
     {
         var exports = JsonConvert.DeserializeObject<ConfigEntityExports<GeneratorConfig>>(exportsJson);
-        if (exports == null)
+        if (exports == null || exports.Type != typeof(GeneratorConfig).Name)
         {
-            PluginLog.Verbose($"Failed to import generators from json: {exportsJson}");
-            return -1;
+            PluginLog.Verbose($"Failed to import generator config from json: {exportsJson}");
+            return null;
         }
         var generatorConfigs = exports.Entities.ToList();
         AddDefaultStates(generatorConfigs);
         Config.GeneratorConfigs.AddRange(generatorConfigs);
         Config.Save();
-        return generatorConfigs.Count;
+
+        return generatorConfigs;
     }
 
     private void DrawDefinitionHeader(GeneratorConfig generatorConfig, IEnumerable<CallGateChannel> funcChannels)
