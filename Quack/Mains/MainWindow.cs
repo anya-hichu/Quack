@@ -23,7 +23,7 @@ public class MainWindow : Window, IDisposable
     private IPluginLog PluginLog { get; init; }
     private MainWindowState MainWindowState { get; init; }
 
-    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack##mainWindow")
+    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack###mainWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -52,7 +52,7 @@ public class MainWindow : Window, IDisposable
         using (ImRaii.ItemWidth(ImGui.GetWindowWidth() - 225))
         {
             var query = state.Query;
-            if (ImGui.InputTextWithHint($"Query ({state.FilteredMacros.Count}/{CachedMacros.Count})##filter", "Search Query (min 3 chars)", ref query, ushort.MaxValue))
+            if (ImGui.InputTextWithHint($"Query ({state.FilteredMacros.Count}/{CachedMacros.Count})###filter", "Search Query (min 3 chars)", ref query, ushort.MaxValue))
             {
                 state.Query = query;
                 state.Update();
@@ -64,7 +64,7 @@ public class MainWindow : Window, IDisposable
         }
 
         ImGui.SameLine();
-        if (ImGui.Button("x##queryClear"))
+        if (ImGui.Button("x###queryClear"))
         {
             state.Query = string.Empty;
             state.Update();
@@ -75,7 +75,7 @@ public class MainWindow : Window, IDisposable
             ImGui.SameLine();
             using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
             {
-                if (ImGui.Button($"Cancel All##macrosCancelAll"))
+                if (ImGui.Button($"Cancel All###macrosCancelAll"))
                 {
                     MacroExecutor.CancelTasks();
                 }
@@ -85,10 +85,10 @@ public class MainWindow : Window, IDisposable
         var queriedMacrosId = "queriedMacros";
         using (ImRaii.Table($"{queriedMacrosId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
         {
-            ImGui.TableSetupColumn($"Name##{queriedMacrosId}Name", ImGuiTableColumnFlags.None, 3);
-            ImGui.TableSetupColumn($"Path##{queriedMacrosId}Path", ImGuiTableColumnFlags.None, 2);
-            ImGui.TableSetupColumn($"Tags##{queriedMacrosId}Tags", ImGuiTableColumnFlags.None, 1);
-            ImGui.TableSetupColumn($"Actions##{queriedMacrosId}Actions", ImGuiTableColumnFlags.None, 2);
+            ImGui.TableSetupColumn($"Name###{queriedMacrosId}Name", ImGuiTableColumnFlags.None, 3);
+            ImGui.TableSetupColumn($"Path###{queriedMacrosId}Path", ImGuiTableColumnFlags.None, 2);
+            ImGui.TableSetupColumn($"Tags###{queriedMacrosId}Tags", ImGuiTableColumnFlags.None, 1);
+            ImGui.TableSetupColumn($"Actions###{queriedMacrosId}Actions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
 
             var clipper = ListClipper.Build();

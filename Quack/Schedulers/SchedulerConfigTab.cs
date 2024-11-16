@@ -39,13 +39,13 @@ public class SchedulerConfigTab : ConfigEntityTab
     {
         var nowUtc = DateTime.UtcNow;
 
-        if (ImGui.Button("New##schedulerConfigsNew"))
+        if (ImGui.Button("New###schedulerConfigsNew"))
         {
             NewSchedulerConfig();
         }
 
         ImGui.SameLine(ImGui.GetWindowWidth() - 217);
-        ImGui.Button("Export All##schedulerConfigsExportAll");
+        ImGui.Button("Export All###schedulerConfigsExportAll");
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip(EXPORT_HINT);
@@ -60,7 +60,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         }
 
         ImGui.SameLine();
-        ImGui.Button("Import All##schedulerConfigsImportAll");
+        ImGui.Button("Import All###schedulerConfigsImportAll");
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip(IMPORT_HINT);
@@ -77,7 +77,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         ImGui.SameLine();
         using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
         {
-            if (ImGui.Button("Delete All##schedulerConfigsDeleteAll") && KeyState[VirtualKey.CONTROL])
+            if (ImGui.Button("Delete All###schedulerConfigsDeleteAll") && KeyState[VirtualKey.CONTROL])
             {
                 DeleteSchedulerConfigs();
             }
@@ -146,25 +146,25 @@ public class SchedulerConfigTab : ConfigEntityTab
     private void DrawDefinitionHeader(SchedulerConfig schedulerConfig, DateTime nowUtc)
     {
         var schedulerConfigsId = $"schedulerConfigs{schedulerConfig.GetHashCode()}";
-        if (ImGui.CollapsingHeader($"Definition##{schedulerConfigsId}DefinitionHeader", ImGuiTreeNodeFlags.DefaultOpen))
+        if (ImGui.CollapsingHeader($"Definition###{schedulerConfigsId}DefinitionHeader", ImGuiTreeNodeFlags.DefaultOpen))
         {
             using (ImRaii.PushIndent())
             {
                 var enabled = schedulerConfig.Enabled;
                 var enabledInputId = $"{schedulerConfigsId}Enabled";
-                if (ImGui.Checkbox($"Enabled##{enabledInputId}", ref enabled))
+                if (ImGui.Checkbox($"Enabled###{enabledInputId}", ref enabled))
                 {
                     schedulerConfig.Enabled = enabled;
                     Debounce(enabledInputId, Config.Save);
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 180);
-                if (ImGui.Button($"Duplicate##{schedulerConfigsId}Duplicate"))
+                if (ImGui.Button($"Duplicate###{schedulerConfigsId}Duplicate"))
                 {
                     DuplicateSchedulerConfig(schedulerConfig);
                 }
                 ImGui.SameLine();
-                ImGui.Button($"Export##{schedulerConfigsId}Export");
+                ImGui.Button($"Export###{schedulerConfigsId}Export");
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip(EXPORT_HINT);
@@ -181,7 +181,7 @@ public class SchedulerConfigTab : ConfigEntityTab
 
                 using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                 {
-                    if (ImGui.Button($"Delete##{schedulerConfigsId}Delete") && KeyState[VirtualKey.CONTROL])
+                    if (ImGui.Button($"Delete###{schedulerConfigsId}Delete") && KeyState[VirtualKey.CONTROL])
                     {
                         DeleteSchedulerConfig(schedulerConfig);
                     }
@@ -193,17 +193,17 @@ public class SchedulerConfigTab : ConfigEntityTab
 
                 var name = schedulerConfig.Name;
                 var nameInputId = $"{schedulerConfigsId}Name";
-                if (ImGui.InputText($"Name##{nameInputId}", ref name, ushort.MaxValue))
+                if (ImGui.InputText($"Name###{nameInputId}", ref name, ushort.MaxValue))
                 {
                     schedulerConfig.Name = name;
                     Debounce(nameInputId, Config.Save);
                 }
 
                 var triggerConfigsId = $"{schedulerConfigsId}TriggerConfigs";
-                if (ImGui.CollapsingHeader($"Triggers##{triggerConfigsId}Header", ImGuiTreeNodeFlags.DefaultOpen))
+                if (ImGui.CollapsingHeader($"Triggers###{triggerConfigsId}Header", ImGuiTreeNodeFlags.DefaultOpen))
                 {
 
-                    if (ImGui.Button($"+##{triggerConfigsId}New"))
+                    if (ImGui.Button($"+###{triggerConfigsId}New"))
                     {
                         schedulerConfig.TriggerConfigs.Add(new());
                         Config.Save();
@@ -216,7 +216,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                         for (var i = 0; i < triggerConfigs.Count; i++)
                         {
                             var triggerConfigId = $"{triggerConfigsId}{i}";
-                            using (var tab = ImRaii.TabItem($"#{i}##{triggerConfigId}Tab"))
+                            using (var tab = ImRaii.TabItem($"#{i}###{triggerConfigId}Tab"))
                             {
                                 if (!tab)
                                 {
@@ -228,7 +228,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                                 {
                                     var timeExpression = triggerConfig.TimeExpression;
                                     var timeExpressionInputId = $"{triggerConfigId}TimeExpression";
-                                    if (ImGui.InputText($"Time Expression (Cron)##{timeExpressionInputId}", ref timeExpression, ushort.MaxValue))
+                                    if (ImGui.InputText($"Time Expression (Cron)###{timeExpressionInputId}", ref timeExpression, ushort.MaxValue))
                                     {
                                         triggerConfig.TimeExpression = timeExpression;
                                         Debounce(timeExpressionInputId, Config.Save);
@@ -236,7 +236,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                                     Hint("* * * * *\n |  |  |  |  |\n |  |  |  |  day of the week (0–6) or (MON to SUN) \n |  |  |  month (1–12)\n |  |  day of the month (1–31)\n |  hour (0–23)\nminute (0–59)\n\nWildcard (*): represents 'all'. For example, using '* * * * *' will run every minute. Using '* * * * 1' will run every minute only on Monday. Using six asterisks means every second when seconds are supported.\nComma (,): used to separate items of a list. For example, using 'MON,WED,FRI' in the 5th field (day of week) means Mondays, Wednesdays and Fridays.\nHyphen (-): defines ranges. For example, '2000-2010' indicates every year between 2000 and 2010, inclusive.");
 
                                     ImGui.SameLine(ImGui.GetWindowWidth() - 125);
-                                    if (ImGui.Button($"Duplicate##{triggerConfigId}Duplicate"))
+                                    if (ImGui.Button($"Duplicate###{triggerConfigId}Duplicate"))
                                     {
                                         triggerConfigs.Add(triggerConfig.Clone());
                                         Config.Save();
@@ -244,7 +244,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                                     ImGui.SameLine();
                                     using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                                     {
-                                        if (ImGui.Button($"Delete##{triggerConfigId}Delete") && KeyState[VirtualKey.CONTROL])
+                                        if (ImGui.Button($"Delete###{triggerConfigId}Delete") && KeyState[VirtualKey.CONTROL])
                                         {
                                             triggerConfigs.RemoveAt(i);
                                             Config.Save();
@@ -271,7 +271,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                                     var timeZoneNames = timeZones.Select(z => z.DisplayName).ToArray();
                                     var timeZoneName = triggerConfig.TimeZone.DisplayName;
                                     var timeZoneNameIndex = timeZoneNames.IndexOf(timeZoneName);
-                                    if (ImGui.Combo($"Time Zone##{triggerConfigId}TimeZone", ref timeZoneNameIndex, timeZoneNames, timeZoneNames.Length))
+                                    if (ImGui.Combo($"Time Zone###{triggerConfigId}TimeZone", ref timeZoneNameIndex, timeZoneNames, timeZoneNames.Length))
                                     {
                                         triggerConfig.TimeZone = timeZones.ElementAt(timeZoneNameIndex);
                                         Config.Save();
@@ -292,7 +292,7 @@ public class SchedulerConfigTab : ConfigEntityTab
 
                                     var command = triggerConfig.Command;
                                     var commandInputId = $"{triggerConfigId}Command";
-                                    if (ImGui.InputText($"Command##{commandInputId}", ref command, ushort.MaxValue))
+                                    if (ImGui.InputText($"Command###{commandInputId}", ref command, ushort.MaxValue))
                                     {
                                         triggerConfig.Command = command;
                                         Debounce(commandInputId, Config.Save);
@@ -328,13 +328,13 @@ public class SchedulerConfigTab : ConfigEntityTab
         if (schedulerConfig.TriggerConfigs.Count > 0)
         {
             var nextOccurrencesId = $"schedulerConfigs{schedulerConfig.GetHashCode()}NextOccurrences";
-            if (ImGui.CollapsingHeader($"Next Occurrences##{nextOccurrencesId}Header", ImGuiTreeNodeFlags.DefaultOpen))
+            if (ImGui.CollapsingHeader($"Next Occurrences###{nextOccurrencesId}Header", ImGuiTreeNodeFlags.DefaultOpen))
             {
                 using (ImRaii.PushIndent())
                 {
                     var state = SchedulerConfigToState[schedulerConfig];
                     var maxDays = state.MaxDays;
-                    if (ImGui.InputInt($"Max Days##{nextOccurrencesId}StateMaxDays", ref maxDays))
+                    if (ImGui.InputInt($"Max Days###{nextOccurrencesId}StateMaxDays", ref maxDays))
                     {
                         state.MaxDays = maxDays;
                     }
@@ -344,11 +344,11 @@ public class SchedulerConfigTab : ConfigEntityTab
                         var scheduleConfigTableId = $"{nextOccurrencesId}Table";
                         using (ImRaii.Table(scheduleConfigTableId, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
                         {
-                            ImGui.TableSetupColumn($"Remaining##{scheduleConfigTableId}RemainingTime", ImGuiTableColumnFlags.None, 0.1f);
-                            ImGui.TableSetupColumn($"Time##{scheduleConfigTableId}Time", ImGuiTableColumnFlags.None, 0.2f);
-                            ImGui.TableSetupColumn($"UTC Time##{scheduleConfigTableId}UtcTime", ImGuiTableColumnFlags.None, 0.1f);
-                            ImGui.TableSetupColumn($"Local Time {TimeZoneInfo.Local}##{scheduleConfigTableId}LocalTime", ImGuiTableColumnFlags.None, 0.1f);
-                            ImGui.TableSetupColumn($"Command##{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
+                            ImGui.TableSetupColumn($"Remaining###{scheduleConfigTableId}RemainingTime", ImGuiTableColumnFlags.None, 0.1f);
+                            ImGui.TableSetupColumn($"Time###{scheduleConfigTableId}Time", ImGuiTableColumnFlags.None, 0.2f);
+                            ImGui.TableSetupColumn($"UTC Time###{scheduleConfigTableId}UtcTime", ImGuiTableColumnFlags.None, 0.1f);
+                            ImGui.TableSetupColumn($"Local Time {TimeZoneInfo.Local}###{scheduleConfigTableId}LocalTime", ImGuiTableColumnFlags.None, 0.1f);
+                            ImGui.TableSetupColumn($"Command###{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
                             ImGui.TableHeadersRow();
 
                             var clipper = ListClipper.Build();

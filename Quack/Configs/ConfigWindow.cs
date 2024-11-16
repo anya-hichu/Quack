@@ -26,7 +26,7 @@ public class ConfigWindow : Window, IDisposable
 
     public ConfigWindow(HashSet<Macro> cachedMacros, CallGate callGate, ChatSender chatSender, Config config, ICommandManager commandManager, Debouncers debouncers, 
                         IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, MacroTableQueue macroTableQueue, 
-                        IPluginLog pluginLog, IToastGui toastGui) : base("Quack Config##configWindow")
+                        IPluginLog pluginLog, IToastGui toastGui) : base("Quack Config###configWindow")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -49,10 +49,10 @@ public class ConfigWindow : Window, IDisposable
     {
         using (ImRaii.TabBar("configTabs"))
         {
-            WithTab(GeneralTab.Draw, "General##generalConfigTab");
-            WithTab(MacroConfigTab.Draw, "Macros##macroConfigTab");
-            WithTab(SchedulerTab.Draw, "Schedulers##schedulerConfigTab");
-            WithTab(GeneratorTab.Draw, "Generators##generatorConfigTab");
+            WithTab(GeneralTab.Draw, "General###generalConfigTab");
+            WithTab(MacroConfigTab.Draw, "Macros###macroConfigTab");
+            WithTab(SchedulerTab.Draw, "Schedulers###schedulerConfigTab");
+            WithTab(GeneratorTab.Draw, "Generators###generatorConfigTab");
         }
         FileDialogManager.Draw();
     }

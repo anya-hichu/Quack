@@ -29,13 +29,13 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
             if (popup)
             {
                 var format = macroExecution.Format;
-                if (ImGui.InputText($"Format##{baseId}Format", ref format, ushort.MaxValue))
+                if (ImGui.InputText($"Format###{baseId}Format", ref format, ushort.MaxValue))
                 {
                     macroExecution.Format = format;
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button($"Config##{baseId}UseConfigFormat"))
+                if (ImGui.Button($"Config###{baseId}UseConfigFormat"))
                 {
                     macroExecution.UseConfigFormat();
                 }
@@ -45,14 +45,14 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
                 if (requiredArgsLength > 0)
                 {
                     var args = macroExecution.Args;
-                    if (ImGui.InputText($"Args##{baseId}Args", ref args, ushort.MaxValue))
+                    if (ImGui.InputText($"Args###{baseId}Args", ref args, ushort.MaxValue))
                     {
                         macroExecution.Args = args;
                         macroExecution.ParseArgs();
                     }
                 }
 
-                if (isExecutable && ImGui.Button($"Execute##{baseId}Execute"))
+                if (isExecutable && ImGui.Button($"Execute###{baseId}Execute"))
                 {
                     macroExecution.ExecuteTask();
                     ImGui.CloseCurrentPopup();
@@ -71,7 +71,7 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
             }
         }
 
-        ImGui.Button($"Execute##{baseId}Execute");
+        ImGui.Button($"Execute###{baseId}Execute");
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip("Click <RIGHT> for advanced execution options");
