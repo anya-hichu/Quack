@@ -447,90 +447,93 @@ public class GeneratorConfigTab : ConfigEntityTab
                     }
                 }
 
-                var generatedMacrosTableId = $"{generatedMacrosId}Table";
-                using (ImRaii.Table(generatedMacrosTableId, 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
+                if (ImGui.GetCursorPosY() < ImGui.GetWindowHeight())
                 {
-                    ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.None, 0.05f);
-                    ImGui.TableSetupColumn($"Name##{generatedMacrosTableId}Name", ImGuiTableColumnFlags.None, 0.2f);
-                    ImGui.TableSetupColumn($"Path##{generatedMacrosTableId}Path", ImGuiTableColumnFlags.None, 0.2f);
-                    ImGui.TableSetupColumn($"Tags##{generatedMacrosTableId}Tags", ImGuiTableColumnFlags.None, 0.1f);
-                    ImGui.TableSetupColumn($"Command##{generatedMacrosTableId}Command", ImGuiTableColumnFlags.None, 0.1f);
-                    ImGui.TableSetupColumn($"Args##{generatedMacrosTableId}Args", ImGuiTableColumnFlags.None, 0.1f);
-                    ImGui.TableSetupColumn($"Content##{generatedMacrosTableId}Content", ImGuiTableColumnFlags.None, 0.5f);
-                    ImGui.TableHeadersRow();
-
-                    var visibleFilteredGeneratedMacros = showSelectedOnly ? filteredGeneratedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE) : filteredGeneratedMacros;
-
-                    var clipper = ListClipper.Build();
-                    clipper.Begin(visibleFilteredGeneratedMacros.Count(), 27);
-
-                    var updatedSelectedGeneratedMacros = selectedGeneratedMacros.ToHashSet(MacroComparer.INSTANCE);
-                    while (clipper.Step())
+                    var generatedMacrosTableId = $"{generatedMacrosId}Table";
+                    using (ImRaii.Table(generatedMacrosTableId, 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
                     {
-                        for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                        ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.None, 0.05f);
+                        ImGui.TableSetupColumn($"Name##{generatedMacrosTableId}Name", ImGuiTableColumnFlags.None, 0.2f);
+                        ImGui.TableSetupColumn($"Path##{generatedMacrosTableId}Path", ImGuiTableColumnFlags.None, 0.2f);
+                        ImGui.TableSetupColumn($"Tags##{generatedMacrosTableId}Tags", ImGuiTableColumnFlags.None, 0.1f);
+                        ImGui.TableSetupColumn($"Command##{generatedMacrosTableId}Command", ImGuiTableColumnFlags.None, 0.1f);
+                        ImGui.TableSetupColumn($"Args##{generatedMacrosTableId}Args", ImGuiTableColumnFlags.None, 0.1f);
+                        ImGui.TableSetupColumn($"Content##{generatedMacrosTableId}Content", ImGuiTableColumnFlags.None, 0.5f);
+                        ImGui.TableHeadersRow();
+
+                        var visibleFilteredGeneratedMacros = showSelectedOnly ? filteredGeneratedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE) : filteredGeneratedMacros;
+
+                        var clipper = ListClipper.Build();
+                        clipper.Begin(visibleFilteredGeneratedMacros.Count(), 27);
+
+                        var updatedSelectedGeneratedMacros = selectedGeneratedMacros.ToHashSet(MacroComparer.INSTANCE);
+                        while (clipper.Step())
                         {
-                            var generatedMacro = visibleFilteredGeneratedMacros.ElementAt(i);
-                            if (ImGui.TableNextColumn())
+                            for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                             {
-                                var selected = selectedGeneratedMacros.Contains(generatedMacro);
-                                if (ImGui.Checkbox($"##{generatedMacrosTableId}Entries{i}Selected", ref selected))
+                                var generatedMacro = visibleFilteredGeneratedMacros.ElementAt(i);
+                                if (ImGui.TableNextColumn())
                                 {
-                                    if (selected)
+                                    var selected = selectedGeneratedMacros.Contains(generatedMacro);
+                                    if (ImGui.Checkbox($"##{generatedMacrosTableId}Entries{i}Selected", ref selected))
                                     {
-                                        updatedSelectedGeneratedMacros.Add(generatedMacro);
+                                        if (selected)
+                                        {
+                                            updatedSelectedGeneratedMacros.Add(generatedMacro);
+                                        }
+                                        else
+                                        {
+                                            updatedSelectedGeneratedMacros.Remove(generatedMacro);
+                                        }
+                                    }
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(generatedMacro.Name);
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(generatedMacro.Path);
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(string.Join(", ", generatedMacro.Tags));
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(generatedMacro.Command);
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(generatedMacro.Args);
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    var contentLines = generatedMacro.Content.Split("\n");
+                                    if (contentLines.Length > 1)
+                                    {
+                                        ImGui.Text($"{contentLines[0]}...");
+                                        if (ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip(generatedMacro.Content);
+                                        }
                                     }
                                     else
                                     {
-                                        updatedSelectedGeneratedMacros.Remove(generatedMacro);
+                                        ImGui.Text(generatedMacro.Content);
                                     }
-                                }
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(generatedMacro.Name);
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(generatedMacro.Path);
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(string.Join(", ", generatedMacro.Tags));
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(generatedMacro.Command);
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(generatedMacro.Args);
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                var contentLines = generatedMacro.Content.Split("\n");
-                                if (contentLines.Length > 1)
-                                {
-                                    ImGui.Text($"{contentLines[0]}...");
-                                    if (ImGui.IsItemHovered())
-                                    {
-                                        ImGui.SetTooltip(generatedMacro.Content);
-                                    }
-                                }
-                                else
-                                {
-                                    ImGui.Text(generatedMacro.Content);
                                 }
                             }
                         }
+                        state.SelectedGeneratedMacros = updatedSelectedGeneratedMacros;
+                        clipper.Destroy();
                     }
-                    state.SelectedGeneratedMacros = updatedSelectedGeneratedMacros;
-                    clipper.Destroy();
                 }
             }
         }
