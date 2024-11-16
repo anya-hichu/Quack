@@ -339,82 +339,85 @@ public class SchedulerConfigTab : ConfigEntityTab
                         state.MaxDays = maxDays;
                     }
 
-                    var scheduleConfigTableId = $"{nextOccurrencesId}Table";
-                    using (ImRaii.Table(scheduleConfigTableId, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
+                    if (ImGui.GetCursorPosY() < ImGui.GetWindowHeight())
                     {
-                        ImGui.TableSetupColumn($"Remaining##{scheduleConfigTableId}RemainingTime", ImGuiTableColumnFlags.None, 0.1f);
-                        ImGui.TableSetupColumn($"Time##{scheduleConfigTableId}Time", ImGuiTableColumnFlags.None, 0.2f);
-                        ImGui.TableSetupColumn($"UTC Time##{scheduleConfigTableId}UtcTime", ImGuiTableColumnFlags.None, 0.1f);
-                        ImGui.TableSetupColumn($"Local Time {TimeZoneInfo.Local}##{scheduleConfigTableId}LocalTime", ImGuiTableColumnFlags.None, 0.1f);
-                        ImGui.TableSetupColumn($"Command##{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
-                        ImGui.TableHeadersRow();
-
-                        var clipper = ListClipper.Build();
-                        var entries = schedulerConfig.TriggerConfigs.SelectMany(config =>
+                        var scheduleConfigTableId = $"{nextOccurrencesId}Table";
+                        using (ImRaii.Table(scheduleConfigTableId, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
                         {
-                            return config.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(occurrence =>
+                            ImGui.TableSetupColumn($"Remaining##{scheduleConfigTableId}RemainingTime", ImGuiTableColumnFlags.None, 0.1f);
+                            ImGui.TableSetupColumn($"Time##{scheduleConfigTableId}Time", ImGuiTableColumnFlags.None, 0.2f);
+                            ImGui.TableSetupColumn($"UTC Time##{scheduleConfigTableId}UtcTime", ImGuiTableColumnFlags.None, 0.1f);
+                            ImGui.TableSetupColumn($"Local Time {TimeZoneInfo.Local}##{scheduleConfigTableId}LocalTime", ImGuiTableColumnFlags.None, 0.1f);
+                            ImGui.TableSetupColumn($"Command##{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
+                            ImGui.TableHeadersRow();
+
+                            var clipper = ListClipper.Build();
+                            var entries = schedulerConfig.TriggerConfigs.SelectMany(config =>
                             {
-                                var remainingTime = occurrence - nowUtc;
-                                return (config, remainingTime, occurrence);
-                            });
-                        }).OrderBy(p => p.remainingTime);
+                                return config.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(occurrence =>
+                                {
+                                    var remainingTime = occurrence - nowUtc;
+                                    return (config, remainingTime, occurrence);
+                                });
+                            }).OrderBy(p => p.remainingTime);
 
-                        clipper.Begin(entries.Count(), ImGui.GetTextLineHeightWithSpacing());
-                        while (clipper.Step())
-                        {
-                            for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                            clipper.Begin(entries.Count(), ImGui.GetTextLineHeightWithSpacing());
+                            while (clipper.Step())
                             {
-                                var entry = entries.ElementAt(i);
-                                if (ImGui.TableNextColumn())
+                                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                                 {
-                                    ImGui.Text(entry.remainingTime.Humanize());
-                                    if (ImGui.IsItemHovered())
+                                    var entry = entries.ElementAt(i);
+                                    if (ImGui.TableNextColumn())
                                     {
-                                        ImGui.SetTooltip(entry.remainingTime.ToString());
+                                        ImGui.Text(entry.remainingTime.Humanize());
+                                        if (ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip(entry.remainingTime.ToString());
+                                        }
                                     }
-                                }
-                                if (ImGui.TableNextColumn())
-                                {
-                                    var timeText = $"{TimeZoneInfo.ConvertTimeFromUtc(entry.occurrence, entry.config.TimeZone)} {entry.config.TimeZone}";
-                                    ImGui.Text(timeText);
-                                    if (ImGui.IsItemHovered())
+                                    if (ImGui.TableNextColumn())
                                     {
-                                        ImGui.SetTooltip(timeText);
+                                        var timeText = $"{TimeZoneInfo.ConvertTimeFromUtc(entry.occurrence, entry.config.TimeZone)} {entry.config.TimeZone}";
+                                        ImGui.Text(timeText);
+                                        if (ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip(timeText);
+                                        }
                                     }
-                                }
 
-                                if (ImGui.TableNextColumn())
-                                {
-                                    var utcTimeText = entry.occurrence.ToString();
-                                    ImGui.Text(utcTimeText);
-                                    if (ImGui.IsItemHovered())
+                                    if (ImGui.TableNextColumn())
                                     {
-                                        ImGui.SetTooltip(utcTimeText);
+                                        var utcTimeText = entry.occurrence.ToString();
+                                        ImGui.Text(utcTimeText);
+                                        if (ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip(utcTimeText);
+                                        }
                                     }
-                                }
 
-                                if (ImGui.TableNextColumn())
-                                {
-                                    var localTimeText = entry.occurrence.ToLocalTime().ToString();
-                                    ImGui.Text(localTimeText);
-                                    if (ImGui.IsItemHovered())
+                                    if (ImGui.TableNextColumn())
                                     {
-                                        ImGui.SetTooltip(localTimeText);
+                                        var localTimeText = entry.occurrence.ToLocalTime().ToString();
+                                        ImGui.Text(localTimeText);
+                                        if (ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip(localTimeText);
+                                        }
                                     }
-                                }
 
-                                if (ImGui.TableNextColumn())
-                                {
-                                    var commandText = entry.config.Command;
-                                    ImGui.Text(commandText);
-                                    if (ImGui.IsItemHovered())
+                                    if (ImGui.TableNextColumn())
                                     {
-                                        ImGui.SetTooltip(commandText);
+                                        var commandText = entry.config.Command;
+                                        ImGui.Text(commandText);
+                                        if (ImGui.IsItemHovered())
+                                        {
+                                            ImGui.SetTooltip(commandText);
+                                        }
                                     }
                                 }
                             }
+                            clipper.Destroy();
                         }
-                        clipper.Destroy();
                     }
                 }
             }
