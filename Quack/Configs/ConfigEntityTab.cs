@@ -22,8 +22,8 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
 {
     protected static readonly string BLANK_NAME = "(Blank)";
     protected static readonly string CONFIRM_DELETE_HINT = "Press <CTRL> while clicking to confirm";
-    protected static readonly string EXPORT_HINT = "Click <RIGHT> for file export\nClick <LEFT> for clipboard export";
-    protected static readonly string IMPORT_HINT = "Click <RIGHT> for file import\nClick <LEFT> for clipboard import";
+    protected static readonly string EXPORT_HINT = "Click <LEFT> for file export\nClick <RIGHT> for clipboard export";
+    protected static readonly string IMPORT_HINT = "Click <LEFT> for file import\nClick <RIGHT> for clipboard import";
 
     protected Debouncers Debouncers { get; init; } = debouncers;
     protected FileDialogManager FileDialogManager { get; init; } = fileDialogManager;
