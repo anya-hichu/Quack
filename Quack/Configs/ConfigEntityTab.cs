@@ -87,10 +87,10 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                 // Backward compatibility with non-versionned format before config v6
                 if (exportsJson.TrimStart().StartsWith('['))
                 {
-                    var entities = JsonConvert.DeserializeObject<List<object>>(exportsJson);
+                    var entities = JsonConvert.DeserializeObject<List<T>>(exportsJson);
                     if (entities != null)
                     {
-                        var exports = new ConfigEntityExports<object>() { Version = 5, Entities = entities };
+                        var exports = new ConfigEntityExports<T>() { Version = 5, Entities = entities };
                         exportsJson = JsonConvert.SerializeObject(exports);
                     }
                 }
