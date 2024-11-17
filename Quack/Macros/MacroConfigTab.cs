@@ -2,13 +2,13 @@ using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Interface.ImGuiNotification.Internal;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
 using Newtonsoft.Json;
 using Quack.Configs;
+using Quack.Exports;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
@@ -17,8 +17,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
-using static FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureMacroModule;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Quack.Macros;
 
@@ -121,11 +119,11 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
-            ImportFromFile(ImportMacroExportsJson, "Import Macros");
+            ImportFromFile(ProcessExportJson, "Import Macros");
         }
         else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
-            ImportFromClipboard(ImportMacroExportsJson);
+            ImportFromClipboard(ProcessExportJson);
         }
 
         ImGui.SameLine();
@@ -420,15 +418,15 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         MacroConfigTabState.SelectedMacros = [macro];
     }
 
-    private List<Macro>? ImportMacroExportsJson(string exportsJson)
+    private List<Macro>? ProcessExportJson(string exportJson)
     {
-        var exports = JsonConvert.DeserializeObject<ConfigEntityExports<Macro>>(exportsJson);
-        if (exports == null || exports.Type != typeof(Macro).Name)
+        var export = JsonConvert.DeserializeObject<Export<Macro>>(exportJson);
+        if (export == null || export.Type != typeof(Macro).Name)
         {
-            PluginLog.Verbose($"Failed to import macro from json: {exportsJson}");
+            PluginLog.Verbose($"Failed to import macro from json: {exportJson}");
             return null;
         }
-        var macros = exports.Entities;
+        var macros = export.Entities;
         var conflictingMacros = CachedMacros.Intersect(macros);
         CachedMacros.ExceptWith(macros);
         CachedMacros.UnionWith(macros);

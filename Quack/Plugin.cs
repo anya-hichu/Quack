@@ -77,8 +77,8 @@ public sealed class Plugin : IDalamudPlugin
         MacroTable = new(DbConnection, PluginLog);
         MacroTable.MaybeCreateTable();
 
-        var configMigrator = new ConfigMigrator(Config, DbConnection, MacroTable);
-        configMigrator.ExecuteMigrations();
+        var configMigrator = new ConfigMigrator(DbConnection, MacroTable);
+        configMigrator.MaybeMigrate(Config);
 
         var cachedMacros = MacroTable.List();
 

@@ -9,6 +9,7 @@ using ImGuiNET;
 using JavaScriptEngineSwitcher.Core;
 using Newtonsoft.Json;
 using Quack.Configs;
+using Quack.Exports;
 using Quack.Macros;
 using Quack.Utils;
 using System;
@@ -71,11 +72,11 @@ public class GeneratorConfigTab : ConfigEntityTab
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
-            ImportFromFile(ImportGeneratorConfigExportsJson, "Import Generators");
+            ImportFromFile(ProcessExportJson, "Import Generators");
         }
         else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
-            ImportFromClipboard(ImportGeneratorConfigExportsJson);
+            ImportFromClipboard(ProcessExportJson);
         }
 
         ImGui.SameLine();
@@ -103,8 +104,7 @@ public class GeneratorConfigTab : ConfigEntityTab
         {
             foreach (var generatorConfig in generatorConfigs)
             {
-                var hash = generatorConfig.GetHashCode();
-                using (var tab = ImRaii.TabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}###generatorConfigs{hash}Tab"))
+                using (var tab = ImRaii.TabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}###generatorConfigs{generatorConfig.GetHashCode()}Tab"))
                 {
                     if (tab)
                     {
@@ -117,15 +117,15 @@ public class GeneratorConfigTab : ConfigEntityTab
         }
     }
 
-    private List<GeneratorConfig>? ImportGeneratorConfigExportsJson(string exportsJson)
+    private List<GeneratorConfig>? ProcessExportJson(string exportJson)
     {
-        var exports = JsonConvert.DeserializeObject<ConfigEntityExports<GeneratorConfig>>(exportsJson);
-        if (exports == null || exports.Type != typeof(GeneratorConfig).Name)
+        var export = JsonConvert.DeserializeObject<Export<GeneratorConfig>>(exportJson);
+        if (export == null || export.Type != typeof(GeneratorConfig).Name)
         {
-            PluginLog.Verbose($"Failed to import generator config from json: {exportsJson}");
+            PluginLog.Verbose($"Failed to import generator config from json: {exportJson}");
             return null;
         }
-        var generatorConfigs = exports.Entities.ToList();
+        var generatorConfigs = export.Entities.ToList();
         AddDefaultStates(generatorConfigs);
         Config.GeneratorConfigs.AddRange(generatorConfigs);
         Config.Save();
@@ -229,7 +229,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                             var ipcNamesForCombo = ipcOrdered.Select(g => g.Name).Prepend(string.Empty);
                             for (var i = 0; i < generatorConfig.IpcConfigs.Count; i++)
                             {
-                                using (var tab = ImRaii.TabItem($"#{i}###{ipcConfigsId}Tab"))
+                                using (var tab = ImRaii.TabItem($"#{i}###{ipcConfigsId}{i}Tab"))
                                 {
                                     if (!tab)
                                     {
@@ -560,6 +560,7 @@ public class GeneratorConfigTab : ConfigEntityTab
     private void DuplicateGeneratorConfig(GeneratorConfig generatorConfig)
     {
         var duplicate = generatorConfig.Clone();
+        duplicate.Name = $"{generatorConfig.Name} (Copy)";
         AddDefaultStates([duplicate]);
         Config.GeneratorConfigs.Add(duplicate);
         Config.Save();
@@ -592,9 +593,17 @@ public class GeneratorConfigTab : ConfigEntityTab
                 state.SelectedGeneratedMacros = new(generatedMacros, MacroComparer.INSTANCE);
                 state.FilteredGeneratedMacros = new(MacroSearch.Lookup(generatedMacros, state.GeneratedMacrosFilter), MacroComparer.INSTANCE);
             }
-            catch (GeneratorException e) when (e.InnerException is not JsInterruptedException)
+            catch (GeneratorException e)
             {
-                state.MaybeGeneratorException = e;
+                if (e.InnerException is JsInterruptedException)
+                {
+                    PluginLog.Error($"Cancelled macro generation manually");
+                } 
+                else
+                {
+                    state.MaybeGeneratorException = e;
+                    PluginLog.Error($"Error occured when generating macros: {e}");
+                } 
             }
         });
 

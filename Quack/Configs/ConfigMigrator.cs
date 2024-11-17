@@ -7,40 +7,41 @@ using System.Linq;
 
 namespace Quack.Configs;
 
-public class ConfigMigrator(Config config, SQLiteConnection dbConnection, MacroTable macroTable)
+public class ConfigMigrator(SQLiteConnection dbConnection, MacroTable macroTable)
 {
-    private Config Config { get; init; } = config;
     private SQLiteConnection DbConnection { get; init; } = dbConnection;
     private MacroTable MacroTable { get; init; } = macroTable;
 
-    public void ExecuteMigrations()
+    public void MaybeMigrate(Config config)
     {
-        var version = Config.Version;
-        if (version < Config.CURRENT_VERSION)
+        var version = config.Version;
+        var currentVersion = Config.CURRENT_VERSION;
+
+        if (version < currentVersion)
         {
             if (version < 1)
             {
-                Config.GeneratorConfigs.ForEach(c =>
+                config.GeneratorConfigs.ForEach(generatorConfig =>
                 {
-                    c.IpcConfigs.Add(new()
+                    generatorConfig.IpcConfigs.Add(new()
                     {
-                        Name = c.IpcName,
-                        Args = c.IpcArgs
+                        Name = generatorConfig.IpcName,
+                        Args = generatorConfig.IpcArgs
                     });
-                    c.IpcName = c.IpcArgs = string.Empty;
+                    generatorConfig.IpcName = generatorConfig.IpcArgs = string.Empty;
                 });
             }
 
             if (version < 2)
             {
-                Config.ExtraCommandFormat = Config.CommandFormat;
-                Config.CommandFormat = string.Empty;
+                config.ExtraCommandFormat = config.CommandFormat;
+                config.CommandFormat = string.Empty;
             }
 
             if (version < 3)
             {
-                MacroTable.Insert(Config.Macros);
-                Config.Macros.Clear();
+                MacroTable.Insert(config.Macros);
+                config.Macros.Clear();
             }
 
             if (version < 4)
@@ -57,25 +58,25 @@ public class ConfigMigrator(Config config, SQLiteConnection dbConnection, MacroT
 
             if (version < 6)
             {
-                Config.SchedulerConfigs.ForEach(MigrateSchedulerConfigToV6);
+                config.SchedulerConfigs.ForEach(MigrateToV6);
             }
 
-            Config.Version = Config.CURRENT_VERSION;
-            Config.Save();
+            config.Version = currentVersion;
+            config.Save();
         }
     }
 
-    public static void MigrateSchedulerConfigToV6(SchedulerConfig schedulerConfig)
+    public static void MigrateToV6(SchedulerConfig schedulerConfig)
     {
         var schedulerCommandConfigs = schedulerConfig.SchedulerCommandConfigs;
         if (schedulerCommandConfigs.Count > 0)
         {
             // Optimized V5 migration
-            schedulerConfig.TriggerConfigs = new(schedulerCommandConfigs.Select(c => new SchedulerTriggerConfig()
+            schedulerConfig.TriggerConfigs = new(schedulerCommandConfigs.Select(generatorConfig => new SchedulerTriggerConfig()
             {
-                TimeZone = c.TimeZone,
-                TimeExpression = c.TimeExpression,
-                Command = c.Command
+                TimeZone = generatorConfig.TimeZone,
+                TimeExpression = generatorConfig.TimeExpression,
+                Command = generatorConfig.Command
             }));
             schedulerCommandConfigs.Clear();
         } 

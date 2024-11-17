@@ -1,13 +1,13 @@
 using Dalamud;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
+using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.V8;
 using Newtonsoft.Json;
 using Quack.Macros;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Schema;
 
 namespace Quack.Generators;
 
@@ -27,15 +27,33 @@ public class Generator
 
     public HashSet<Macro> GenerateMacros()
     {
-        var args = CallIpcs();
-        var macros = CallFunction<Macro>(ENTRY_POINT, args);
-        return new(macros, MacroComparer.INSTANCE);
+        try
+        {
+            MaybeEngine = new V8JsEngine(GetEngineSettings());
+            var args = CallIpcs();
+            var macros = CallFunction<Macro>(ENTRY_POINT, args);
+            return new(macros, MacroComparer.INSTANCE);
+        }
+        catch (Exception e) when(e is not GeneratorException)
+        {
+            throw new GeneratorException($"Exception occured while executing {GeneratorConfig.Name} generator script", e);
+        }
+        finally
+        {
+            MaybeEngine?.Dispose();
+            MaybeEngine = null;
+        } 
     }
 
     private object[] CallIpcs()
     {
         return GeneratorConfig.IpcConfigs.Select(ipcConfig =>
         {
+            if (IsStopped())
+            {
+                throw new JsInterruptedException("Cancelled manually while calling IPCs");
+            }
+
             if (!Service<CallGate>.Get().Gates.TryGetValue(ipcConfig.Name, out var channel))
             {
                 throw new GeneratorException($"Could not find generator {GeneratorConfig.Name} IPC channel: {ipcConfig.Name}");
@@ -51,30 +69,22 @@ public class Generator
 
     private T[] CallFunction<T>(string name, object[] args)
     {
-        try
+        if (MaybeEngine == null)
         {
-            MaybeEngine = new V8JsEngine(GetEngineSettings());
-            PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script with engine {MaybeEngine.Name} ({MaybeEngine.Version})");
-            MaybeEngine.Execute(GeneratorConfig.Script);
-            PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} {ENTRY_POINT} function with: {string.Join(", ", args)}");
-            var entitiesJson = MaybeEngine.CallFunction<string>(name, args);
-            var entities = JsonConvert.DeserializeObject<T[]>(entitiesJson);
-            if (entities == null)
-            {
-                throw new GeneratorException($"Invalid JSON format returned by generator {GeneratorConfig.Name} {ENTRY_POINT} function: {entitiesJson}");
-            }
-            PluginLog.Debug($"Successfully generated {entities.Length} macros using {GeneratorConfig.Name} generator");
-            return entities;
+            throw new JsInterruptedException("Cancelled manually before calling script");
         }
-        catch (Exception e) when (e is not GeneratorException)
+
+        PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script with engine {MaybeEngine.Name} ({MaybeEngine.Version})");
+        MaybeEngine.Execute(GeneratorConfig.Script);
+        PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} {ENTRY_POINT} function with: {string.Join(", ", args)}");
+        var entitiesJson = MaybeEngine.CallFunction<string>(name, args);
+        var entities = JsonConvert.DeserializeObject<T[]>(entitiesJson);
+        if (entities == null)
         {
-            throw new GeneratorException($"Exception occured while executing {GeneratorConfig.Name} generator script", e);
+            throw new GeneratorException($"Invalid JSON format returned by generator {GeneratorConfig.Name} {ENTRY_POINT} function: {entitiesJson}");
         }
-        finally
-        {
-            MaybeEngine?.Dispose();
-            MaybeEngine = null;
-        }
+        PluginLog.Debug($"Successfully generated {entities.Length} macros using {GeneratorConfig.Name} generator");
+        return entities;
     }
 
     private V8Settings GetEngineSettings()
@@ -94,5 +104,7 @@ public class Generator
     public void Cancel()
     {
         MaybeEngine?.Interrupt();
+        MaybeEngine?.Dispose();
+        MaybeEngine = null;
     }
 }

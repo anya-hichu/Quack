@@ -10,6 +10,7 @@ using ImGuiNET;
 using Newtonsoft.Json;
 using Quack.Chat;
 using Quack.Configs;
+using Quack.Exports;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
@@ -68,11 +69,11 @@ public class SchedulerConfigTab : ConfigEntityTab
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {
-            ImportFromFile(ImportSchedulerConfigExportsJson, "Import Schedulers");
+            ImportFromFile(ProcessExportJson, "Import Schedulers");
         }
         else if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
-            ImportFromClipboard(ImportSchedulerConfigExportsJson);
+            ImportFromClipboard(ProcessExportJson);
         }
 
         ImGui.SameLine();
@@ -113,26 +114,19 @@ public class SchedulerConfigTab : ConfigEntityTab
         Config.Save();
     }
 
-    private List<SchedulerConfig>? ImportSchedulerConfigExportsJson(string exportsJson)
+    private List<SchedulerConfig>? ProcessExportJson(string exportJson)
     {
-        var exports = JsonConvert.DeserializeObject<ConfigEntityExports<SchedulerConfig>>(exportsJson);
-        if (exports == null || exports.Type != typeof(SchedulerConfig).Name)
+        var export = JsonConvert.DeserializeObject<Export<SchedulerConfig>>(exportJson);
+        if (export == null || export.Type != typeof(SchedulerConfig).Name)
         {
-            PluginLog.Verbose($"Failed to import scheduler config from json: {exportsJson}");
+            PluginLog.Verbose($"Failed to import scheduler config from json: {exportJson}");
             return null;
         }
-
-        var schedulerConfigs = exports.Entities;
-        schedulerConfigs.ForEach(schedulerConfig =>
-        {
-            #region deprecated
-            if (exports.Version < 6)
-            {
-                ConfigMigrator.MigrateSchedulerConfigToV6(schedulerConfig);
-            }
-            #endregion
-            SchedulerConfigToState.Add(schedulerConfig, new());
-        });
+        #region deprecated
+        ExportMigrator.MaybeMigrate(export);
+        #endregion
+        var schedulerConfigs = export.Entities;
+        schedulerConfigs.ForEach(schedulerConfig => SchedulerConfigToState.Add(schedulerConfig, new()));
         Config.SchedulerConfigs.AddRange(schedulerConfigs);
         Config.Save();
         return schedulerConfigs;
@@ -354,14 +348,14 @@ public class SchedulerConfigTab : ConfigEntityTab
                             ImGui.TableHeadersRow();
 
                             var clipper = ListClipper.Build();
-                            var entries = schedulerConfig.TriggerConfigs.SelectMany(config =>
+                            var entries = schedulerConfig.TriggerConfigs.SelectMany(TriggerConfig =>
                             {
-                                return config.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(occurrence =>
+                                return TriggerConfig.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(Occurrence =>
                                 {
-                                    var remainingTime = occurrence - nowUtc;
-                                    return (config, remainingTime, occurrence);
+                                    var RemainingTime = Occurrence - nowUtc;
+                                    return (TriggerConfig, RemainingTime, Occurrence);
                                 });
-                            }).OrderBy(p => p.remainingTime);
+                            }).OrderBy(p => p.RemainingTime);
 
                             clipper.Begin(entries.Count(), ImGui.GetTextLineHeightWithSpacing());
                             while (clipper.Step())
@@ -371,15 +365,16 @@ public class SchedulerConfigTab : ConfigEntityTab
                                     var entry = entries.ElementAt(i);
                                     if (ImGui.TableNextColumn())
                                     {
-                                        ImGui.Text(entry.remainingTime.Humanize());
+                                        ImGui.Text(entry.RemainingTime.Humanize());
                                         if (ImGui.IsItemHovered())
                                         {
-                                            ImGui.SetTooltip(entry.remainingTime.ToString());
+                                            ImGui.SetTooltip(entry.RemainingTime.ToString());
                                         }
                                     }
                                     if (ImGui.TableNextColumn())
                                     {
-                                        var timeText = $"{TimeZoneInfo.ConvertTimeFromUtc(entry.occurrence, entry.config.TimeZone)} {entry.config.TimeZone}";
+                                        var timeZone = entry.TriggerConfig.TimeZone;
+                                        var timeText = $"{TimeZoneInfo.ConvertTimeFromUtc(entry.Occurrence, timeZone)} {timeZone}";
                                         ImGui.Text(timeText);
                                         if (ImGui.IsItemHovered())
                                         {
@@ -389,7 +384,7 @@ public class SchedulerConfigTab : ConfigEntityTab
 
                                     if (ImGui.TableNextColumn())
                                     {
-                                        var utcTimeText = entry.occurrence.ToString();
+                                        var utcTimeText = entry.Occurrence.ToString();
                                         ImGui.Text(utcTimeText);
                                         if (ImGui.IsItemHovered())
                                         {
@@ -399,7 +394,7 @@ public class SchedulerConfigTab : ConfigEntityTab
 
                                     if (ImGui.TableNextColumn())
                                     {
-                                        var localTimeText = entry.occurrence.ToLocalTime().ToString();
+                                        var localTimeText = entry.Occurrence.ToLocalTime().ToString();
                                         ImGui.Text(localTimeText);
                                         if (ImGui.IsItemHovered())
                                         {
@@ -409,7 +404,7 @@ public class SchedulerConfigTab : ConfigEntityTab
 
                                     if (ImGui.TableNextColumn())
                                     {
-                                        var commandText = entry.config.Command;
+                                        var commandText = entry.TriggerConfig.Command;
                                         ImGui.Text(commandText);
                                         if (ImGui.IsItemHovered())
                                         {
