@@ -336,7 +336,7 @@ public class GeneratorConfigTab : ConfigEntityTab
 
     private void AddDefaultStates(List<GeneratorConfig> generatorConfigs)
     {
-        generatorConfigs.ForEach(generatorConfig => GeneratorConfigToState.Add(generatorConfig, new(generatorConfig, PluginLog)));
+        generatorConfigs.ForEach(generatorConfig => GeneratorConfigToState.Add(generatorConfig, new(CallGate, generatorConfig, PluginLog)));
     }
 
     private void DrawOutputHeader(GeneratorConfig generatorConfig)

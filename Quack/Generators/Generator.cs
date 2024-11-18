@@ -15,12 +15,14 @@ public class Generator
 {
     private static readonly string ENTRY_POINT = "main";
 
+    private CallGate CallGate { get; init; }
     private GeneratorConfig GeneratorConfig { get; init; }
     private IPluginLog PluginLog { get; init; }
     private V8JsEngine? MaybeEngine { get; set; }
 
-    public Generator(GeneratorConfig generatorConfig, IPluginLog pluginLog)
+    public Generator(CallGate callGate, GeneratorConfig generatorConfig, IPluginLog pluginLog)
     {
+        CallGate = callGate;
         GeneratorConfig = generatorConfig;
         PluginLog = pluginLog;
     }
@@ -54,7 +56,7 @@ public class Generator
                 throw new JsInterruptedException("Cancelled manually while calling IPCs");
             }
 
-            if (!Service<CallGate>.Get().Gates.TryGetValue(ipcConfig.Name, out var channel))
+            if (!CallGate.Gates.TryGetValue(ipcConfig.Name, out var channel))
             {
                 throw new GeneratorException($"Could not find generator {GeneratorConfig.Name} IPC channel: {ipcConfig.Name}");
             }
@@ -76,7 +78,12 @@ public class Generator
 
         PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script with engine {MaybeEngine.Name} ({MaybeEngine.Version})");
         MaybeEngine.Execute(GeneratorConfig.Script);
+        if (IsStopped())
+        {
+            throw new JsInterruptedException("Cancelled manually while calling IPCs");
+        }
         PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} {ENTRY_POINT} function with: {string.Join(", ", args)}");
+
         var entitiesJson = MaybeEngine.CallFunction<string>(name, args);
         var entities = JsonConvert.DeserializeObject<T[]>(entitiesJson);
         if (entities == null)

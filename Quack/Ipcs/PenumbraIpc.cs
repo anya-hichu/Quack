@@ -48,6 +48,7 @@ public class PenumbraIpc : IDisposable
 
     private ICallGateProvider<Dictionary<string, object>[]> GetModListProvider { get; init; }
     private ICallGateProvider<Dictionary<string, object>[]> GetModListWithSettingsProvider { get; init; }
+    private ICallGateProvider<Dictionary<string, string>[]> GetModListWithSettingsJsonProvider { get; init; }
 
     public PenumbraIpc(IDalamudPluginInterface pluginInterface, IPluginLog pluginLog)
     {
@@ -74,6 +75,7 @@ public class PenumbraIpc : IDisposable
 
     public void Dispose() {
         GetModListProvider.UnregisterFunc();
+        GetModListWithSettingsProvider.UnregisterFunc();
     }
 
     private Dictionary<string, object>[] GetModList()

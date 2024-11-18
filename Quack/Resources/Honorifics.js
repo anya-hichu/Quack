@@ -24,7 +24,7 @@ function main(titlesJson) {
         };
     });
 
-    const macros = [disablehonorificsMacro].concat(titleMacros);
+    const macros = [disableHonorificsMacro].concat(titleMacros);
 
     return JSON.stringify(macros);
 }
