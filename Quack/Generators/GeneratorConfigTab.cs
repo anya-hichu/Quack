@@ -343,17 +343,12 @@ public class GeneratorConfigTab : ConfigEntityTab
     {
         var hash = generatorConfig.GetHashCode();
         var state = GeneratorConfigToState[generatorConfig];
-        var generatedMacros = state.GeneratedMacros;
-        if (generatedMacros.Count > 0)
+        if (state.GeneratedMacros.Count > 0)
         {
             var generatedMacrosId = $"generatorConfigs{hash}GeneratedMacros";
             if (ImGui.CollapsingHeader($"Output###{generatedMacrosId}Header", ImGuiTreeNodeFlags.DefaultOpen))
             {
-                var selectedGeneratedMacros = state.SelectedGeneratedMacros;
-                var filteredGeneratedMacros = state.FilteredGeneratedMacros;
-                var generatedMacrosFilter = state.GeneratedMacrosFilter;
-
-                var filteredConflictingMacros = CachedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE);
+                var filteredConflictingMacros = CachedMacros.Intersect(state.SelectedGeneratedMacros, MacroComparer.INSTANCE);
                 var generatedMacrosConflictsPopupId = $"###{generatedMacrosId}ConflictsPopup";
                 if (filteredConflictingMacros.Any())
                 {
@@ -400,28 +395,29 @@ public class GeneratorConfigTab : ConfigEntityTab
                 ImGui.SameLine();
                 if (ImGui.Button($"Invert Selection###{generatedMacrosId}InvertSelection"))
                 {
-                    state.SelectedGeneratedMacros = new(generatedMacros.Except(selectedGeneratedMacros, MacroComparer.INSTANCE), MacroComparer.INSTANCE);
+                    state.SelectedGeneratedMacros = new(state.GeneratedMacros.Except(state.SelectedGeneratedMacros, MacroComparer.INSTANCE), MacroComparer.INSTANCE);
                 }
 
                 ImGui.SameLine();
                 if (ImGui.Button($"Select All Filtered###{generatedMacrosId}SelectAllFiltered"))
                 {
-                    state.SelectedGeneratedMacros = filteredGeneratedMacros;
+                    state.SelectedGeneratedMacros = state.FilteredGeneratedMacros;
                 }
 
                 ImGui.SameLine();
                 if (ImGui.Button($"Select All Conflicting###{generatedMacrosId}SelectAllConflicting"))
                 {
-                    state.SelectedGeneratedMacros = new(CachedMacros.Intersect(generatedMacros, MacroComparer.INSTANCE), MacroComparer.INSTANCE);
+                    state.SelectedGeneratedMacros = new(CachedMacros.Intersect(state.GeneratedMacros, MacroComparer.INSTANCE), MacroComparer.INSTANCE);
                 }
 
                 ImGui.SameLine();
                 using (ImRaii.ItemWidth(250))
                 {
-                    if (ImGui.InputText($"Filter ({filteredGeneratedMacros.Count}/{generatedMacros.Count})###{generatedMacrosId}Filter", ref generatedMacrosFilter, ushort.MaxValue))
+                    var generatedMacrosFilter = state.GeneratedMacrosFilter;
+                    if (ImGui.InputText($"Filter ({state.FilteredGeneratedMacros.Count}/{state.GeneratedMacros.Count})###{generatedMacrosId}Filter", ref generatedMacrosFilter, ushort.MaxValue))
                     {
                         state.GeneratedMacrosFilter = generatedMacrosFilter;
-                        state.FilteredGeneratedMacros = new(MacroSearch.Lookup(generatedMacros, generatedMacrosFilter), MacroComparer.INSTANCE);
+                        state.FilteredGeneratedMacros = new(MacroSearch.Lookup(state.GeneratedMacros, generatedMacrosFilter), MacroComparer.INSTANCE);
                     }
                 }
 
@@ -429,7 +425,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 if (ImGui.Button($"x###{generatedMacrosId}FilterClear"))
                 {
                     state.GeneratedMacrosFilter = string.Empty;
-                    state.FilteredGeneratedMacros = generatedMacros;
+                    state.FilteredGeneratedMacros = state.GeneratedMacros;
                 }
 
                 ImGui.SameLine(ImGui.GetWindowWidth() - 232);
@@ -444,8 +440,9 @@ public class GeneratorConfigTab : ConfigEntityTab
                 {
                     if (ImGui.Button($"Delete All###{generatedMacrosId}DeleteAll"))
                     {
-                        generatedMacros.Clear();
-                        selectedGeneratedMacros.Clear();
+                        state.GeneratedMacros.Clear();
+                        state.SelectedGeneratedMacros.Clear();
+                        state.FilteredGeneratedMacros.Clear();
                     }
                 }
 
@@ -463,12 +460,12 @@ public class GeneratorConfigTab : ConfigEntityTab
                         ImGui.TableSetupColumn($"Content###{generatedMacrosTableId}Content", ImGuiTableColumnFlags.None, 0.5f);
                         ImGui.TableHeadersRow();
 
-                        var visibleFilteredGeneratedMacros = showSelectedOnly ? filteredGeneratedMacros.Intersect(selectedGeneratedMacros, MacroComparer.INSTANCE) : filteredGeneratedMacros;
+                        var visibleFilteredGeneratedMacros = showSelectedOnly ? state.FilteredGeneratedMacros.Intersect(state.SelectedGeneratedMacros, MacroComparer.INSTANCE) : state.FilteredGeneratedMacros;
 
                         var clipper = ListClipper.Build();
                         clipper.Begin(visibleFilteredGeneratedMacros.Count(), 27);
 
-                        var updatedSelectedGeneratedMacros = selectedGeneratedMacros.ToHashSet(MacroComparer.INSTANCE);
+                        var updatedSelectedGeneratedMacros = state.SelectedGeneratedMacros.ToHashSet(MacroComparer.INSTANCE);
                         while (clipper.Step())
                         {
                             for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
@@ -476,7 +473,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                                 var generatedMacro = visibleFilteredGeneratedMacros.ElementAt(i);
                                 if (ImGui.TableNextColumn())
                                 {
-                                    var selected = selectedGeneratedMacros.Contains(generatedMacro);
+                                    var selected = state.SelectedGeneratedMacros.Contains(generatedMacro);
                                     if (ImGui.Checkbox($"###{generatedMacrosTableId}Entries{i}Selected", ref selected))
                                     {
                                         if (selected)
