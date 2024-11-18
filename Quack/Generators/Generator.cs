@@ -62,9 +62,7 @@ public class Generator
             }
 
             var args = JsonConvert.DeserializeObject<object[]>(ipcConfig.Args);
-            PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} IPC channel {channel.Name} with arguments: {ipcConfig.Args}");
             var returnValue = channel.InvokeFunc<object>(args);
-            PluginLog.Verbose($"IPC channel {channel.Name} returned value: {returnValue}");
             return returnValue.GetType().IsGenericType ? returnValue : returnValue.ToString()!;
         }).ToArray();
     }
@@ -75,15 +73,12 @@ public class Generator
         {
             throw new JsInterruptedException("Cancelled manually before calling script");
         }
-
         PluginLog.Debug($"Executing generator {GeneratorConfig.Name} script with engine {MaybeEngine.Name} ({MaybeEngine.Version})");
         MaybeEngine.Execute(GeneratorConfig.Script);
         if (IsStopped())
         {
-            throw new JsInterruptedException("Cancelled manually while calling IPCs");
+            throw new JsInterruptedException($"Cancelled manually while calling {ENTRY_POINT} function");
         }
-        PluginLog.Verbose($"Calling generator {GeneratorConfig.Name} {ENTRY_POINT} function with: {string.Join(", ", args)}");
-
         var entitiesJson = MaybeEngine.CallFunction<string>(name, args);
         var entities = JsonConvert.DeserializeObject<T[]>(entitiesJson);
         if (entities == null)
