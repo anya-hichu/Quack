@@ -15,6 +15,7 @@ using Quack.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace Quack.Schedulers;
 
@@ -41,13 +42,14 @@ public class SchedulerConfigTab : ConfigEntityTab
     {
         var nowUtc = DateTime.UtcNow;
 
-        if (ImGui.Button("New###schedulerConfigsNew"))
+        var schedulerConfigsId = "schedulerConfigs";
+        if (ImGui.Button($"New###{schedulerConfigsId}New"))
         {
             NewSchedulerConfig();
         }
 
         ImGui.SameLine(ImGui.GetWindowWidth() - 217);
-        ImGui.Button("Export All###schedulerConfigsExportAll");
+        ImGui.Button($"Export All###{schedulerConfigsId}ExportAll");
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip(EXPORT_HINT);
@@ -62,7 +64,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         }
 
         ImGui.SameLine();
-        ImGui.Button("Import All###schedulerConfigsImportAll");
+        ImGui.Button($"Import All###{schedulerConfigsId}ImportAll");
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip(IMPORT_HINT);
@@ -79,7 +81,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         ImGui.SameLine();
         using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
         {
-            if (ImGui.Button("Delete All###schedulerConfigsDeleteAll") && KeyState[VirtualKey.CONTROL])
+            if (ImGui.Button($"Delete All###{schedulerConfigsId}DeleteAll") && KeyState[VirtualKey.CONTROL])
             {
                 DeleteSchedulerConfigs();
             }
@@ -89,12 +91,18 @@ public class SchedulerConfigTab : ConfigEntityTab
             }
         }
 
-        using (ImRaii.TabBar("schedulerConfigsTabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
+        var schedulerConfigs = Config.SchedulerConfigs;
+        using (ImRaii.TabBar($"{schedulerConfigsId}{string.Join("-", schedulerConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
         {
-            foreach (var schedulerConfig in Config.SchedulerConfigs)
+            
+            for (var i = 0; i < schedulerConfigs.Count; i++)
             {
-                using (var tab = ImRaii.TabItem($"{(schedulerConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : schedulerConfig.Name)}###schedulerConfigs{schedulerConfig.GetHashCode()}Tab"))
+                var schedulerConfig = schedulerConfigs.ElementAt(i);
+                var schedulerConfigId = $"schedulerConfigs{schedulerConfig.GetHashCode()}";
+                using (var tab = ImRaii.TabItem($"{(schedulerConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : schedulerConfig.Name)}###{schedulerConfigId}Tab"))
                 {
+                    MoveTabPopup($"{schedulerConfigId}Popup", schedulerConfigs, i, Config.Save);
+
                     if (tab)
                     {
                         ImGui.NewLine();
@@ -211,25 +219,36 @@ public class SchedulerConfigTab : ConfigEntityTab
                         var triggerConfigs = schedulerConfig.TriggerConfigs;
                         for (var i = 0; i < triggerConfigs.Count; i++)
                         {
+                            var triggerConfig = triggerConfigs.ElementAt(i);
+
                             var triggerConfigId = $"{triggerConfigsId}{i}";
-                            using (var tab = ImRaii.TabItem($"#{i}###{triggerConfigId}Tab"))
+
+                            var triggerName = triggerConfig.Name;
+                            using (var tab = ImRaii.TabItem($"{(triggerName.IsNullOrWhitespace() ? $"#{i}" : triggerName)}###{triggerConfigId}Tab"))
                             {
+                                MoveTabPopup($"{triggerConfigId}Popup", triggerConfigs, i, Config.Save);
+
+                                var timeExpression = triggerConfig.TimeExpression;
+                                var command = triggerConfig.Command;
+                                if (ImGui.IsItemHovered() && !timeExpression.IsNullOrWhitespace() && !command.IsNullOrWhitespace())
+                                {
+                                    ImGui.SetTooltip($"At [{timeExpression}] execute command [{command}]");
+                                }
+
                                 if (!tab)
                                 {
                                     continue;
                                 }
 
-                                var triggerConfig = triggerConfigs.ElementAt(i);
+                                
                                 using (ImRaii.PushIndent())
                                 {
-                                    var timeExpression = triggerConfig.TimeExpression;
-                                    var timeExpressionInputId = $"{triggerConfigId}TimeExpression";
-                                    if (ImGui.InputText($"Time Expression (Cron)###{timeExpressionInputId}", ref timeExpression, ushort.MaxValue))
+                                    var triggerNameInputId = $"{triggerConfigId}Name";
+                                    if (ImGui.InputText($"Name###{triggerNameInputId}", ref triggerName, ushort.MaxValue))
                                     {
-                                        triggerConfig.TimeExpression = timeExpression;
-                                        Debounce(timeExpressionInputId, Config.Save);
+                                        triggerConfig.Name = triggerName;
+                                        Debounce(triggerNameInputId, Config.Save);
                                     }
-                                    ImGuiComponents.HelpMarker("* * * * *\n |  |  |  |  |\n |  |  |  |  day of the week (0–6) or (MON to SUN) \n |  |  |  month (1–12)\n |  |  day of the month (1–31)\n |  hour (0–23)\nminute (0–59)\n\nWildcard (*): represents 'all'. For example, using '* * * * *' will run every minute. Using '* * * * 1' will run every minute only on Monday. Using six asterisks means every second when seconds are supported.\nComma (,): used to separate items of a list. For example, using 'MON,WED,FRI' in the 5th field (day of week) means Mondays, Wednesdays and Fridays.\nHyphen (-): defines ranges. For example, '2000-2010' indicates every year between 2000 and 2010, inclusive.");
 
                                     ImGui.SameLine(ImGui.GetWindowWidth() - 125);
                                     if (ImGui.Button($"Duplicate###{triggerConfigId}Duplicate"))
@@ -251,18 +270,29 @@ public class SchedulerConfigTab : ConfigEntityTab
                                         }
                                     }
 
-                                    if (triggerConfig.TryParseCronExpression(out var cronExpression))
+                                    var timeExpressionInputId = $"{triggerConfigId}TimeExpression";
+                                    if (ImGui.InputText($"Time Expression (Cron)###{timeExpressionInputId}", ref timeExpression, ushort.MaxValue))
                                     {
-                                        ImGui.Text($"Interpolation: {cronExpression}");
+                                        triggerConfig.TimeExpression = timeExpression;
+                                        Debounce(timeExpressionInputId, Config.Save);
                                     }
-                                    else
+                                    ImGuiComponents.HelpMarker("* * * * *\n |  |  |  |  |\n |  |  |  |  day of the week (0–6) or (MON to SUN) \n |  |  |  month (1–12)\n |  |  day of the month (1–31)\n |  hour (0–23)\nminute (0–59)\n\nWildcard (*): represents 'all'. For example, using '* * * * *' will run every minute. Using '* * * * 1' will run every minute only on Monday. Using six asterisks means every second when seconds are supported.\nComma (,): used to separate items of a list. For example, using 'MON,WED,FRI' in the 5th field (day of week) means Mondays, Wednesdays and Fridays.\nHyphen (-): defines ranges. For example, '2000-2010' indicates every year between 2000 and 2010, inclusive.");
+
+                                    if (!timeExpression.IsNullOrWhitespace())
                                     {
-                                        using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed))
+                                        if (triggerConfig.TryParseCronExpression(out var cronExpression))
                                         {
-                                            ImGui.Text("Invalid Time Expression");
+                                            ImGui.Text($"Interpolation: {cronExpression}");
+                                        }
+                                        else
+                                        {
+                                            using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudRed))
+                                            {
+                                                ImGui.Text("Invalid Time Expression");
+                                            }
                                         }
                                     }
-
+                                    
                                     var timeZones = TimeZoneInfo.GetSystemTimeZones();
                                     var timeZoneNames = timeZones.Select(z => z.DisplayName).ToArray();
                                     var timeZoneName = triggerConfig.TimeZone.DisplayName;
@@ -286,7 +316,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                                         ImGui.Text($"Next Occurrence: {nextOccurrence.Value}");
                                     }
 
-                                    var command = triggerConfig.Command;
+                                    
                                     var commandInputId = $"{triggerConfigId}Command";
                                     if (ImGui.InputText($"Command###{commandInputId}", ref command, ushort.MaxValue))
                                     {

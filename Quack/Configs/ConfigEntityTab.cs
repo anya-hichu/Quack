@@ -1,5 +1,6 @@
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Humanizer;
 using ImGuiNET;
@@ -138,5 +139,55 @@ public abstract class ConfigEntityTab(Debouncers debouncers, FileDialogManager f
                 Content = $"Failed to import {readableType} from clipboard"
             });
         });
+    }
+
+    protected static void MoveTabPopup<T>(string id, List<T> collection, int index, Action callback)
+    {
+        var previous = index - 1;
+        var next = index + 1;
+
+        var canMoveLeft = CanMove(collection, previous);
+        var canMoveRight = CanMove(collection, next);
+
+        if (canMoveLeft || canMoveRight)
+        {
+            using (var contextPopup = ImRaii.ContextPopupItem(id))
+            {
+                if (contextPopup)
+                {
+                    if (canMoveLeft)
+                    {
+                        if (ImGui.Button($"← Move Left###{id}MoveLeft"))
+                        {
+                            Move(collection, index, previous);
+                            callback();
+                            ImGui.CloseCurrentPopup();
+                        }
+                    }
+                    if (canMoveRight)
+                    {
+                        ImGui.SameLine();
+                        if (ImGui.Button($"Move Right →###{id}MoveRight"))
+                        {
+                            Move(collection, index, next);
+                            callback();
+                            ImGui.CloseCurrentPopup();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static bool CanMove<T>(List<T> collection, int newIndex)
+    {
+        return newIndex >= 0 && newIndex < collection.Count;
+    }
+
+    private static void Move<T>(List<T> collection, int oldIndex, int newIndex)
+    {
+        T item = collection[oldIndex];
+        collection.RemoveAt(oldIndex);
+        collection.Insert(newIndex, item);
     }
 }

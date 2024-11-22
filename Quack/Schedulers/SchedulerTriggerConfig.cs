@@ -9,6 +9,7 @@ namespace Quack.Schedulers;
 [Serializable]
 public class SchedulerTriggerConfig
 {
+    public string Name { get; set; } = string.Empty;
     public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Utc;
     public string TimeExpression { get; set; } = string.Empty;
     public string Command { get; set; } = string.Empty;

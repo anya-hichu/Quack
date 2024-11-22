@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Quack.Configs;
 using Quack.Exports;
 using Quack.Macros;
+using Quack.Schedulers;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
@@ -100,12 +101,18 @@ public class GeneratorConfigTab : ConfigEntityTab
 
         var generatorConfigs = Config.GeneratorConfigs;
         var funcChannels = CallGate.Gates.Values.Where(g => g.Func != null);
-        using (ImRaii.TabBar("generatorConfigsTabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
+
+        var generatorConfigsId = "generatorConfigs";
+        using (ImRaii.TabBar($"{generatorConfigsId}{string.Join("-", generatorConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
         {
-            foreach (var generatorConfig in generatorConfigs)
+            for (var i = 0; i < generatorConfigs.Count; i++)
             {
-                using (var tab = ImRaii.TabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}###generatorConfigs{generatorConfig.GetHashCode()}Tab"))
+                var generatorConfig = generatorConfigs.ElementAt(i);
+                var generatorConfigId = $"{generatorConfigsId}{generatorConfig.GetHashCode()}";
+                using (var tab = ImRaii.TabItem($"{(generatorConfig.Name.IsNullOrWhitespace() ? BLANK_NAME : generatorConfig.Name)}###{generatorConfigId}Tab"))
                 {
+                    MoveTabPopup($"{generatorConfigId}Popup", generatorConfigs, i, Config.Save);
+
                     if (tab)
                     {
                         ImGui.NewLine();
@@ -227,20 +234,29 @@ public class GeneratorConfigTab : ConfigEntityTab
                         {
                             var ipcOrdered = funcChannels.OrderBy(g => g.Name);
                             var ipcNamesForCombo = ipcOrdered.Select(g => g.Name).Prepend(string.Empty);
-                            for (var i = 0; i < generatorConfig.IpcConfigs.Count; i++)
+
+                            var ipcConfigs = generatorConfig.IpcConfigs;
+                            for (var i = 0; i < ipcConfigs.Count; i++)
                             {
-                                using (var tab = ImRaii.TabItem($"#{i}###{ipcConfigsId}{i}Tab"))
+                                var ipcConfig = ipcConfigs.ElementAt(i);
+                                var IpcName = ipcConfig.Name;
+
+                                var ipcConfigId = $"{ipcConfigsId}{i}";
+                                using (var tab = ImRaii.TabItem($"{(IpcName.IsNullOrWhitespace() ? $"#{i}" : IpcName)}###{ipcConfigId}Tab"))
                                 {
+                                    MoveTabPopup($"{ipcConfigId}Popup", ipcConfigs, i, Config.Save);
+
+
                                     if (!tab)
                                     {
                                         continue;
                                     }
 
-                                    var ipcConfig = generatorConfig.IpcConfigs[i];
-                                    var ipcIndexForCombo = ipcNamesForCombo.IndexOf(ipcConfig.Name);
+                                    
+                                    var ipcIndexForCombo = ipcNamesForCombo.IndexOf(IpcName);
                                     using (ImRaii.ItemWidth(500))
                                     {
-                                        if (ImGui.Combo($"Name###{ipcConfigsId}Name", ref ipcIndexForCombo, ipcNamesForCombo.ToArray(), ipcNamesForCombo.Count()))
+                                        if (ImGui.Combo($"Name###{ipcConfigId}Name", ref ipcIndexForCombo, ipcNamesForCombo.ToArray(), ipcNamesForCombo.Count()))
                                         {
                                             ipcConfig.Name = ipcNamesForCombo.ElementAt(ipcIndexForCombo);
                                             Config.Save();
@@ -250,9 +266,9 @@ public class GeneratorConfigTab : ConfigEntityTab
                                     ImGui.SameLine(600);
                                     using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudRed))
                                     {
-                                        if (ImGui.Button($"Delete###{ipcConfigsId}Delete") && KeyState[VirtualKey.CONTROL])
+                                        if (ImGui.Button($"Delete###{ipcConfigId}Delete") && KeyState[VirtualKey.CONTROL])
                                         {
-                                            generatorConfig.IpcConfigs.RemoveAt(i);
+                                            ipcConfigs.RemoveAt(i);
                                             Config.Save();
                                         }
                                         if (ImGui.IsItemHovered())
@@ -282,7 +298,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                                         using (ImRaii.ItemWidth(500))
                                         {
                                             var ipcArgs = ipcConfig.Args;
-                                            var ipcArgsInputId = $"{ipcConfigsId}Args";
+                                            var ipcArgsInputId = $"{ipcConfigId}Args";
                                             if (ImGui.InputText($"Args (JSON)###{ipcArgsInputId}", ref ipcArgs, ushort.MaxValue))
                                             {
                                                 ipcConfig.Args = ipcArgs;
