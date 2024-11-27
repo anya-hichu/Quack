@@ -246,12 +246,10 @@ public class GeneratorConfigTab : ConfigEntityTab
                                 {
                                     MoveTabPopup($"{ipcConfigId}Popup", ipcConfigs, i, Config.Save);
 
-
                                     if (!tab)
                                     {
                                         continue;
                                     }
-
                                     
                                     var ipcIndexForCombo = ipcNamesForCombo.IndexOf(IpcName);
                                     using (ImRaii.ItemWidth(500))
