@@ -5,19 +5,25 @@ var ARGS = 'Self';
 
 function main(designsJson) {
     const designs = JSON.parse(designsJson);
-    const macros = designs.map(d => {
-        const contentLines = [
-            '/penumbra bulktag disable {0} | all',
-            `/glamour apply ${d.id} | <me>; true`
-        ];
-
-        return {
+    const macros = designs.flatMap(d => {
+        const tags = ['glamour', 'design', 'apply'];
+        const applyCommand = `/glamour apply ${d.id} | <me>; true`;
+        return [{
             name: `Apply Design [${d.name}]`,
-            path: `Glamours/${d.path}/Apply`,
-            tags: d.tags.concat(['glamour', 'design', 'apply']),
+            path: `Glamours/${normalize(d.path)}/Apply`,
+            tags: tags,
             args: ARGS,
-            content: contentLines.join("\n")
-        }
-    })
+            content: ['/penumbra bulktag disable {0} | all', applyCommand].join("\n")
+        }, {
+            name: `Apply Partial Design [${d.name}]`,
+            path: `Glamours/${normalize(d.path)}/Apply [partial]`,
+            tags: tags.concat(['partial']),
+            content: applyCommand
+        }]
+    });
     return JSON.stringify(macros);
+}
+
+function normalize(path) {
+    return path.replaceAll('\\', '|');
 }

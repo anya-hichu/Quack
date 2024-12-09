@@ -8,7 +8,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 5;
+    public static readonly int DEFAULTS_VERSION = 6;
     private static readonly List<GeneratorConfig> DEFAULTS = [
         new() {
             Name = $"Customize Profiles (V{DEFAULTS_VERSION})", 
@@ -56,7 +56,7 @@ public class GeneratorConfig
         },
         new() {
             Name = $"Moodles (V{DEFAULTS_VERSION})",
-            IpcConfigs = [new() { Name = "Moodles.GetRegisteredMoodlesInfo" }],
+            IpcConfigs = [new() { Name = "Moodles.GetRegisteredMoodles" }],
             Script = Properties.Resources.MoodlesJsContent
         },
         new() {
