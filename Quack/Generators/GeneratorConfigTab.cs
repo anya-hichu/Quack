@@ -218,7 +218,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 }
 
                 var ipcConfigsId = $"{generatorConfigId}IpcConfigsHeader";
-                if (ImGui.CollapsingHeader($"IPCs###{ipcConfigsId}"))
+                if (ImGui.CollapsingHeader($"IPCs###{ipcConfigsId}", ImGuiTreeNodeFlags.DefaultOpen))
                 {
                     using (ImRaii.PushIndent())
                     {
