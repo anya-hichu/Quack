@@ -7,6 +7,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using ImGuiNET;
 using Lumina.Excel.Sheets;
 using Quack.Chat;
 using Quack.Configs;
@@ -17,12 +18,15 @@ using Quack.Mains;
 using Quack.Schedulers;
 using Quack.Utils;
 using SQLite;
+using System.Diagnostics;
 using System.IO;
 
 namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
 {
+    private static readonly string RELEASES_URL = "https://github.com/anya-hichu/Quack/releases";
+
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, exec and cancel";
     private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path or Command]( [Formatting (false/true/format)])?( [Argument Value])*";
@@ -92,11 +96,14 @@ public sealed class Plugin : IDalamudPlugin
 
         MainWindow = new(cachedMacros, Config, macroExecutionState, MacroExecutor, MacroTable, PluginLog)
         {
-            TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, Click = _ => ToggleConfigUI() }]
+            TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, ShowTooltip = () => ImGui.SetTooltip("Toggle Config Window"), Click = _ => ToggleConfigUI() }]
         };
         ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager)
         {
-            TitleBarButtons = [new() { Icon = FontAwesomeIcon.ListAlt, Click = _ => ToggleMainUI() }]
+            TitleBarButtons = [
+                new() { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = () => ImGui.SetTooltip("View Changelogs (Browser)"), Click = _ => OpenReleasesUrl() },
+                new() { Icon = FontAwesomeIcon.ListAlt, ShowTooltip = () => ImGui.SetTooltip("Toggle Search Window"), Click = _ => ToggleMainUI() },
+            ]
         };
 
         WindowSystem.AddWindow(MainWindow);
@@ -274,5 +281,10 @@ public sealed class Plugin : IDalamudPlugin
             return false;
         }
         return true;
+    }
+
+    private static void OpenReleasesUrl()
+    {
+        Process.Start(new ProcessStartInfo() { FileName = RELEASES_URL, UseShellExecute = true });
     }
 }
