@@ -8,7 +8,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 6;
+    public static readonly int DEFAULTS_VERSION = 7;
     private static readonly List<GeneratorConfig> DEFAULTS = [
         new() {
             Name = $"Customize Profiles (V{DEFAULTS_VERSION})", 
