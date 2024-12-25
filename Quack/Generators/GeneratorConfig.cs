@@ -8,8 +8,13 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 7;
+    public static readonly int DEFAULTS_VERSION = 8;
     private static readonly List<GeneratorConfig> DEFAULTS = [
+        new() {
+            Name = $"Addresses (V{DEFAULTS_VERSION})",
+            IpcConfigs = [new() { Name = LifestreamIpc.ADDRESS_LIST }],
+            Script = Properties.Resources.AddressesJsContent
+        },
         new() {
             Name = $"Customize Profiles (V{DEFAULTS_VERSION})", 
             IpcConfigs = [new() { Name = "CustomizePlus.Profile.GetList" }],

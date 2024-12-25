@@ -25,15 +25,6 @@ public class PenumbraIpc : IDisposable
         public string[] LocalTags { get; set; } = [];
     }
 
-    public class ModData(string dir, string name, string path, string[] localTags, Dictionary<string, object> settings)
-    {
-        public string dir = dir;
-        public string name = name;
-        public string path = path;
-        public string[] localTags = localTags;
-        public Dictionary<string, object> settings = settings;
-    }
-
     public static readonly string MOD_LIST = "Quack.Penumbra.GetModList";
     public static readonly string MOD_LIST_WITH_SETTINGS = "Quack.Penumbra.GetModListWithSettings";
 
@@ -48,7 +39,6 @@ public class PenumbraIpc : IDisposable
 
     private ICallGateProvider<Dictionary<string, object>[]> GetModListProvider { get; init; }
     private ICallGateProvider<Dictionary<string, object>[]> GetModListWithSettingsProvider { get; init; }
-    private ICallGateProvider<Dictionary<string, string>[]> GetModListWithSettingsJsonProvider { get; init; }
 
     public PenumbraIpc(IDalamudPluginInterface pluginInterface, IPluginLog pluginLog)
     {
@@ -108,13 +98,13 @@ public class PenumbraIpc : IDisposable
                 }
                 else
                 {
-                    throw new FileNotFoundException($"Failed to find penumbra local tag infos file at #{Path.GetRelativePath(PluginConfigsDirectory, SortOrderConfigPath)}");
+                    throw new FileNotFoundException($"Failed to find penumbra local tag infos file at {Path.GetRelativePath(PluginConfigsDirectory, SortOrderConfigPath)}");
                 }
             }).ToArray();
         }
         else
         {
-            throw new FileNotFoundException($"Failed to find penumbra path infos file at #{SortOrderConfigPath}");
+            throw new FileNotFoundException($"Failed to find penumbra path infos file at {SortOrderConfigPath}");
         }
     }
 
@@ -155,7 +145,7 @@ public class PenumbraIpc : IDisposable
             }
             else
             {
-                throw new FileNotFoundException($"Failed to find penumbra settings file at #{defaultSettingsPath}");
+                throw new FileNotFoundException($"Failed to find penumbra settings file at {defaultSettingsPath}");
             }
         }).ToArray();
     }

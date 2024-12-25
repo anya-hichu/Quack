@@ -55,6 +55,7 @@ public sealed class Plugin : IDalamudPlugin
     private LocalPlayerIpc LocalPlayerIpc { get; init; }
     private MacrosIpc MacrosIpc { get; init; }
     private PenumbraIpc PenumbraIpc { get; init; }
+    private LifestreamIpc LifestreamIpc { get; init; }
 
     private MacroExecutor MacroExecutor { get; init; }
     private MainWindowKeyBind MainWindowKeyBind { get; init; }
@@ -125,6 +126,7 @@ public sealed class Plugin : IDalamudPlugin
         LocalPlayerIpc = new(PluginInterface, ClientState);
         MacrosIpc = new(PluginInterface);
         PenumbraIpc = new(PluginInterface, PluginLog);
+        LifestreamIpc = new(PluginInterface, DataManager.GetExcelSheet<World>()!);
 
         MainWindowKeyBind = new(ToggleMainUI, Config, Framework, KeyState);
         MacroCommands = new(cachedMacros, ChatGui, Config, CommandManager, MacroExecutor, MacroTable);
@@ -147,6 +149,7 @@ public sealed class Plugin : IDalamudPlugin
         LocalPlayerIpc.Dispose();
         MacrosIpc.Dispose();
         PenumbraIpc.Dispose();
+        LifestreamIpc.Dispose();
 
         MainWindowKeyBind.Dispose();
         MacroCommands.Dispose();
