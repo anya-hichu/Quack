@@ -46,7 +46,7 @@ public class MacroConfigTabState : IDisposable
 
         if (MaybeCollectionConfig != null)
         {
-            macros = new(macros.Where(macro => MaybeCollectionConfig.Tags.IsSubsetOf(macro.Tags)));
+            macros = new(macros.Where(MaybeCollectionConfig.Matches));
         }
 
         foreach (var macro in macros)

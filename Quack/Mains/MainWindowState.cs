@@ -47,7 +47,7 @@ public class MainWindowState : IDisposable
             var macros = MacroTable.Search(query);
 
             // Refilter to exclude partial matches (done in 2 steps for performance reasons)
-            FilteredMacros = new(macros.Where(macro => MaybeCollectionConfig.Tags.IsSubsetOf(macro.Tags)), MacroComparer.INSTANCE);
+            FilteredMacros = new(macros.Where(MaybeCollectionConfig.Matches), MacroComparer.INSTANCE);
         }
     }
 

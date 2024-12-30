@@ -127,7 +127,7 @@ public class MainWindow : Window, IDisposable
                     var macro = state.FilteredMacros.ElementAt(i);
                     if (ImGui.TableNextColumn())
                     {
-                        using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(c => c.Tags.IsSubsetOf(macro.Tags), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
+                        using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(collection => collection.Matches(macro), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
                         {
                             ImGui.Text(macro.Name);
                         }

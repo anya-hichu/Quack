@@ -543,7 +543,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
 
                 if (CachedMacros.FindFirst(m => m.Path == treeNode.Node, out var macro))
                 {
-                    using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(c => c.Tags.IsSubsetOf(macro.Tags), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
+                    using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(collection => collection.Matches(macro), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
                     {
                         using (ImRaii.TreeNode($"{(name.IsNullOrWhitespace() ? BLANK_NAME : name)}###pathNode{hash}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | (state.SelectedMacros.Contains(macro) ? ImGuiTreeNodeFlags.Selected : ImGuiTreeNodeFlags.None)))
                         {

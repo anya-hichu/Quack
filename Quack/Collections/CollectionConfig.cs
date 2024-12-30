@@ -1,4 +1,5 @@
 using Dalamud.Interface.Colors;
+using Quack.Macros;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -12,4 +13,9 @@ public class CollectionConfig
     public HashSet<string> Tags { get; set; } = [];
     public Vector4 Color { get; set; } = ImGuiColors.DalamudWhite;
     public bool Selectable { get; set; } = true;
+
+    public bool Matches(Macro macro)
+    {
+        return Tags.IsSubsetOf(macro.Tags);
+    }
 }
