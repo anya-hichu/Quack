@@ -7,12 +7,13 @@ function main(modsJson) {
     const mods = JSON.parse(modsJson);
 
     const macros = mods.flatMap(m => {
+        const tags = ['mod'].concat(m.favorite ? ['favorite'] : []);
         return m.settings.groupSettings.flatMap(s => {
-            var isMulti = s.type == "Multi"
+            const isMulti = s.type == "Multi"
             const groupMacros = isMulti ? [{
                 name: `Clear Option Group [${s.name}]`,
                 path: `Mods/${m.path}/Settings/${escape(s.name)}/Clear`,
-                tags: ['mod', 'options', 'clear'],
+                tags: tags.concat(['options', 'clear']),
                 args: ARGS,
                 content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" =`
             }] : []; 
@@ -21,19 +22,19 @@ function main(modsJson) {
                     return [{
                         name: `Enable Exclusively Option [${o.name}]`,
                         path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable [exclusive]`,
-                        tags: ['mod', 'option', 'enable', 'exclusive'],
+                        tags: tags.concat(['option', 'enable', 'exclusive']),
                         args: ARGS,
                         content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
                     }, {
                         name: `Enable Option [${o.name}]`,
                         path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable`,
-                        tags: ['mod', 'option', 'enable'],
+                        tags: tags.concat(['mod', 'option', 'enable']),
                         args: ARGS,
                         content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" += "${o.name}"`
                     }, {
                         name: `Disable Option [${o.name}]`,
                         path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Disable`,
-                        tags: ['mod', 'option', 'disable'],
+                        tags: tags.concat(['mod', 'option', 'disable']),
                         args: ARGS,
                         content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" -= "${o.name}"`
                     }];
@@ -41,7 +42,7 @@ function main(modsJson) {
                     return [{
                         name: `Enable Option [${o.name}]`,
                         path: `Mods/${normalize(m.path)}/Settings/${escape(s.name)}/Options/${escape(o.name)}/Enable`,
-                        tags: ['mod', 'option', 'enable'],
+                        tags: tags.concat(['mod', 'option', 'enable']),
                         args: ARGS,
                         content: `/modset {0} "${m.dir}" "${m.name}" "${s.name}" = "${o.name}"`
                     }];

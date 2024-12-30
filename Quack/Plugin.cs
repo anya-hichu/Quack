@@ -16,6 +16,7 @@ using Quack.Ipcs;
 using Quack.Macros;
 using Quack.Mains;
 using Quack.Schedulers;
+using Quack.UI;
 using Quack.Utils;
 using SQLite;
 using System.Diagnostics;
@@ -95,17 +96,19 @@ public sealed class Plugin : IDalamudPlugin
         MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
         var macroExecutionState = new MacroExecutionState(Config, MacroExecutor);
 
-        MainWindow = new(cachedMacros, Config, macroExecutionState, MacroExecutor, MacroTable, PluginLog)
+        var uiEvents = new UIEvents(PluginLog);
+        MainWindow = new(cachedMacros, Config, macroExecutionState, MacroExecutor, MacroTable, PluginLog, uiEvents)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, ShowTooltip = () => ImGui.SetTooltip("Toggle Config Window"), Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager)
+        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager, uiEvents)
         {
             TitleBarButtons = [
                 new() { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = () => ImGui.SetTooltip("View Changelogs (Browser)"), Click = _ => OpenReleasesUrl() },
                 new() { Icon = FontAwesomeIcon.ListAlt, ShowTooltip = () => ImGui.SetTooltip("Toggle Search Window"), Click = _ => ToggleMainUI() },
             ]
         };
+
 
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(ConfigWindow);

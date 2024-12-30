@@ -12,6 +12,7 @@ using Quack.Configs;
 using Quack.Exports;
 using Quack.Macros;
 using Quack.Schedulers;
+using Quack.UI;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
@@ -476,7 +477,7 @@ public class GeneratorConfigTab : ConfigEntityTab
 
                         var visibleFilteredGeneratedMacros = showSelectedOnly ? state.FilteredGeneratedMacros.Intersect(state.SelectedGeneratedMacros, MacroComparer.INSTANCE) : state.FilteredGeneratedMacros;
 
-                        var clipper = ListClipper.Build();
+                        var clipper = UIListClipper.Build();
                         clipper.Begin(visibleFilteredGeneratedMacros.Count(), 27);
 
                         var updatedSelectedGeneratedMacros = state.SelectedGeneratedMacros.ToHashSet(MacroComparer.INSTANCE);

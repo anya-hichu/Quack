@@ -1,5 +1,6 @@
 using Dalamud.Configuration;
 using Dalamud.Game.ClientState.Keys;
+using Quack.Collections;
 using Quack.Generators;
 using Quack.Macros;
 using Quack.Schedulers;
@@ -23,6 +24,8 @@ public class Config : IPluginConfiguration
     public List<GeneratorConfig> GeneratorConfigs { get; set; } = [];
 
     public List<SchedulerConfig> SchedulerConfigs { get; set; } = [];
+
+    public List<CollectionConfig> CollectionConfigs { get; set; } = [];
 
     public void Save()
     {

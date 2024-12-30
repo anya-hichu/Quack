@@ -1,11 +1,14 @@
+using Dalamud.Interface;
 using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using ImGuiNET;
 using Quack.Configs;
 using Quack.Macros;
-using Quack.Utils;
+using Quack.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,30 +18,35 @@ namespace Quack.Mains;
 
 public class MainWindow : Window, IDisposable
 {
+    private static readonly string ANY_COLLECTION = "All";
+
     private HashSet<Macro> CachedMacros { get; init; }
+    private Config Config { get; init; }
     private MacroExecutionState MacroExecutionState { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
     private MacroTable MacroTable { get; init; }
-    private Config Config { get; init; }
     private IPluginLog PluginLog { get; init; }
+    private UIEvents UIEvents { get; init; }
+
     private MainWindowState MainWindowState { get; init; }
 
-    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog) : base("Quack###mainWindow")
+    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog, UIEvents uiEvents) : base("Quack###mainWindow")
     {
-        SizeConstraints = new WindowSizeConstraints
+        SizeConstraints = new()
         {
-            MinimumSize = new Vector2(300, 200),
-            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+            MinimumSize = new(300, 200),
+            MaximumSize = new(float.MaxValue, float.MaxValue)
         };
 
         CachedMacros = cachedMacros;
         Config = config;
+        UIEvents = uiEvents;
         MacroExecutor = macroExecutor;
         MacroExecutionState = macroExecutionState;
         MacroTable = macroTable;
         PluginLog = pluginLog;
 
-        MainWindowState = new(MacroTable);
+        MainWindowState = new(MacroTable, UIEvents);
     }
 
     public void Dispose()
@@ -49,17 +57,17 @@ public class MainWindow : Window, IDisposable
     public override void Draw()
     {
         var state = MainWindowState;
-        using (ImRaii.ItemWidth(ImGui.GetWindowWidth() - 225))
+        using (ImRaii.ItemWidth(ImGui.GetWindowWidth() - 320))
         {
             var query = state.Query;
-            if (ImGui.InputTextWithHint($"Query ({state.FilteredMacros.Count}/{CachedMacros.Count})###filter", "Search Query (min 3 chars)", ref query, ushort.MaxValue))
+            if (ImGui.InputTextWithHint($"Query###filter", "Search Query (min 3 chars)", ref query, ushort.MaxValue))
             {
                 state.Query = query;
                 state.Update();
             }
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Indexed columns with trigram: name, path, command, tags\n\nExample queries:\n - PEDRO\n - cute tags:design\n - ^Custom tags:throw NOT cheese\n\nSee FTS5 query documentation for syntax and more examples: https://www.sqlite.org/fts5.html");
+                ImGui.SetTooltip($"Result count: {state.FilteredMacros.Count}/{CachedMacros.Count}\n\nIndexed columns with trigram: name, path, command, tags\n\nExample queries:\n - PEDRO\n - cute tags:design\n - ^Custom tags:throw NOT cheese\n\nSee FTS5 query documentation for syntax and more examples: https://www.sqlite.org/fts5.html");
             }
         }
 
@@ -68,6 +76,25 @@ public class MainWindow : Window, IDisposable
         {
             state.Query = string.Empty;
             state.Update();
+        }
+
+        ImGui.SameLine();
+
+        var collectionNames = Config.CollectionConfigs.Where(c => c.Selectable).Select(c => c.Name).Prepend(ANY_COLLECTION);
+        var collectionNameIndex = state.MaybeCollectionConfig == null ? 0 : collectionNames.IndexOf(state.MaybeCollectionConfig.Name);
+
+        using (ImRaii.ItemWidth(140))
+        {
+            if (ImGui.Combo($"###collectionName", ref collectionNameIndex, collectionNames.ToArray(), collectionNames.Count()))
+            {
+                var collectionName = collectionNames.ElementAt(collectionNameIndex);
+                state.MaybeCollectionConfig = collectionName == ANY_COLLECTION ? null : Config.CollectionConfigs.Find(c => c.Name == collectionName)!;
+                state.Update();
+            }
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Collection Selection");
+            }
         }
 
         if (MacroExecutor.HasRunningTasks())
@@ -91,7 +118,7 @@ public class MainWindow : Window, IDisposable
             ImGui.TableSetupColumn($"Actions###{queriedMacrosId}Actions", ImGuiTableColumnFlags.None, 2);
             ImGui.TableHeadersRow();
 
-            var clipper = ListClipper.Build();
+            var clipper = UIListClipper.Build();
             clipper.Begin(state.FilteredMacros.Count, 27);
             while (clipper.Step())
             {
@@ -100,7 +127,10 @@ public class MainWindow : Window, IDisposable
                     var macro = state.FilteredMacros.ElementAt(i);
                     if (ImGui.TableNextColumn())
                     {
-                        ImGui.Text(macro.Name);
+                        using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(c => c.Tags.IsSubsetOf(macro.Tags), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
+                        {
+                            ImGui.Text(macro.Name);
+                        }
                         if (ImGui.IsItemHovered())
                         {
                             ImGui.SetTooltip(macro.Name);
@@ -128,7 +158,16 @@ public class MainWindow : Window, IDisposable
 
                     if (ImGui.TableNextColumn())
                     {
-                        MacroExecutionState.Button($"{queriedMacrosId}{i}Execution", macro);
+                        MacroExecutionState.Button($"{queriedMacrosId}{i}Execute", macro);
+                        ImGui.SameLine();
+                        if (ImGuiComponents.IconButton($"{queriedMacrosId}{i}Edit", FontAwesomeIcon.Edit))
+                        {
+                            UIEvents.InvokeEdit(macro);
+                        }
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip($"Edit macro [{macro.Name}]");
+                        }
                     }
 
                     ImGui.TableNextRow();

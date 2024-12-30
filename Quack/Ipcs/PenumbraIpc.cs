@@ -23,6 +23,8 @@ public class PenumbraIpc : IDisposable
     {
         [JsonProperty(Required = Required.Always)]
         public string[] LocalTags { get; set; } = [];
+        [JsonProperty(Required = Required.Always)]
+        public bool Favorite { get; set; } = false;
     }
 
     public static readonly string MOD_LIST = "Quack.Penumbra.GetModList";
@@ -93,7 +95,8 @@ public class PenumbraIpc : IDisposable
                         { "dir", d.Key },
                         { "name", d.Value },
                         { "path", sortOrderConfig.Data.GetValueOrDefault(d.Key, d.Value) }, // Root items don't have a path
-                        { "localTags", modDataConfig.LocalTags }
+                        { "localTags", modDataConfig.LocalTags },
+                        { "favorite", modDataConfig.Favorite }
                     };
                 }
                 else

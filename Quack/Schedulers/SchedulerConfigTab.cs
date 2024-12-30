@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Quack.Chat;
 using Quack.Configs;
 using Quack.Exports;
+using Quack.UI;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
@@ -377,7 +378,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                             ImGui.TableSetupColumn($"Command###{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
                             ImGui.TableHeadersRow();
 
-                            var clipper = ListClipper.Build();
+                            var clipper = UIListClipper.Build();
                             var entries = schedulerConfig.TriggerConfigs.SelectMany(TriggerConfig =>
                             {
                                 return TriggerConfig.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(Occurrence =>

@@ -6,7 +6,7 @@ var ARGS = 'Self';
 function main(designsJson) {
     const designs = JSON.parse(designsJson);
     const macros = designs.flatMap(d => {
-        const tags = ['glamour', 'design', 'apply'];
+        const tags = ['glamour', 'design', 'apply', d.tags, d.color ? [d.color.toLowerCase()] : []].flat();
         const applyCommand = `/glamour apply ${d.id} | <me>; true`;
         return [{
             name: `Apply Design [${d.name}]`,

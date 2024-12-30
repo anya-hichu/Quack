@@ -1,8 +1,8 @@
 using ImGuiNET;
 
-namespace Quack.Utils;
+namespace Quack.UI;
 
-public static class ListClipper
+public static class UIListClipper
 {
     public static unsafe ImGuiListClipperPtr Build()
     {

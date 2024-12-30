@@ -1,19 +1,17 @@
-using Dalamud;
-using Dalamud.Game.Gui.Toast;
 using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Interface.ImGuiNotification.Internal;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
+using ImGuiNET;
 using Quack.Chat;
 using Quack.Generators;
 using Quack.Macros;
 using Quack.Schedulers;
+using Quack.UI;
 using Quack.Utils;
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 
 namespace Quack.Configs;
 
@@ -23,27 +21,33 @@ public class ConfigWindow : Window, IDisposable
 
     private ConfigGeneralTab GeneralTab { get; init; }
     private MacroConfigTab MacroConfigTab { get; init; }
+    private ImGuiTabItemFlags MacroConfigTabFlags { get; set; } = ImGuiTabItemFlags.None;
+    private UIEvents UIEvents { get; init; }
     private SchedulerConfigTab SchedulerTab { get; init; }
     private GeneratorConfigTab GeneratorTab { get; init; }
 
     public ConfigWindow(HashSet<Macro> cachedMacros, CallGate callGate, ChatSender chatSender, Config config, ICommandManager commandManager, Debouncers debouncers, 
                         IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, MacroTableQueue macroTableQueue, 
-                        IPluginLog pluginLog, INotificationManager notificationManager) : base("Quack Config###configWindow")
+                        IPluginLog pluginLog, INotificationManager notificationManager, UIEvents uiEvents) : base("Quack Config###configWindow")
     {
-        SizeConstraints = new WindowSizeConstraints
+        SizeConstraints = new()
         {
-            MinimumSize = new Vector2(1070, 400),
-            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+            MinimumSize = new(1070, 400),
+            MaximumSize = new(float.MaxValue, float.MaxValue)
         };
 
-        GeneralTab = new(config, keyState);
-        MacroConfigTab = new(cachedMacros, config, commandManager, debouncers, FileDialogManager, keyState, macroExecutionState, macroExecutor, macroTable, macroTableQueue, pluginLog, notificationManager);
+        GeneralTab = new(config, debouncers, FileDialogManager, keyState, notificationManager, uiEvents);
+        MacroConfigTab = new(cachedMacros, config, commandManager, debouncers, FileDialogManager, keyState, macroExecutionState, macroExecutor, macroTable, macroTableQueue, pluginLog, notificationManager, uiEvents);
         SchedulerTab = new(chatSender, config, debouncers, FileDialogManager, keyState, pluginLog, notificationManager);
         GeneratorTab = new(cachedMacros, callGate, config, debouncers, FileDialogManager, keyState, macroTableQueue, pluginLog, notificationManager);
+        
+        UIEvents = uiEvents;
+        UIEvents.OnMacroEdit += EditMacro;
     }
 
     public void Dispose()
     {
+        UIEvents.OnMacroEdit -= EditMacro;
         MacroConfigTab.Dispose();
     }
 
@@ -51,20 +55,30 @@ public class ConfigWindow : Window, IDisposable
     {
         using (ImRaii.TabBar("configTabs"))
         {
-            WithTab(GeneralTab.Draw, "General###generalConfigTab");
-            WithTab(MacroConfigTab.Draw, "Macros###macroConfigTab");
-            WithTab(SchedulerTab.Draw, "Schedulers###schedulerConfigTab");
-            WithTab(GeneratorTab.Draw, "Generators###generatorConfigTab");
+            WithTab(GeneralTab.Draw, "General###generalConfigTab", ImGuiTabItemFlags.None);
+            WithTab(MacroConfigTab.Draw, "Macros###macroConfigTab", MacroConfigTabFlags);
+            WithTab(SchedulerTab.Draw, "Schedulers###schedulerConfigTab", ImGuiTabItemFlags.None);
+            WithTab(GeneratorTab.Draw, "Generators###generatorConfigTab", ImGuiTabItemFlags.None);
         }
         FileDialogManager.Draw();
+        MacroConfigTabFlags = ImGuiTabItemFlags.None;
     }
 
-    private static void WithTab(Action callback, string label)
+    private static void WithTab(Action callback, string label, ImGuiTabItemFlags flags)
     {
-        using var tab = ImRaii.TabItem(label);
+        using var tab = ImRaii.TabItem(label, flags);
         if (tab)
         {
             callback();
         }
+    }
+
+    private void EditMacro(Macro macro)
+    {
+        if(!IsOpen)
+        {
+            Toggle();
+        }
+        MacroConfigTabFlags = ImGuiTabItemFlags.SetSelected;
     }
 }

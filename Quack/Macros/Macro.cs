@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 
 namespace Quack.Macros;
 
@@ -19,7 +20,7 @@ public class Macro
     public string Args { get; set; } = string.Empty;
 
     [JsonProperty("tags")]
-    public string[] Tags { get; set; } = [];
+    public HashSet<string> Tags { get; set; } = [];
 
     [JsonProperty("content")]
     public string Content { get; set; } = string.Empty;

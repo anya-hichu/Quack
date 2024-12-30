@@ -218,7 +218,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
         {
             Name = macroRecord.Name!,
             Path = macroRecord.Path!,
-            Tags = macroRecord.Tags!.Split(','),
+            Tags = new(macroRecord.Tags!.Split(',')),
             Command = macroRecord.Command!,
             Args = macroRecord.Args!,
             Content = macroRecord.Content!,

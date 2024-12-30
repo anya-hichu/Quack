@@ -21,6 +21,8 @@ public class GlamourerIpc : IDisposable
     {
         [JsonProperty(Required = Required.Always)]
         public string[] Tags { get; set; } = [];
+        [JsonProperty(Required = Required.Always)]
+        public string Color { get; set; } = string.Empty;
     }
 
     public static readonly string DESIGN_LIST = "Quack.Glamourer.GetDesignList";
@@ -82,7 +84,8 @@ public class GlamourerIpc : IDisposable
                         { "id", d.Key},
                         { "name", d.Value},
                         { "path", sortOrderConfig.Data.GetValueOrDefault(d.Key, d.Value)}, // Root items don't have a path
-                        { "tags", designConfig.Tags}
+                        { "tags", designConfig.Tags },
+                        { "color", designConfig.Color }
                     };
                 }
                 else

@@ -25,6 +25,8 @@ function main(modsJson, emotesJson) {
     const emotes = JSON.parse(emotesJson);
 
     const customEmoteMacros = mods.flatMap(mod => {
+        const tags = ['mod', 'emote'].concat(mod.favorite ? ['favorite'] : []);
+
         const modGamePaths = Object.keys(mod.settings.files || {});
         const modCommandsWithPoseIndex = lookupCommandsWithPoseIndex(emotes, modGamePaths);
 
@@ -41,7 +43,7 @@ function main(modsJson, emotesJson) {
             return {
                 name: `Custom Emote [${mod.name}] [${commandPath}]`,
                 path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
-                tags: ['mod', 'emote', command],
+                tags: tags.concat([command]),
                 args: ARGS,
                 content: contentLines.join("\n")
             };
@@ -66,7 +68,7 @@ function main(modsJson, emotesJson) {
                     return {
                         name: `Custom Emote [${option.name}] [${commandPath}]`,
                         path: `Mods/${normalize(mod.path)}/Settings/${escape(setting.name)}/Options/${escape(option.name)}/Emotes${commandPath}`,
-                        tags: ['mod', 'emote', 'option', command],
+                        tags: tags.concat(['option', command]),
                         args: ARGS,
                         content: contentLines.join("\n")
                     };
