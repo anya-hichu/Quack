@@ -27,7 +27,7 @@ public class MacroConfigTabState : IDisposable
         UIEvents = uiEvents;
 
         Update();
-        UIEvents.OnMacroEdit += EditMacro;
+        UIEvents.OnMacroEdit += OnMacroEdit;
         MacroTable.OnChange += Update;
         UIEvents.OnCollectionConfigTagsEdit += OnTagsEdit;
     }
@@ -36,7 +36,7 @@ public class MacroConfigTabState : IDisposable
     {
         UIEvents.OnCollectionConfigTagsEdit -= OnTagsEdit;
         MacroTable.OnChange -= Update;
-        UIEvents.OnMacroEdit -= EditMacro;
+        UIEvents.OnMacroEdit -= OnMacroEdit;
     }
 
     public void Update()
@@ -70,7 +70,7 @@ public class MacroConfigTabState : IDisposable
         PathNodes = pathNodes;
     }
 
-    private void EditMacro(Macro macro)
+    private void OnMacroEdit(Macro macro)
     {
         SelectedMacros = new([macro], MacroComparer.INSTANCE);
     }
