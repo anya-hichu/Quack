@@ -17,8 +17,11 @@ Installable using my custom repository (instructions here: https://github.com/an
 #### Macros
 ![macros config](images/image3.png)
 
+#### Schedulers
+![generators config](images/image5.png)
+
 #### Generators
-![generators config](images/image4.png)
+![generators config](images/image5.png)
 
 ## Commands
 
