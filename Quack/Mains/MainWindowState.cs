@@ -24,12 +24,12 @@ public class MainWindowState : IDisposable
 
         Update();
         MacroTable.OnChange += Update;
-        UIEvents.OnCollectionConfigTagsEdit += OnTagsEdit;
+        UIEvents.OnCollectionConfigTagsUpdate += OnTagsEdit;
     }
 
     public void Dispose()
     {
-        UIEvents.OnCollectionConfigTagsEdit -= OnTagsEdit;
+        UIEvents.OnCollectionConfigTagsUpdate -= OnTagsEdit;
         MacroTable.OnChange -= Update;
     }
 

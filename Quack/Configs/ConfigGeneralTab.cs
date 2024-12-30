@@ -132,7 +132,7 @@ public class ConfigGeneralTab : ConfigEntityTab
                                     collectionConfig.Tags = new(tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
                                     Debounce(tagInputId, () =>
                                     {
-                                        UIEvents.InvokeTagsEdit(collectionConfig);
+                                        UIEvents.NotifyTagsUpdate(collectionConfig);
                                         Config.Save();
                                     });
                                 }

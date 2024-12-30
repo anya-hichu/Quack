@@ -52,12 +52,15 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
                     }
                 }
 
-                if (isExecutable && ImGui.Button($"Execute###{baseId}Execute"))
+                if (isExecutable)
                 {
-                    macroExecution.ExecuteTask();
-                    ImGui.CloseCurrentPopup();
-                    MacroExecutionByMacro.Remove(macro);
-                    OpenPopupIds.Remove(advancedExecutionPopupId);
+                    if (ImGui.Button($"Execute###{baseId}Execute"))
+                    {
+                        macroExecution.ExecuteTask();
+                        ImGui.CloseCurrentPopup();
+                        MacroExecutionByMacro.Remove(macro);
+                        OpenPopupIds.Remove(advancedExecutionPopupId);
+                    }
                 }
                 else
                 {
@@ -74,7 +77,7 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
         ImGui.Button($"Execute###{baseId}Execute");
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip($"Click <RIGHT> for advanced execution options for macro [{macro.Name}]");
+            ImGui.SetTooltip($"Click <RIGHT> for advanced execution of macro [{macro.Name}]");
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
         {

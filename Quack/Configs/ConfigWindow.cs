@@ -42,12 +42,12 @@ public class ConfigWindow : Window, IDisposable
         GeneratorTab = new(cachedMacros, callGate, config, debouncers, FileDialogManager, keyState, macroTableQueue, pluginLog, notificationManager);
         
         UIEvents = uiEvents;
-        UIEvents.OnMacroEdit += OnMacroEdit;
+        UIEvents.OnMacroEditRequest += OnMacroEditRequest;
     }
 
     public void Dispose()
     {
-        UIEvents.OnMacroEdit -= OnMacroEdit;
+        UIEvents.OnMacroEditRequest -= OnMacroEditRequest;
         MacroConfigTab.Dispose();
     }
 
@@ -73,7 +73,7 @@ public class ConfigWindow : Window, IDisposable
         }
     }
 
-    private void OnMacroEdit(Macro macro)
+    private void OnMacroEditRequest(Macro macro)
     {
         if(!IsOpen)
         {

@@ -9,18 +9,18 @@ public class UIEvents(IPluginLog pluginLog)
 {
     private IPluginLog PluginLog { get; init; } = pluginLog;
 
-    public event Action<Macro>? OnMacroEdit;
-    public event Action<CollectionConfig>? OnCollectionConfigTagsEdit;
+    public event Action<Macro>? OnMacroEditRequest;
+    public event Action<CollectionConfig>? OnCollectionConfigTagsUpdate;
 
-    public void InvokeEdit(Macro macro)
+    public void NotifyEditRequest(Macro macro)
     {
-        PluginLog.Debug($"Invoked OnMacroEdit UI event with macro [{macro.Name}]");
-        OnMacroEdit?.Invoke(macro);
+        PluginLog.Debug($"Notify OnMacroEditRequest UI event for macro [{macro.Name}]");
+        OnMacroEditRequest?.Invoke(macro);
     }
 
-    public void InvokeTagsEdit(CollectionConfig collectionConfig)
+    public void NotifyTagsUpdate(CollectionConfig collectionConfig)
     {
-        PluginLog.Debug($"Invoked OnCollectionConfigTagsEdit UI event with collection [{collectionConfig.Name}]");
-        OnCollectionConfigTagsEdit?.Invoke(collectionConfig);
+        PluginLog.Debug($"Notify OnCollectionConfigTagsUpdate UI event for collection [{collectionConfig.Name}]");
+        OnCollectionConfigTagsUpdate?.Invoke(collectionConfig);
     }
 }

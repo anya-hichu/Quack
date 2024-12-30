@@ -8,7 +8,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 9;
+    public static readonly int DEFAULTS_VERSION = 10;
     private static readonly List<GeneratorConfig> DEFAULTS = [
         new() {
             Name = $"Addresses (V{DEFAULTS_VERSION})",

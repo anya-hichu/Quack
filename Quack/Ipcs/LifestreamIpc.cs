@@ -22,6 +22,12 @@ public class LifestreamIpc : IDisposable
         Shiro = 111,
     }
 
+    private enum PropertyType
+    {
+        House = 0,
+        Apartment = 1,
+    }
+
     private class AddressBookFileSystem
     {
         [JsonProperty(Required = Required.Always)]
@@ -36,7 +42,7 @@ public class LifestreamIpc : IDisposable
         public int World { get; set; } = 21;
         public City City { get; set; } = City.Goblet;
         public int Ward { get; set; } = 1;
-        public int PropertyType { get; set; } = 0;
+        public PropertyType PropertyType { get; set; } = PropertyType.House;
         public int Plot { get; set; } = 1;
         public int Apartment { get; set; } = 1;
         public bool ApartmentSubdivision { get; set; } = false;
@@ -121,7 +127,7 @@ public class LifestreamIpc : IDisposable
                         { "world", WorldSheet.First(w => w.RowId == entry.World).Name.ToString() },
                         { "city", entry.City.ToString() },
                         { "ward", entry.Ward },
-                        { "propertyType", entry.PropertyType },
+                        { "propertyType", entry.PropertyType.ToString() },
                         { "plot", entry.Plot },
                         { "apartment", entry.Apartment },
                         { "apartmentSubdivision", entry.ApartmentSubdivision },

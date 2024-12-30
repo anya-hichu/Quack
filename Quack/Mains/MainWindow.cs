@@ -162,7 +162,7 @@ public class MainWindow : Window, IDisposable
                         ImGui.SameLine();
                         if (ImGuiComponents.IconButton($"{queriedMacrosId}{i}Edit", FontAwesomeIcon.Edit))
                         {
-                            UIEvents.InvokeEdit(macro);
+                            UIEvents.NotifyEditRequest(macro);
                         }
                         if (ImGui.IsItemHovered())
                         {

@@ -27,16 +27,16 @@ public class MacroConfigTabState : IDisposable
         UIEvents = uiEvents;
 
         Update();
-        UIEvents.OnMacroEdit += OnMacroEdit;
         MacroTable.OnChange += Update;
-        UIEvents.OnCollectionConfigTagsEdit += OnTagsEdit;
+        UIEvents.OnMacroEditRequest += OnMacroEditRequest;
+        UIEvents.OnCollectionConfigTagsUpdate += OnCollectionConfigTagsUpdate;
     }
 
     public void Dispose()
     {
-        UIEvents.OnCollectionConfigTagsEdit -= OnTagsEdit;
+        UIEvents.OnCollectionConfigTagsUpdate -= OnCollectionConfigTagsUpdate;
+        UIEvents.OnMacroEditRequest -= OnMacroEditRequest;
         MacroTable.OnChange -= Update;
-        UIEvents.OnMacroEdit -= OnMacroEdit;
     }
 
     public void Update()
@@ -70,12 +70,12 @@ public class MacroConfigTabState : IDisposable
         PathNodes = pathNodes;
     }
 
-    private void OnMacroEdit(Macro macro)
+    private void OnMacroEditRequest(Macro macro)
     {
         SelectedMacros = new([macro], MacroComparer.INSTANCE);
     }
 
-    private void OnTagsEdit(CollectionConfig collectionConfig)
+    private void OnCollectionConfigTagsUpdate(CollectionConfig collectionConfig)
     {
         if (collectionConfig == MaybeCollectionConfig)
         {
