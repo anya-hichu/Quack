@@ -278,7 +278,9 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                 var tagInputId = $"{macroConfigId}Tags";
                 if (ImGui.InputText($"Tags (comma separated)###{tagInputId}", ref tags, ushort.MaxValue))
                 {
-                    selectedMacro.Tags = new(tags.Split(',').Select(t => t.Trim()));
+                    CachedMacros.Remove(selectedMacro);
+                    selectedMacro.Tags = new(tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+                    CachedMacros.Add(selectedMacro);
                     Debounce(tagInputId, () => MacroTableQueue.Update("tags", selectedMacro));
                 }
 

@@ -129,7 +129,7 @@ public class ConfigGeneralTab : ConfigEntityTab
                                 var tagInputId = $"{collectionConfigId}Tags";
                                 if (ImGui.InputText($"Tags (comma separated)###{tagInputId}", ref tags, ushort.MaxValue))
                                 {
-                                    collectionConfig.Tags = new(tags.Split(',', StringSplitOptions.TrimEntries));
+                                    collectionConfig.Tags = new(tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
                                     Debounce(tagInputId, () =>
                                     {
                                         UIEvents.InvokeTagsEdit(collectionConfig);
