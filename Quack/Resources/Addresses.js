@@ -1,3 +1,5 @@
+// Requires Lifestream plugin
+
 function main(addressListJson) {
     const addressList = JSON.parse(addressListJson);
     const macros = addressList.map(address => {
@@ -16,9 +18,9 @@ function serialize(address) {
     if (address.aliasEnabled) {
         return `${address.alias}`;
     } else if (address.propertyType == "House") {
-        return `${address.world}, ${address.city}, W${address.ward}, P${address.plot}`;
+        return `${address.world}, ${address.residentialDistrict}, W${address.ward}, P${address.plot}`;
     } else if (address.propertyType == "Apartment") {
-        return `${address.world}, ${address.city}, W${address.ward}${address.apartmentSubdivision ? ' sub' : ''}, A${address.apartment}`;
+        return `${address.world}, ${address.residentialDistrict}, W${address.ward}${address.apartmentSubdivision ? ' Subdivision' : ''}, A${address.apartment}`;
     } else {
         throw `Unsupported property type: ${address.propertyType}`;
     }

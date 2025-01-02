@@ -58,6 +58,7 @@ public sealed class Plugin : IDalamudPlugin
     private PenumbraIpc PenumbraIpc { get; init; }
     private LifestreamIpc LifestreamIpc { get; init; }
 
+    private MacroExecutionState MacroExecutionState { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
     private MainWindowKeyBind MainWindowKeyBind { get; init; }
     private MacroCommands MacroCommands { get; init; }
@@ -94,14 +95,14 @@ public sealed class Plugin : IDalamudPlugin
         Debouncers = new(PluginLog);
 
         MacroExecutor = new(ChatSender, MacroSharedLock, PluginLog);
-        var macroExecutionState = new MacroExecutionState(Config, MacroExecutor);
-
         var uiEvents = new UIEvents(PluginLog);
-        MainWindow = new(cachedMacros, Config, macroExecutionState, MacroExecutor, MacroTable, PluginLog, uiEvents)
+        MacroExecutionState = new MacroExecutionState(Config, MacroExecutor, uiEvents);
+
+        MainWindow = new(cachedMacros, Config, MacroExecutionState, MacroExecutor, MacroTable, uiEvents)
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, ShowTooltip = () => ImGui.SetTooltip("Toggle Config Window"), Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, macroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager, uiEvents)
+        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, MacroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager, uiEvents)
         {
             TitleBarButtons = [
                 new() { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = () => ImGui.SetTooltip("View Changelogs (Browser)"), Click = _ => OpenReleasesUrl() },
@@ -163,6 +164,7 @@ public sealed class Plugin : IDalamudPlugin
         Debouncers.Dispose();
 
         SchedulerTriggers.Dispose();
+        MacroExecutionState.Dispose();
     }
 
     private void OnCommand(string command, string args)

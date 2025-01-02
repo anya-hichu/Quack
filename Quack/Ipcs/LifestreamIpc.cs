@@ -13,13 +13,22 @@ namespace Quack.Ipcs;
 
 public class LifestreamIpc : IDisposable
 {
-    private enum City
+    public static readonly Dictionary<ResidentialAetheryteKind, string> ResidentialDistrictByCity = new()
     {
-        Goblet = 9,
-        Lb = 2,
-        Mist = 8,
-        Empy = 70,
-        Shiro = 111,
+        [ResidentialAetheryteKind.Gridania] = "Lavender Beds",
+        [ResidentialAetheryteKind.Limsa] = "Mist",
+        [ResidentialAetheryteKind.Uldah] = "Goblet",
+        [ResidentialAetheryteKind.Kugane] = "Shirogane",
+        [ResidentialAetheryteKind.Foundation] = "Empyreum",
+    };
+
+    public enum ResidentialAetheryteKind
+    {
+        Uldah = 9,
+        Gridania = 2,
+        Limsa = 8,
+        Foundation = 70,
+        Kugane = 111,
     }
 
     private enum PropertyType
@@ -40,7 +49,7 @@ public class LifestreamIpc : IDisposable
         // https://github.com/NightmareXIV/Lifestream/blob/2.3.2.8/Lifestream/Data/AddressBookEntry.cs
         public string Name { get; set; } = string.Empty;
         public int World { get; set; } = 21;
-        public City City { get; set; } = City.Goblet;
+        public ResidentialAetheryteKind City { get; set; } = ResidentialAetheryteKind.Uldah;
         public int Ward { get; set; } = 1;
         public PropertyType PropertyType { get; set; } = PropertyType.House;
         public int Plot { get; set; } = 1;
@@ -122,10 +131,12 @@ public class LifestreamIpc : IDisposable
 
             return addressBookFolder.Entries.Select(entry =>
             {
+                var residentialDistrict = ResidentialDistrictByCity[entry.City];
                 return new Dictionary<string, object>() {
                         { "name", entry.Name },
                         { "world", WorldSheet.First(w => w.RowId == entry.World).Name.ToString() },
-                        { "city", entry.City.ToString() },
+                        { "city", residentialDistrict }, // TODO: Remove (misnamed)
+                        { "residentialDistrict", residentialDistrict },
                         { "ward", entry.Ward },
                         { "propertyType", entry.PropertyType.ToString() },
                         { "plot", entry.Plot },

@@ -11,6 +11,7 @@ public class MacroConfigTabState : IDisposable
 {
     private static readonly char PATH_SEPARATOR = '/';
 
+    private ActionQueue ActionQueue { get; init; } = new();
     private HashSet<Macro> CachedMacros { get; init; }
     private MacroTable MacroTable { get; init; }
     private UIEvents UIEvents { get; init; }
@@ -41,33 +42,36 @@ public class MacroConfigTabState : IDisposable
 
     public void Update()
     {
-        var pathNodes = new HashSet<TreeNode<string>>(0, TreeNodeComparer<string>.INSTANCE);
-        var macros = MacroSearch.Lookup(CachedMacros, Filter);
-
-        if (MaybeCollectionConfig != null)
+        ActionQueue.Enqueue(() =>
         {
-            macros = new(macros.Where(MaybeCollectionConfig.Matches));
-        }
+            var pathNodes = new HashSet<TreeNode<string>>(0, TreeNodeComparer<string>.INSTANCE);
+            var macros = MacroSearch.Lookup(CachedMacros, Filter);
 
-        foreach (var macro in macros)
-        {
-            var current = pathNodes;
-            var parts = macro.Path.Split(PATH_SEPARATOR);
-            for (var take = 1; take <= parts.Length; take++)
+            if (MaybeCollectionConfig != null)
             {
-                var newNode = new TreeNode<string>(string.Join(PATH_SEPARATOR, parts.Take(take)));
-                if (current.TryGetValue(newNode, out var existingNode))
+                macros = new(macros.Where(MaybeCollectionConfig.Matches));
+            }
+
+            foreach (var macro in macros)
+            {
+                var current = pathNodes;
+                var parts = macro.Path.Split(PATH_SEPARATOR);
+                for (var take = 1; take <= parts.Length; take++)
                 {
-                    current = existingNode.ChildNodes;
-                }
-                else
-                {
-                    current.Add(newNode);
-                    current = newNode.ChildNodes;
+                    var newNode = new TreeNode<string>(string.Join(PATH_SEPARATOR, parts.Take(take)));
+                    if (current.TryGetValue(newNode, out var existingNode))
+                    {
+                        current = existingNode.ChildNodes;
+                    }
+                    else
+                    {
+                        current.Add(newNode);
+                        current = newNode.ChildNodes;
+                    }
                 }
             }
-        }
-        PathNodes = pathNodes;
+            PathNodes = pathNodes;
+        });
     }
 
     private void OnMacroEditRequest(Macro macro)

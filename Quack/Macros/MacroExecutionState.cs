@@ -1,16 +1,35 @@
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using Quack.Configs;
+using Quack.UI;
+using System;
 using System.Collections.Generic;
 
 namespace Quack.Macros;
 
-public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
+public class MacroExecutionState : IDisposable
 {
-    private Config Config { get; init; } = config;
-    private MacroExecutor MacroExecutor { get; init; } = macroExecutor;
+    private Config Config { get; init; }
+    private MacroExecutor MacroExecutor { get; init; }
+    private UIEvents UIEvents { get; init; }
+
     private Dictionary<Macro, MacroExecution> MacroExecutionByMacro { get; set; } = [];
     private HashSet<string> OpenPopupIds { get; init; } = [];
+    private HashSet<Macro> ExecutionRequests { get; init; } = [];
+
+    public MacroExecutionState(Config config, MacroExecutor macroExecutor, UIEvents uiEvents)
+    {
+        Config = config;
+        MacroExecutor = macroExecutor;
+        UIEvents = uiEvents;
+
+        UIEvents.OnMacroExecutionRequest += OnExecutionRequest;
+    }
+
+    public void Dispose()
+    {
+        UIEvents.OnMacroExecutionRequest += OnExecutionRequest;
+    }
 
     public void Button(string baseId, Macro macro)
     {
@@ -19,9 +38,7 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
             MacroExecutionByMacro[macro] = macroExecution = BuildMacroExecution(macro);
         }
 
-        var hash = macro.GetHashCode();
         var isExecutable = macroExecution.IsExecutable();
-
         var advancedExecutionPopupId = $"{baseId}AdvancedPopup";
 
         using (var popup = ImRaii.Popup(advancedExecutionPopupId))
@@ -79,7 +96,8 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
         {
             ImGui.SetTooltip($"Click <RIGHT> for advanced execution of macro [{macro.Name}]");
         }
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+        // TODO: Fix advanced execution popup on request
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left) || ExecutionRequests.Remove(macro))
         {
             if (isExecutable)
             {
@@ -107,5 +125,10 @@ public class MacroExecutionState(Config config, MacroExecutor macroExecutor)
     {
         ImGui.OpenPopup(id);
         OpenPopupIds.Add(id);
+    }
+
+    private void OnExecutionRequest(Macro macro)
+    {
+        ExecutionRequests.Add(macro);
     }
 }

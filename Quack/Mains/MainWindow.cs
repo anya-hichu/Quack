@@ -3,7 +3,6 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using ImGuiNET;
 using Quack.Configs;
@@ -25,12 +24,11 @@ public class MainWindow : Window, IDisposable
     private MacroExecutionState MacroExecutionState { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
     private MacroTable MacroTable { get; init; }
-    private IPluginLog PluginLog { get; init; }
     private UIEvents UIEvents { get; init; }
 
     private MainWindowState MainWindowState { get; init; }
 
-    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, IPluginLog pluginLog, UIEvents uiEvents) : base("Quack###mainWindow")
+    public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, UIEvents uiEvents) : base("Quack###mainWindow")
     {
         SizeConstraints = new()
         {
@@ -44,7 +42,6 @@ public class MainWindow : Window, IDisposable
         MacroExecutor = macroExecutor;
         MacroExecutionState = macroExecutionState;
         MacroTable = macroTable;
-        PluginLog = pluginLog;
 
         MainWindowState = new(MacroTable, UIEvents);
     }
@@ -110,12 +107,14 @@ public class MainWindow : Window, IDisposable
         }
 
         var queriedMacrosId = "queriedMacros";
-        using (ImRaii.Table($"{queriedMacrosId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
+        using (ImRaii.Table($"{queriedMacrosId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY))
         {
             ImGui.TableSetupColumn($"Name###{queriedMacrosId}Name", ImGuiTableColumnFlags.None, 3);
             ImGui.TableSetupColumn($"Path###{queriedMacrosId}Path", ImGuiTableColumnFlags.None, 2);
             ImGui.TableSetupColumn($"Tags###{queriedMacrosId}Tags", ImGuiTableColumnFlags.None, 1);
             ImGui.TableSetupColumn($"Actions###{queriedMacrosId}Actions", ImGuiTableColumnFlags.None, 2);
+
+            ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.TableHeadersRow();
 
             var clipper = UIListClipper.Build();
@@ -135,6 +134,10 @@ public class MainWindow : Window, IDisposable
                         {
                             ImGui.SetTooltip(macro.Name);
                         }
+                        if (ImGui.IsItemClicked())
+                        {
+                            UIEvents.RequestExecution(macro);
+                        }
                     }
 
                     if (ImGui.TableNextColumn())
@@ -143,6 +146,10 @@ public class MainWindow : Window, IDisposable
                         if (ImGui.IsItemHovered())
                         {
                             ImGui.SetTooltip(macro.Path);
+                        }
+                        if (ImGui.IsItemClicked())
+                        {
+                            UIEvents.RequestExecution(macro);
                         }
                     }
 
@@ -154,6 +161,10 @@ public class MainWindow : Window, IDisposable
                         {
                             ImGui.SetTooltip(joinedTags);
                         }
+                        if (ImGui.IsItemClicked())
+                        {
+                            UIEvents.RequestExecution(macro);
+                        }
                     }
 
                     if (ImGui.TableNextColumn())
@@ -162,7 +173,7 @@ public class MainWindow : Window, IDisposable
                         ImGui.SameLine();
                         if (ImGuiComponents.IconButton($"{queriedMacrosId}{i}Edit", FontAwesomeIcon.Edit))
                         {
-                            UIEvents.NotifyEditRequest(macro);
+                            UIEvents.RequestEdit(macro);
                         }
                         if (ImGui.IsItemHovered())
                         {

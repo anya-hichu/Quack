@@ -2,6 +2,7 @@ using Dalamud.Utility;
 using Quack.Collections;
 using Quack.Macros;
 using Quack.UI;
+using Quack.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace Quack.Mains;
 
 public class MainWindowState : IDisposable
 {
+    private ActionQueue ActionQueue { get; init; } = new();
     private MacroTable MacroTable { get; init; }
     private UIEvents UIEvents { get; init; }
 
@@ -35,20 +37,23 @@ public class MainWindowState : IDisposable
 
     public void Update()
     {
-        if (MaybeCollectionConfig == null)
+        ActionQueue.Enqueue(() =>
         {
-            FilteredMacros = MacroTable.Search(Query);
-        } 
-        else
-        {
-            var collectionFilters = MaybeCollectionConfig.Tags.Select(tag => $"tags:{tag}");
-            var AllFilters = Query.IsNullOrWhitespace() ? collectionFilters : collectionFilters.Prepend(Query);
-            var query = string.Join(" AND ", AllFilters);
-            var macros = MacroTable.Search(query);
+            if (MaybeCollectionConfig == null)
+            {
+                FilteredMacros = MacroTable.Search(Query);
+            }
+            else
+            {
+                var collectionFilters = MaybeCollectionConfig.Tags.Select(tag => $"tags:{tag}");
+                var AllFilters = Query.IsNullOrWhitespace() ? collectionFilters : collectionFilters.Prepend(Query);
+                var query = string.Join(" AND ", AllFilters);
+                var macros = MacroTable.Search(query);
 
-            // Refilter to exclude partial matches (done in 2 steps for performance reasons)
-            FilteredMacros = new(macros.Where(MaybeCollectionConfig.Matches), MacroComparer.INSTANCE);
-        }
+                // Refilter to exclude partial matches (done in 2 steps for performance reasons)
+                FilteredMacros = new(macros.Where(MaybeCollectionConfig.Matches), MacroComparer.INSTANCE);
+            }
+        });   
     }
 
     private void OnTagsEdit(CollectionConfig collectionConfig)

@@ -10,15 +10,22 @@ public class UIEvents(IPluginLog pluginLog)
     private IPluginLog PluginLog { get; init; } = pluginLog;
 
     public event Action<Macro>? OnMacroEditRequest;
+    public event Action<Macro>? OnMacroExecutionRequest;
     public event Action<CollectionConfig>? OnCollectionConfigTagsUpdate;
 
-    public void NotifyEditRequest(Macro macro)
+    public void RequestEdit(Macro macro)
     {
         PluginLog.Debug($"Notify OnMacroEditRequest UI event for macro [{macro.Name}]");
         OnMacroEditRequest?.Invoke(macro);
     }
 
-    public void NotifyTagsUpdate(CollectionConfig collectionConfig)
+    public void RequestExecution(Macro macro)
+    {
+        PluginLog.Debug($"Notify OnMacroExecutionRequest UI event for macro [{macro.Name}]");
+        OnMacroExecutionRequest?.Invoke(macro);
+    }
+
+    public void UpdateTags(CollectionConfig collectionConfig)
     {
         PluginLog.Debug($"Notify OnCollectionConfigTagsUpdate UI event for collection [{collectionConfig.Name}]");
         OnCollectionConfigTagsUpdate?.Invoke(collectionConfig);
