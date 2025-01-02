@@ -25,8 +25,9 @@ public class ConfigWindow : Window, IDisposable
     private UIEvents UIEvents { get; init; }
     private SchedulerConfigTab SchedulerTab { get; init; }
     private GeneratorConfigTab GeneratorTab { get; init; }
+    private ConfigInfoTab InfoTab { get; init; }
 
-    public ConfigWindow(HashSet<Macro> cachedMacros, CallGate callGate, ChatSender chatSender, Config config, ICommandManager commandManager, Debouncers debouncers, 
+    public ConfigWindow(HashSet<Macro> cachedMacros, CallGate callGate, ChatSender chatSender, Config config, ICommandManager commandManager, string databasePath, Debouncers debouncers, 
                         IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, MacroTableQueue macroTableQueue, 
                         IPluginLog pluginLog, INotificationManager notificationManager, UIEvents uiEvents) : base("Quack Config###configWindow")
     {
@@ -40,7 +41,8 @@ public class ConfigWindow : Window, IDisposable
         MacroConfigTab = new(cachedMacros, config, commandManager, debouncers, FileDialogManager, keyState, macroExecutionState, macroExecutor, macroTable, macroTableQueue, pluginLog, notificationManager, uiEvents);
         SchedulerTab = new(chatSender, config, debouncers, FileDialogManager, keyState, pluginLog, notificationManager);
         GeneratorTab = new(cachedMacros, callGate, config, debouncers, FileDialogManager, keyState, macroTableQueue, pluginLog, notificationManager);
-        
+        InfoTab = new(cachedMacros, databasePath, macroTable, macroTableQueue, uiEvents);
+
         UIEvents = uiEvents;
         UIEvents.OnMacroEditRequest += OnMacroEditRequest;
     }
@@ -59,6 +61,7 @@ public class ConfigWindow : Window, IDisposable
             WithTab(MacroConfigTab.Draw, "Macros###macroConfigTab", MacroConfigTabFlags);
             WithTab(SchedulerTab.Draw, "Schedulers###schedulerConfigTab", ImGuiTabItemFlags.None);
             WithTab(GeneratorTab.Draw, "Generators###generatorConfigTab", ImGuiTabItemFlags.None);
+            WithTab(InfoTab.Draw, "Infos###infoConfigTab", ImGuiTabItemFlags.None);
         }
         FileDialogManager.Draw();
         MacroConfigTabFlags = ImGuiTabItemFlags.None;

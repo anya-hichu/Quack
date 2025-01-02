@@ -19,6 +19,7 @@ using Quack.Schedulers;
 using Quack.UI;
 using Quack.Utils;
 using SQLite;
+using System;
 using System.Diagnostics;
 using System.IO;
 
@@ -26,11 +27,13 @@ namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
 {
+    private static readonly Version TAG = typeof(Plugin).Assembly.GetName().Version!;
     private static readonly string RELEASES_URL = "https://github.com/anya-hichu/Quack/releases";
+    private static readonly string TUTORIAL_PDF_URL = $"{RELEASES_URL}/download/{TAG}/Tutorial.pdf";
 
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, exec and cancel";
-    private const string CommandExecHelpMessage = $"Exec command syntax (supports quoting): {CommandName} exec [Macro Name or Path or Command]( [Formatting (false/true/format)])?( [Argument Value])*";
+    private const string CommandExecHelpMessage = $"Exec command syntax (supports double quoting): {CommandName} exec [Macro Name or Path or Command]( [Formatting (false/true/format)])?( [Argument Value])*";
 
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
@@ -102,10 +105,11 @@ public sealed class Plugin : IDalamudPlugin
         {
             TitleBarButtons = [new() { Icon = FontAwesomeIcon.Cog, ShowTooltip = () => ImGui.SetTooltip("Toggle Config Window"), Click = _ => ToggleConfigUI() }]
         };
-        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, Debouncers, KeyState, MacroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager, uiEvents)
+        ConfigWindow = new(cachedMacros, Service<CallGate>.Get(), ChatSender, Config, CommandManager, databasePath, Debouncers, KeyState, MacroExecutionState, MacroExecutor, MacroTable, new(MacroTable, new()), PluginLog, NotificationManager, uiEvents)
         {
             TitleBarButtons = [
-                new() { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = () => ImGui.SetTooltip("View Changelogs (Browser)"), Click = _ => OpenReleasesUrl() },
+                new() { Icon = FontAwesomeIcon.InfoCircle, ShowTooltip = () => ImGui.SetTooltip("View Changelogs (Browser)"), Click = _ => OpenUrl(RELEASES_URL) },
+                new() { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = () => ImGui.SetTooltip("View Tutorial (Browser)"), Click = _ => OpenUrl(TUTORIAL_PDF_URL) },
                 new() { Icon = FontAwesomeIcon.ListAlt, ShowTooltip = () => ImGui.SetTooltip("Toggle Search Window"), Click = _ => ToggleMainUI() },
             ]
         };
@@ -291,8 +295,8 @@ public sealed class Plugin : IDalamudPlugin
         return true;
     }
 
-    private static void OpenReleasesUrl()
+    private static void OpenUrl(string url)
     {
-        Process.Start(new ProcessStartInfo() { FileName = RELEASES_URL, UseShellExecute = true });
+        Process.Start(new ProcessStartInfo() { FileName = url, UseShellExecute = true });
     }
 }

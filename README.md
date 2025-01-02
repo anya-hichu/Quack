@@ -1,9 +1,13 @@
-
 # Quack <img src="https://github.com/anya-hichu/Quack/raw/master/images/icon.png" height="35"/>
 
 Generate and run macro actions quickly using a spotlight inspired interface.
 
 Installable using my custom repository (instructions here: https://github.com/anya-hichu/DalamudPluginRepo) or from compiled archives.
+
+## Tutorial
+
+Markdown version: [click here](TUTORIAL.md)
+Published PDF versions are available on the release pages.
 
 ## Screenshots
 
@@ -27,6 +31,6 @@ Installable using my custom repository (instructions here: https://github.com/an
 
 - `/quack main`
 - `/quack config`
-- `/quack exec [Macro Name or Path]( [Formatting (false/true/format)])?( [Argument Value])*` (quoting support)
-- `[Macro Command]( [Argument Value])*`
+- `/quack exec [Macro Name or Path]( [Formatting (false/true/format)])?( [Argument Value])*` (double quoting support)
+- `[Macro Command]( [Argument Value])*` (double quoting support)
 - `/quack cancel` - Cancel all executing macros (/macrocancel is scoped)

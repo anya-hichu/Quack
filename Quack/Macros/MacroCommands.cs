@@ -70,11 +70,6 @@ public class MacroCommands: IDisposable
         RegisteredCommands.Add(macro.Command);
     }
 
-    private void RemoveMacroHandler(Macro macro)
-    {
-        RemoveHandler(macro.Command);
-    }
-
     private void RemoveHandler(string command)
     {
         CommandManager.RemoveHandler(command);
