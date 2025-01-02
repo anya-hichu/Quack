@@ -7,6 +7,7 @@ Installable using my custom repository (instructions here: https://github.com/an
 ## Tutorial
 
 Markdown version: [click here](TUTORIAL.md)
+
 Published PDF versions are available on the release pages.
 
 ## Screenshots
