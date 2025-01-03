@@ -35,7 +35,7 @@ public class Arguments
             }
         }
 
-        var toReturn = translatedArguments.ToString().Split(new[] { CUSTOM_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries);
+        var toReturn = translatedArguments.ToString().Split([CUSTOM_SEPARATOR], StringSplitOptions.RemoveEmptyEntries);
         for (var i = 0; i < toReturn.Length; i++)
         {
             toReturn[i] = RemoveMatchingQuotes(toReturn[i]);

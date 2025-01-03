@@ -18,7 +18,7 @@ public class ConfigInfoTab
     private MacroTableQueue MacroTableQueue { get; init; }
     private UIEvents UIEvents { get; init; }
 
-    private ConfigInfoTabState ConfigInfoTabState { get; init; }
+    private ConfigInfoTabState State { get; init; }
 
     public ConfigInfoTab(HashSet<Macro> cachedMacros, string databasePath, MacroTable macroTable, MacroTableQueue macroTableQueue, UIEvents uiEvents)
     {
@@ -26,31 +26,29 @@ public class ConfigInfoTab
         MacroTableQueue = macroTableQueue;
         UIEvents = uiEvents;
 
-        ConfigInfoTabState = new(cachedMacros, macroTable);
+        State = new(cachedMacros, macroTable);
     }
 
 
     public void Draw()
     {
-        var state = ConfigInfoTabState;
         if (ImGui.CollapsingHeader($"Registered Commands"))
         {
             using (ImRaii.PushIndent())
             {
                 var registeredCommandsId = "registeredCommands";
 
-                var filteredMacroWithCommands = state.FilteredMacroWithCommands;
-                var filter = state.Filter;
+                var filter = State.Filter;
                 if (ImGui.InputTextWithHint("###macrosFilter", "Filter", ref filter, ushort.MaxValue))
                 {
-                    state.Filter = filter;
-                    state.Update();
+                    State.Filter = filter;
+                    State.Update();
                 }
                 ImGui.SameLine();
                 if (ImGui.Button("x###macrosFilterClear"))
                 {
-                    state.Filter = string.Empty;
-                    state.Update();
+                    State.Filter = string.Empty;
+                    State.Update();
                 }
 
                 using (ImRaii.Table($"{registeredCommandsId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY, new(ImGui.GetWindowWidth() - ImGui.GetCursorPosX(), 250)))
@@ -64,12 +62,12 @@ public class ConfigInfoTab
                     ImGui.TableHeadersRow();
 
                     var clipper = UIListClipper.Build();
-                    clipper.Begin(filteredMacroWithCommands.Count, 27);
+                    clipper.Begin(State.FilteredMacroWithCommands.Count, 27);
                     while (clipper.Step())
                     {
                         for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                         {
-                            var macro = filteredMacroWithCommands.ElementAt(i);
+                            var macro = State.FilteredMacroWithCommands.ElementAt(i);
                             if (ImGui.TableNextColumn())
                             {
                                 ImGui.Text(macro.Command);

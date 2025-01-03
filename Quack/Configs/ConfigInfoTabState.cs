@@ -1,15 +1,15 @@
 using Dalamud.Utility;
 using Quack.Macros;
+using Quack.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Quack.Configs;
 
 public class ConfigInfoTabState : IDisposable
 {
+    private ActionQueue ActionQueue { get; init; } = new();
     private HashSet<Macro> CachedMacros { get; init; }
     private MacroTable MacroTable { get; init; }
 
@@ -32,6 +32,14 @@ public class ConfigInfoTabState : IDisposable
 
     public void Update()
     {
-        FilteredMacroWithCommands = MacroSearch.Lookup(CachedMacros.Where(m => !m.Command.IsNullOrWhitespace()), Filter);
+        ActionQueue.Enqueue(() =>
+        {
+            FilteredMacroWithCommands = MacroSearch.Lookup(GetMacroWithCommands(), Filter);
+        }); 
+    }
+
+    private IEnumerable<Macro> GetMacroWithCommands()
+    {
+        return CachedMacros.Where(m => !m.Command.IsNullOrWhitespace());
     }
 }

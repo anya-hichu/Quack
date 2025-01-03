@@ -27,9 +27,9 @@ namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
 {
-    private static readonly Version TAG = typeof(Plugin).Assembly.GetName().Version!;
+    private static readonly Version VERSION = typeof(Plugin).Assembly.GetName().Version!;
     private static readonly string RELEASES_URL = "https://github.com/anya-hichu/Quack/releases";
-    private static readonly string TUTORIAL_PDF_URL = $"{RELEASES_URL}/download/{TAG}/Tutorial.pdf";
+    private static readonly string TUTORIAL_PDF_URL = $"https://docs.google.com/viewer?url={RELEASES_URL}/download/{VERSION}/Quack-Tutorial.pdf";
 
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, exec and cancel";

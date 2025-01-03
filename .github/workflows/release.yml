@@ -62,7 +62,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ steps.publish-document.outputs.pdf }}
-          asset_name: Tutorial.pdf
+          asset_name: Quack-Tutorial.pdf
           asset_content_type: application/pdf
         env:
           GITHUB_TOKEN: ${{ github.token }}

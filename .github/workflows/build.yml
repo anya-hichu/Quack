@@ -31,11 +31,14 @@ jobs:
       - name: Build Project
         run: dotnet build --configuration Release Quack/Quack.csproj
 
-      - name: Publish Document
-        uses: shrink/actions-document-publish@v1
-        id: publish-document
+      - name: Publish Documents
+        uses: BaileyJM02/markdown-to-pdf@v1.2.0
         with:
-           sources: TUTORIAL.md
+          input_path: TUTORIAL.md
+          output_dir: build
+          images_dir: images
+          image_import: ./
+          build_html: false
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -45,8 +48,8 @@ jobs:
              Quack/bin/Release/*
              !Quack/bin/Release/Quack/*
 
-      - name: Upload Document
+      - name: Upload Documents
         uses: actions/upload-artifact@v4
         with:
-          name: Tutorial.pdf
-          path: ${{ steps.publish-document.outputs.pdf }}
+          name: Documents
+          path: build/TUTORIAL.pdf
