@@ -37,7 +37,7 @@ jobs:
           input_path: TUTORIAL.md
           output_dir: build
           images_dir: images
-          image_import: ./images
+          image_import: ./
           build_html: false
 
       - name: Upload Artifacts
