@@ -2,8 +2,8 @@
 
 ## Simple macro
 
-![Simple macro](images/first-macro.png)
-![Simple search](images/first-search.png)
+![Simple macro](images/simple-macro.png)
+![Simple search](images/simple-search.png)
 
 ## Macro with arguments
 
