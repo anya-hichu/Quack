@@ -26,7 +26,7 @@ public class MainWindow : Window, IDisposable
     private MacroTable MacroTable { get; init; }
     private UIEvents UIEvents { get; init; }
 
-    private MainWindowState MainWindowState { get; init; }
+    private MainWindowState State { get; init; }
 
     public MainWindow(HashSet<Macro> cachedMacros, Config config, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, UIEvents uiEvents) : base("Quack###mainWindow")
     {
@@ -43,50 +43,49 @@ public class MainWindow : Window, IDisposable
         MacroExecutionState = macroExecutionState;
         MacroTable = macroTable;
 
-        MainWindowState = new(MacroTable, UIEvents);
+        State = new(MacroTable, UIEvents);
     }
 
     public void Dispose()
     {
-        MainWindowState.Dispose();
+        State.Dispose();
     }
 
     public override void Draw()
     {
-        var state = MainWindowState;
         using (ImRaii.ItemWidth(ImGui.GetWindowWidth() - 320))
         {
-            var query = state.Query;
+            var query = State.Query;
             if (ImGui.InputTextWithHint($"Query###filter", "Search Query (min 3 chars)", ref query, ushort.MaxValue))
             {
-                state.Query = query;
-                state.Update();
+                State.Query = query;
+                State.Update();
             }
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip($"Result count: {state.FilteredMacros.Count}/{CachedMacros.Count}\n\nIndexed columns with trigram: name, path, command, tags\n\nExample queries:\n - PEDRO\n - cute tags:design\n - ^Custom tags:throw NOT cheese\n\nSee FTS5 query documentation for syntax and more examples: https://www.sqlite.org/fts5.html");
+                ImGui.SetTooltip($"Result count: {State.FilteredMacros.Count}/{CachedMacros.Count}\n\nIndexed columns with trigram: name, path, command, tags\n\nExample queries:\n - PEDRO\n - cute tags:design\n - ^Custom tags:throw NOT cheese\n\nSee FTS5 query documentation for syntax and more examples: https://www.sqlite.org/fts5.html");
             }
         }
 
         ImGui.SameLine();
         if (ImGui.Button("x###queryClear"))
         {
-            state.Query = string.Empty;
-            state.Update();
+            State.Query = string.Empty;
+            State.Update();
         }
 
         ImGui.SameLine();
 
         var collectionNames = Config.CollectionConfigs.Where(c => c.Selectable).Select(c => c.Name).Prepend(ANY_COLLECTION);
-        var collectionNameIndex = state.MaybeCollectionConfig == null ? 0 : collectionNames.IndexOf(state.MaybeCollectionConfig.Name);
+        var collectionNameIndex = State.MaybeCollectionConfig == null ? 0 : collectionNames.IndexOf(State.MaybeCollectionConfig.Name);
 
         using (ImRaii.ItemWidth(140))
         {
             if (ImGui.Combo($"###collectionName", ref collectionNameIndex, collectionNames.ToArray(), collectionNames.Count()))
             {
                 var collectionName = collectionNames.ElementAt(collectionNameIndex);
-                state.MaybeCollectionConfig = collectionName == ANY_COLLECTION ? null : Config.CollectionConfigs.Find(c => c.Name == collectionName)!;
-                state.Update();
+                State.MaybeCollectionConfig = collectionName == ANY_COLLECTION ? null : Config.CollectionConfigs.Find(c => c.Name == collectionName)!;
+                State.Update();
             }
             if (ImGui.IsItemHovered())
             {
@@ -118,12 +117,12 @@ public class MainWindow : Window, IDisposable
             ImGui.TableHeadersRow();
 
             var clipper = UIListClipper.Build();
-            clipper.Begin(state.FilteredMacros.Count, 27);
+            clipper.Begin(State.FilteredMacros.Count, 27);
             while (clipper.Step())
             {
                 for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
-                    var macro = state.FilteredMacros.ElementAt(i);
+                    var macro = State.FilteredMacros.ElementAt(i);
                     if (ImGui.TableNextColumn())
                     {
                         using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(collection => collection.Matches(macro), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))

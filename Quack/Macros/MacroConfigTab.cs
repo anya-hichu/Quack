@@ -35,9 +35,8 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
     private MacroExecutionState MacroExecutionState { get; init; }
     private MacroExecutor MacroExecutor { get; init; }
     private MacroTableQueue MacroTableQueue { get; init; }
-    private MacroConfigTabState MacroConfigTabState { get; init; }
+    private MacroConfigTabState State { get; init; }
     private IPluginLog PluginLog { get; init; }
-    private UIEvents UiEvents { get; init; }
 
     public MacroConfigTab(HashSet<Macro> cachedMacros, Config config, ICommandManager commandManager, Debouncers debouncers, 
                           FileDialogManager fileDialogManager, IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, 
@@ -52,12 +51,12 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         MacroTableQueue = macroTableQueue;
         PluginLog = pluginLog;
 
-        MacroConfigTabState = new(CachedMacros, macroTable, uiEvents);
+        State = new(CachedMacros, macroTable, uiEvents);
     }
 
     public void Dispose()
     {
-        MacroConfigTabState.Dispose();
+        State.Dispose();
     }
 
     public void Draw()
@@ -69,34 +68,33 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
 
         ImGui.SameLine();
         var leftChildWidth = ImGui.GetWindowWidth() * 0.3f;
-        var state = MacroConfigTabState;
-        var filter = state.Filter;
+        var filter = State.Filter;
         using (ImRaii.ItemWidth(leftChildWidth - 211))
         {
             if (ImGui.InputTextWithHint("###macrosFilter", "Filter", ref filter, ushort.MaxValue))
             {
-                state.Filter = filter;
-                state.Update();
+                State.Filter = filter;
+                State.Update();
             }
         }
         ImGui.SameLine();
         if (ImGui.Button("x###macrosFilterClear"))
         {
-            state.Filter = string.Empty;
-            state.Update();
+            State.Filter = string.Empty;
+            State.Update();
         }
 
         ImGui.SameLine();
         var collectionNames = Config.CollectionConfigs.Where(c => c.Selectable).Select(c => c.Name).Prepend(ANY_COLLECTION);
-        var collectionNameIndex = state.MaybeCollectionConfig == null ? 0 : collectionNames.IndexOf(state.MaybeCollectionConfig.Name);
+        var collectionNameIndex = State.MaybeCollectionConfig == null ? 0 : collectionNames.IndexOf(State.MaybeCollectionConfig.Name);
 
         using (ImRaii.ItemWidth(140))
         {
             if (ImGui.Combo($"###collectionName", ref collectionNameIndex, collectionNames.ToArray(), collectionNames.Count()))
             {
                 var collectionName = collectionNames.ElementAt(collectionNameIndex);
-                state.MaybeCollectionConfig = collectionName == ANY_COLLECTION ? null : Config.CollectionConfigs.Find(c => c.Name == collectionName)!;
-                state.Update();
+                State.MaybeCollectionConfig = collectionName == ANY_COLLECTION ? null : Config.CollectionConfigs.Find(c => c.Name == collectionName)!;
+                State.Update();
             }
             if (ImGui.IsItemHovered())
             {
@@ -165,7 +163,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         {
             using (ImRaii.Child("paths", new(leftChildWidth, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 10)))
             {
-                DrawPathNodes(state.PathNodes);
+                DrawPathNodes(State.PathNodes);
             }
         }
 
@@ -173,7 +171,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         var macroConfigsId = $"macroConfigs";
         using (ImRaii.Child($"{macroConfigsId}Child", new(ImGui.GetWindowWidth() * 0.7f, ImGui.GetWindowHeight() - ImGui.GetCursorPosY() - 10)))
         {
-            var selectedMacros = state.SelectedMacros;
+            var selectedMacros = State.SelectedMacros;
             if (selectedMacros.Count == 1)
             {
                 var selectedMacro = selectedMacros.ElementAt(0);
@@ -223,7 +221,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     }
                 }
 
-                var maybeConflictPath = state.MaybeConflictPath;
+                var maybeConflictPath = State.MaybeConflictPath;
                 var pathConflictPopupId = $"{macroConfigId}PathConflictPopup";
                 using (var popup = ImRaii.Popup(pathConflictPopupId))
                 {
@@ -241,7 +239,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                                 CachedMacros.Add(selectedMacro);
                                 MacroTableQueue.Update("path", selectedMacro, oldPath);
 
-                                state.MaybeConflictPath = null;
+                                State.MaybeConflictPath = null;
                                 ImGui.CloseCurrentPopup();
                             }
                         }
@@ -257,10 +255,10 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                 var pathInputId = $"{macroConfigId}Path";
                 if (ImGui.InputText($"Path###{pathInputId}", ref path, ushort.MaxValue))
                 {
-                    state.MaybeConflictPath = null;
+                    State.MaybeConflictPath = null;
                     if (CachedMacros.FindFirst(m => m.Path == path, out var conflictingMacro) && selectedMacro != conflictingMacro)
                     {
-                        state.MaybeConflictPath = path;
+                        State.MaybeConflictPath = path;
                         ImGui.OpenPopup(pathConflictPopupId);
                     }
                     else
@@ -269,20 +267,21 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                         CachedMacros.Remove(selectedMacro);
                         selectedMacro.Path = path;
                         CachedMacros.Add(selectedMacro);
-                        state.SelectedMacros = new([selectedMacro], MacroComparer.INSTANCE);
+                        State.SelectedMacros = new([selectedMacro], MacroComparer.INSTANCE);
                         Debounce(pathInputId, () => MacroTableQueue.Update("path", selectedMacro, oldPath));
                     }
                 }
 
                 var tags = string.Join(',', selectedMacro.Tags);
                 var tagInputId = $"{macroConfigId}Tags";
-                if (ImGui.InputText($"Tags (comma separated)###{tagInputId}", ref tags, ushort.MaxValue))
+                if (ImGui.InputText($"Tags###{tagInputId}", ref tags, ushort.MaxValue))
                 {
                     CachedMacros.Remove(selectedMacro);
                     selectedMacro.Tags = new(tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
                     CachedMacros.Add(selectedMacro);
                     Debounce(tagInputId, () => MacroTableQueue.Update("tags", selectedMacro));
                 }
+                ImGuiComponents.HelpMarker("Comma separated list");
 
                 var command = selectedMacro.Command;
                 var commandInputId = $"{macroConfigId}Command";
@@ -439,7 +438,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         {
             MacroTableQueue.Insert(macro);
         }
-        MacroConfigTabState.SelectedMacros = new([macro], MacroComparer.INSTANCE);
+        State.SelectedMacros = new([macro], MacroComparer.INSTANCE);
     }
 
     private List<Macro>? ProcessExportJson(string exportJson)
@@ -464,14 +463,14 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
     {
         CachedMacros.Clear();
         MacroTableQueue.DeleteAll();
-        MacroConfigTabState.SelectedMacros.Clear();
+        State.SelectedMacros.Clear();
     }
 
     private void DeleteMacro(Macro macro)
     {
         CachedMacros.Remove(macro);
         MacroTableQueue.Delete(macro);
-        MacroConfigTabState.SelectedMacros.Remove(macro);
+        State.SelectedMacros.Remove(macro);
     }
 
     private void DeleteMacros(IEnumerable<Macro> macros)
@@ -479,7 +478,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         var list = macros.ToList();
         CachedMacros.ExceptWith(list);
         MacroTableQueue.Delete(list);
-        MacroConfigTabState.SelectedMacros.ExceptWith(macros);
+        State.SelectedMacros.ExceptWith(macros);
     }
 
     private void DrawPathNodes(HashSet<TreeNode<string>> nodes)
@@ -541,19 +540,17 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
             }
             else
             {
-                var state = MacroConfigTabState;
-
                 if (CachedMacros.FindFirst(m => m.Path == treeNode.Node, out var macro))
                 {
                     using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(collection => collection.Matches(macro), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
                     {
-                        using (ImRaii.TreeNode($"{(name.IsNullOrWhitespace() ? BLANK_NAME : name)}###pathNode{hash}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | (state.SelectedMacros.Contains(macro) ? ImGuiTreeNodeFlags.Selected : ImGuiTreeNodeFlags.None)))
+                        using (ImRaii.TreeNode($"{(name.IsNullOrWhitespace() ? BLANK_NAME : name)}###pathNode{hash}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet | (State.SelectedMacros.Contains(macro) ? ImGuiTreeNodeFlags.Selected : ImGuiTreeNodeFlags.None)))
                         {
                             using (ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DalamudWhite))
                             {
                                 var nodeClicked = ImGui.IsItemClicked();
 
-                                var selectedMacros = state.SelectedMacros;
+                                var selectedMacros = State.SelectedMacros;
                                 var popupId = $"pathNode{hash}Popup";
                                 using (var contextPopup = ImRaii.ContextPopupItem(popupId))
                                 {

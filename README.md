@@ -6,27 +6,27 @@ Installable using my custom repository (instructions here: https://github.com/an
 
 ## Tutorial
 
-Markdown version: [click here](TUTORIAL.md)
+Available here: [TUTORIAL.md](TUTORIAL.md)
 
-Published PDF versions are available on the release pages.
+Offline PDF versions are published on the release pages.
 
 ## Screenshots
 
 ### Main (search)
-![main](images/image1.png)
+![main](images/main.png)
 
 ### Config
 #### General
-![general config](images/image2.png)
+![General config](images/config-general.png)
 
 #### Macros
-![macros config](images/image3.png)
+![Macros config](images/config-macros.png)
 
 #### Schedulers
-![generators config](images/image4.png)
+![Schedulers config](images/config-schedulers.png)
 
 #### Generators
-![generators config](images/image5.png)
+![Generators config](images/config-generators.png)
 
 ## Commands
 

@@ -127,7 +127,7 @@ public class ConfigGeneralTab : ConfigEntityTab
 
                                 var tags = string.Join(',', collectionConfig.Tags);
                                 var tagInputId = $"{collectionConfigId}Tags";
-                                if (ImGui.InputText($"Tags (comma separated)###{tagInputId}", ref tags, ushort.MaxValue))
+                                if (ImGui.InputText($"Tags###{tagInputId}", ref tags, ushort.MaxValue))
                                 {
                                     collectionConfig.Tags = new(tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
                                     Debounce(tagInputId, () =>
@@ -136,10 +136,7 @@ public class ConfigGeneralTab : ConfigEntityTab
                                         Config.Save();
                                     });
                                 }
-                                if (ImGui.IsItemHovered())
-                                {
-                                    ImGui.SetTooltip("All specified tags have to match in macros (AND condition), use multiple collections for logical OR");
-                                }
+                                ImGuiComponents.HelpMarker("All specified tags (comma separated list) have to match in macros. Use multiple collections for logical OR conditions");
 
                                 ImGui.SameLine();
                                 var color = ImGuiComponents.ColorPickerWithPalette(i, "Color", collectionConfig.Color);
