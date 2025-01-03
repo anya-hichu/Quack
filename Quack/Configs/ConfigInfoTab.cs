@@ -51,67 +51,70 @@ public class ConfigInfoTab
                     State.Update();
                 }
 
-                using (ImRaii.Table($"{registeredCommandsId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY, new(ImGui.GetWindowWidth() - ImGui.GetCursorPosX(), 250)))
+                using (var table = ImRaii.Table($"{registeredCommandsId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY, new(ImGui.GetWindowWidth() - ImGui.GetCursorPosX(), 250)))
                 {
-                    ImGui.TableSetupColumn($"Command###{registeredCommandsId}Command", ImGuiTableColumnFlags.None, 1);
-                    ImGui.TableSetupColumn($"Name###{registeredCommandsId}Name", ImGuiTableColumnFlags.None, 2);
-                    ImGui.TableSetupColumn($"Path###{registeredCommandsId}Path", ImGuiTableColumnFlags.None, 4);
-                    ImGui.TableSetupColumn($"Actions###{registeredCommandsId}Actions", ImGuiTableColumnFlags.None, 2);
-
-                    ImGui.TableSetupScrollFreeze(0, 1);
-                    ImGui.TableHeadersRow();
-
-                    var clipper = UIListClipper.Build();
-                    clipper.Begin(State.FilteredMacroWithCommands.Count, 27);
-                    while (clipper.Step())
+                    if (table)
                     {
-                        for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                        ImGui.TableSetupColumn($"Command###{registeredCommandsId}Command", ImGuiTableColumnFlags.None, 1);
+                        ImGui.TableSetupColumn($"Name###{registeredCommandsId}Name", ImGuiTableColumnFlags.None, 2);
+                        ImGui.TableSetupColumn($"Path###{registeredCommandsId}Path", ImGuiTableColumnFlags.None, 4);
+                        ImGui.TableSetupColumn($"Actions###{registeredCommandsId}Actions", ImGuiTableColumnFlags.None, 2);
+
+                        ImGui.TableSetupScrollFreeze(0, 1);
+                        ImGui.TableHeadersRow();
+
+                        var clipper = UIListClipper.Build();
+                        clipper.Begin(State.FilteredMacroWithCommands.Count, 27);
+                        while (clipper.Step())
                         {
-                            var macro = State.FilteredMacroWithCommands.ElementAt(i);
-                            if (ImGui.TableNextColumn())
+                            for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                             {
-                                ImGui.Text(macro.Command);
-                                if (ImGui.IsItemHovered())
+                                var macro = State.FilteredMacroWithCommands.ElementAt(i);
+                                if (ImGui.TableNextColumn())
                                 {
-                                    ImGui.SetTooltip(macro.Command);
-                                }
-                                EditMacroOnItemClick(macro);
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(macro.Name);
-                                if (ImGui.IsItemHovered())
-                                {
-                                    ImGui.SetTooltip(macro.Name);
-                                }
-                                EditMacroOnItemClick(macro);
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                ImGui.Text(macro.Path);
-                                if (ImGui.IsItemHovered())
-                                {
-                                    ImGui.SetTooltip(macro.Path);
-                                }
-                                EditMacroOnItemClick(macro);
-                            }
-
-                            if (ImGui.TableNextColumn())
-                            {
-                                if (ImGui.Button($"Unregister###{registeredCommandsId}{i}Unregister"))
-                                {
-                                    macro.Command = string.Empty;
-                                    MacroTableQueue.Update("command", macro);
+                                    ImGui.Text(macro.Command);
+                                    if (ImGui.IsItemHovered())
+                                    {
+                                        ImGui.SetTooltip(macro.Command);
+                                    }
+                                    EditMacroOnItemClick(macro);
                                 }
 
-                                ImGui.SameLine();
-                                ImGuiComponents.IconButton($"{registeredCommandsId}{i}Edit", FontAwesomeIcon.Edit);
-                                EditMacroOnItemClick(macro);
-                                if (ImGui.IsItemHovered())
+                                if (ImGui.TableNextColumn())
                                 {
-                                    ImGui.SetTooltip($"Edit macro [{macro.Name}]");
+                                    ImGui.Text(macro.Name);
+                                    if (ImGui.IsItemHovered())
+                                    {
+                                        ImGui.SetTooltip(macro.Name);
+                                    }
+                                    EditMacroOnItemClick(macro);
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    ImGui.Text(macro.Path);
+                                    if (ImGui.IsItemHovered())
+                                    {
+                                        ImGui.SetTooltip(macro.Path);
+                                    }
+                                    EditMacroOnItemClick(macro);
+                                }
+
+                                if (ImGui.TableNextColumn())
+                                {
+                                    if (ImGui.Button($"Unregister###{registeredCommandsId}{i}Unregister"))
+                                    {
+                                        macro.Command = string.Empty;
+                                        MacroTableQueue.Update("command", macro);
+                                    }
+
+                                    ImGui.SameLine();
+                                    ImGuiComponents.IconButton($"{registeredCommandsId}{i}Edit", FontAwesomeIcon.Edit);
+                                    EditMacroOnItemClick(macro);
+                                    if (ImGui.IsItemHovered())
+                                    {
+                                        ImGui.SetTooltip($"Edit macro [{macro.Name}]");
+                                    }
                                 }
                             }
                         }
