@@ -6,7 +6,7 @@ Installable using my custom repository (instructions here: https://github.com/an
 
 ## Tutorial
 
-Available here: [TUTORIAL.md](TUTORIAL.md)
+[Available here](TUTORIAL.md)
 
 Offline PDF versions are published on the release pages.
 
