@@ -1,7 +1,6 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Utility;
 using ImGuiNET;
 using Quack.Macros;
 using Quack.UI;
@@ -152,7 +151,7 @@ public class ConfigInfoTab
         {
             > 9 => $"{length / 1000000000} GB",
             > 6 => $"{length / 1000000} MB",
-            > 3 => $"{length / 1000} GB",
+            > 3 => $"{length / 1000} KB",
             _ => $"{length} Bytes"
         };
     }
