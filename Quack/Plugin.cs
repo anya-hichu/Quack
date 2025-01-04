@@ -27,9 +27,7 @@ namespace Quack;
 
 public sealed class Plugin : IDalamudPlugin
 {
-    private static readonly Version TAG = typeof(Plugin).Assembly.GetName().Version!;
     private static readonly string RELEASES_URL = "https://github.com/anya-hichu/Quack/releases";
-    private static readonly string TUTORIAL_PDF_URL = $"{RELEASES_URL}/download/{TAG}/Tutorial.pdf";
 
     private const string CommandName = "/quack";
     private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, exec and cancel";
@@ -109,7 +107,6 @@ public sealed class Plugin : IDalamudPlugin
         {
             TitleBarButtons = [
                 new() { Icon = FontAwesomeIcon.InfoCircle, ShowTooltip = () => ImGui.SetTooltip("View Changelogs (Browser)"), Click = _ => OpenUrl(RELEASES_URL) },
-                new() { Icon = FontAwesomeIcon.QuestionCircle, ShowTooltip = () => ImGui.SetTooltip("View Tutorial (Browser)"), Click = _ => OpenUrl(TUTORIAL_PDF_URL) },
                 new() { Icon = FontAwesomeIcon.ListAlt, ShowTooltip = () => ImGui.SetTooltip("Toggle Search Window"), Click = _ => ToggleMainUI() },
             ]
         };
