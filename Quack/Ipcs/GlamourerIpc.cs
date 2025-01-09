@@ -21,7 +21,6 @@ public class GlamourerIpc : IDisposable
     {
         [JsonProperty(Required = Required.Always)]
         public string[] Tags { get; set; } = [];
-        [JsonProperty(Required = Required.Always)]
         public string Color { get; set; } = string.Empty;
     }
 
