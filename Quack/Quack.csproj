@@ -1,28 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="Dalamud.Plugin.Bootstrap.targets" />
-
+<Project Sdk="Dalamud.NET.SDK/12.0.2">
   <PropertyGroup>
     <Description>Generate and run macro actions quickly using a spotlight inspired interface.</Description>
     <PackageProjectUrl>https://github.com/anya-hichu/Quack</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cronos" Version="0.8.4" />
+    <PackageReference Include="Cronos" Version="0.9.0" />
     <PackageReference Include="Humanizer.Core" Version="2.14.1" />
-    <PackageReference Include="IgnoresAccessChecksToGenerator" Version="0.7.0">
+    <PackageReference Include="IgnoresAccessChecksToGenerator" Version="0.8.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="JavaScriptEngineSwitcher.Core" Version="3.24.1" />
-    <PackageReference Include="JavaScriptEngineSwitcher.V8" Version="3.24.2" />
-    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.4.5" />
+    <PackageReference Include="JavaScriptEngineSwitcher.V8" Version="3.29.1" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
-    <PackageReference Include="ThrottleDebounce" Version="2.0.0" />
+    <PackageReference Include="ThrottleDebounce" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,7 +43,38 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="DalamudPackager" Version="11.0.0" />
-  </ItemGroup>
+  <Target Name="DeleteUnusedRuntimes" AfterTargets="Build;Release">
+    <ItemGroup>
+        <FoldersToDelete Include="$(OutDir)ru-RU"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\alpine-arm"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\alpine-arm64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\alpine-x64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\browser-wasm"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-arm"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-arm64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-armel"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-mips64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-musl-arm"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-musl-arm64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-musl-x64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-s390x"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-x64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\linux-x86"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\maccatalyst-arm64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\maccatalyst-x64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\osx-arm64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\osx-x64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\unix"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\win-arm"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\win-arm64"/>
+        <FoldersToDelete Include="$(OutDir)runtimes\win-x86"/>
+    </ItemGroup>
+    <Message Text="Deleting folders @(FoldersToDelete)"/>
+    <RemoveDir Directories="@(FoldersToDelete)">
+        <Output
+            TaskParameter="RemovedDirectories"
+            ItemName="FoldersDeleted"/>
+    </RemoveDir>
+    <Message Text="Deleted unused runtimes: @(FoldersDeleted)" Importance="high"/>
+  </Target>
 </Project>
