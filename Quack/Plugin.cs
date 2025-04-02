@@ -128,7 +128,7 @@ public sealed class Plugin : IDalamudPlugin
         EmotesIpc = new(PluginInterface, DataManager.GetExcelSheet<Emote>()!);
         DalamudIpc = new(PluginInterface);
         GlamourerIpc = new(PluginInterface, PluginLog);
-        LocalPlayerIpc = new(PluginInterface, ClientState);
+        LocalPlayerIpc = new(PluginInterface, ClientState, Framework);
         MacrosIpc = new(PluginInterface);
         PenumbraIpc = new(PluginInterface, PluginLog);
         LifestreamIpc = new(PluginInterface, DataManager.GetExcelSheet<World>()!);
