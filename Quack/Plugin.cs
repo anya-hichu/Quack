@@ -19,7 +19,6 @@ using Quack.Schedulers;
 using Quack.UI;
 using Quack.Utils;
 using SQLite;
-using System;
 using System.Diagnostics;
 using System.IO;
 

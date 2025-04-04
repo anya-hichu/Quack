@@ -29,7 +29,7 @@ public class ConfigWindow : Window, IDisposable
 
     public ConfigWindow(HashSet<Macro> cachedMacros, CallGate callGate, ChatSender chatSender, Config config, ICommandManager commandManager, string databasePath, Debouncers debouncers, 
                         IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, MacroTableQueue macroTableQueue, 
-                        IPluginLog pluginLog, INotificationManager notificationManager, UIEvents uiEvents) : base("Quack Config###configWindow")
+                        IPluginLog pluginLog, INotificationManager notificationManager, UIEvents uiEvents) : base("Quack Config##configWindow")
     {
         SizeConstraints = new()
         {
