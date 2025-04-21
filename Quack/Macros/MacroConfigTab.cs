@@ -333,7 +333,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
                     selectedMacro.Content = content;
                     Debounce(contentInputId, () => MacroTableQueue.Update("content", selectedMacro));
                 }
-                ImGuiComponents.HelpMarker("Additional behaviors:\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)\n - Supports commenting out lines by adding '//' at the beginning without leading space");
+                ImGuiComponents.HelpMarker("Additional behaviors:\n - /wait <sec> and <wait.sec> are uncapped and support decimal format (dot)\n - Possible to wait until a nested macro is completed using <wait.macro> placeholder\n - Macro cancellation (/macrocancel) is scoped to the currently executing macro and can also be waited on using <wait.cancel> (trap)\n - Supports commenting out lines by adding '//' at the beginning without leading space");
 
                 var loop = selectedMacro.Loop;
                 var loopInputId = $"{macroConfigId}Loop";

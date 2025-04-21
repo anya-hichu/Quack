@@ -3,6 +3,7 @@ using Dalamud.Utility;
 using Quack.Chat;
 using Quack.Utils;
 using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,10 +16,10 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
     public const string DEFAULT_FORMAT = "{0}";
     private static readonly string COMMENT_PREFIX = "//";
 
-    [GeneratedRegexAttribute(@"<wait\.(?<wait>\d+|macro|cancel)>")]
+    [GeneratedRegexAttribute(@"<wait\.(?<wait>\d+(\.\d+)?|macro|cancel)>")]
     private static partial Regex WaitPlaceholderGeneratedRegex();
 
-    [GeneratedRegexAttribute(@"^/wait(?: (?<wait>\d+))?\s*$")]
+    [GeneratedRegexAttribute(@"^/wait(?: (?<wait>\d+(\.\d+)?))?\s*$")]
     private static partial Regex WaitCommandGeneratedRegex();
 
     private ChatSender ChatSender { get; init; } = chatSender;
@@ -71,7 +72,7 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
             if (waitCommandMatch.Success)
             {
                 var value = waitCommandMatch.Groups["wait"].Value;
-                var secs = value.IsNullOrEmpty() ? 1 : int.Parse(value);
+                var secs = value.IsNullOrEmpty() ? 1 : float.Parse(value, CultureInfo.InvariantCulture);
                 Wait(taskId, secs, macro, i);
             }
             else
@@ -101,7 +102,7 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
                         }
                         PluginLog.Verbose($"Resuming execution #{taskId}");
                     }
-                    else if (int.TryParse(value, out var secs))
+                    else if (float.TryParse(value, CultureInfo.InvariantCulture, out var secs))
                     {
                         Wait(taskId, secs, macro, i);
                     }
@@ -133,10 +134,10 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
         MacroSharedLock.ReleaseAll();
     }
 
-    private void Wait(int taskId, int secs, Macro macro, int line)
+    private void Wait(int taskId, float secs, Macro macro, int line)
     {
         PluginLog.Verbose($"Pausing execution #{taskId} inside macro '{macro.Name}' ({macro.Path}) for {secs} sec(s) at line #{line}");
-        Thread.Sleep(secs * 1000);
+        Thread.Sleep((int)Math.Round(secs * 1000));
         PluginLog.Verbose($"Resuming execution #{taskId}");
     }
 }
