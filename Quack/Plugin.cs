@@ -219,7 +219,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             else if (arguments[0] == "eval")
             {
-                new MacroExecution(new() { Name = arguments[0], Content = arguments[1] }, Config, MacroExecutor).ExecuteTask();
+                MacroExecutor.ExecuteTask(new() { Name = arguments[0], Content = arguments[1] });
             }
             else
             {
@@ -276,7 +276,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             else if (arguments[0] == "eval")
             {
-                new MacroExecution(new() { Name = arguments[0], Content = string.Join('\n', arguments[1..]) }, Config, MacroExecutor).ExecuteTask();
+                MacroExecutor.ExecuteTask(new() { Name = arguments[0], Content = string.Join('\n', arguments[1..]) });
             }
             else
             {
