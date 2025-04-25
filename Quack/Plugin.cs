@@ -21,6 +21,7 @@ using Quack.Utils;
 using SQLite;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace Quack;
 
@@ -29,8 +30,9 @@ public sealed class Plugin : IDalamudPlugin
     private static readonly string RELEASES_URL = "https://github.com/anya-hichu/Quack/releases";
 
     private const string CommandName = "/quack";
-    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, exec and cancel";
+    private const string CommandHelpMessage = $"Available subcommands for {CommandName} are main, config, eval, exec and cancel";
     private const string CommandExecHelpMessage = $"Exec command syntax (supports double quoting): {CommandName} exec [Macro Name or Path or Command]( [Formatting (false/true/format)])?( [Argument Value])*";
+
 
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
@@ -196,79 +198,90 @@ public sealed class Plugin : IDalamudPlugin
         }
         else if (arguments.Length == 2)
         {
-            if (arguments[0] != "exec")
+            if (arguments[0] == "exec")
             {
-                ChatGui.PrintError(CommandHelpMessage);
-                return;
+                if (!TryFindMacro(arguments[1], out var macro))
+                {
+                    return;
+                }
+
+                var macroExecution = new MacroExecution(macro!, Config, MacroExecutor);
+                macroExecution.ParseArgs();
+
+                if (macroExecution.IsExecutable())
+                {
+                    macroExecution.ExecuteTask();
+                }
+                else
+                {
+                    ChatGui.PrintError(macroExecution.GetNonExecutableMessage());
+                }
             }
-
-            if (!TryFindMacro(arguments[1], out var macro))
+            else if (arguments[0] == "eval")
             {
-                return;
-            }
-
-            var macroExecution = new MacroExecution(macro!, Config, MacroExecutor);
-            macroExecution.ParseArgs();
-
-            if (macroExecution.IsExecutable())
-            {
-                macroExecution.ExecuteTask();
+                new MacroExecution(new() { Name = arguments[0], Content = arguments[1] }, Config, MacroExecutor).ExecuteTask();
             }
             else
             {
-                ChatGui.PrintError(macroExecution.GetNonExecutableMessage());
+                ChatGui.PrintError(CommandHelpMessage);
             }
         }
         else if (arguments.Length >= 3)
         {
-            if (arguments[0] != "exec")
+            if (arguments[0] == "exec")
             {
+                if (!TryFindMacro(arguments[1], out var macro))
+                {
+                    return;
+                }
+
+                var formatting = arguments[2];
+                var macroExecution = new MacroExecution(macro!, Config, MacroExecutor);
+                if (arguments.Length > 3)
+                {
+                    macroExecution.ParsedArgs = arguments[3..];
+                }
+                else
+                {
+                    // Default args from macro
+                    macroExecution.ParseArgs();
+                }
+
+                if (formatting == "true")
+                {
+                    macroExecution.UseConfigFormat();
+                }
+                else if (formatting == "false")
+                {
+                    macroExecution.Format = MacroExecutor.DEFAULT_FORMAT;
+                }
+                else if (!formatting.IsNullOrEmpty())
+                {
+                    macroExecution.Format = formatting;
+                }
+                else
+                {
+                    ChatGui.PrintError(CommandExecHelpMessage);
+                    return;
+                }
+
+                if (macroExecution.IsExecutable())
+                {
+                    macroExecution.ExecuteTask();
+                }
+                else
+                {
+                    ChatGui.PrintError(macroExecution.GetNonExecutableMessage());
+                }
+            }
+            else if (arguments[0] == "eval")
+            {
+                new MacroExecution(new() { Name = arguments[0], Content = string.Join('\n', arguments[1..]) }, Config, MacroExecutor).ExecuteTask();
+            }
+            else
+            {
+
                 ChatGui.Print(CommandHelpMessage);
-                return;
-            }
-
-            if (!TryFindMacro(arguments[1], out var macro))
-            {
-                return;
-            }
-
-            var formatting = arguments[2];
-            var macroExecution = new MacroExecution(macro!, Config, MacroExecutor);
-            if (arguments.Length > 3)
-            {
-                macroExecution.ParsedArgs = arguments[3..];
-            } 
-            else
-            {
-                // Default args from macro
-                macroExecution.ParseArgs();
-            }
-
-            if (formatting == "true")
-            {
-                macroExecution.UseConfigFormat();
-            }
-            else if (formatting == "false")
-            {
-                macroExecution.Format = MacroExecutor.DEFAULT_FORMAT;
-            }
-            else if (!formatting.IsNullOrEmpty())
-            {
-                macroExecution.Format = formatting;
-            }
-            else
-            {
-                ChatGui.PrintError(CommandExecHelpMessage);
-                return;
-            }
-
-            if (macroExecution.IsExecutable())
-            {
-                macroExecution.ExecuteTask();
-            } 
-            else
-            {
-                ChatGui.PrintError(macroExecution.GetNonExecutableMessage());
             }
         }
         else
