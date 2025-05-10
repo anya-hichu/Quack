@@ -1,6 +1,6 @@
-// Source: https://jake.ginnivan.net/c-sharp-argument-parser/
+// Source: https://stackoverflow.com/questions/298830/split-string-containing-command-line-parameters-into-string-in-c-sharp
 
-using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Quack.Utils;
@@ -10,51 +10,82 @@ namespace Quack.Utils;
 /// </summary>
 public class Arguments
 {
-    private static readonly char CUSTOM_SEPARATOR = '\n';
-
-    /// <summary>
-    /// Splits the command line. When main(string[] args) is used escaped quotes (ie a path "c:\folder\")
-    /// Will consume all the following command line arguments as the one argument. 
-    /// This function ignores escaped quotes making handling paths much easier.
-    /// </summary>
-    /// <param name="commandLine">The command line.</param>
-    /// <returns></returns>
     public static string[] SplitCommandLine(string commandLine)
     {
-        var translatedArguments = new StringBuilder(commandLine);
-        var escaped = false;
-        for (var i = 0; i < translatedArguments.Length; i++)
+        var args = new List<string>();
+        var currentArg = new StringBuilder();
+        var escape = false;
+        var inQuote = false;
+        var hadQuote = false;
+        var prevCh = '\0';
+
+        // Iterate all characters from the input string
+        for (var i = 0; i < commandLine.Length; i++)
         {
-            if (translatedArguments[i] == '"')
+            var ch = commandLine[i];
+            if (ch == '\\' && !escape)
             {
-                escaped = !escaped;
+                // Beginning of a backslash-escape sequence
+                escape = true;
             }
-            if (translatedArguments[i] == ' ' && !escaped)
+            else if (ch == '\\' && escape)
             {
-                translatedArguments[i] = CUSTOM_SEPARATOR;
+                // Double backslash, keep one
+                currentArg.Append(ch);
+                escape = false;
             }
+            else if (ch == '"' && !escape)
+            {
+                // Toggle quoted range
+                inQuote = !inQuote;
+                hadQuote = true;
+                if (inQuote && prevCh == '"')
+                {
+                    // Doubled quote within a quoted range is like escaping
+                    currentArg.Append(ch);
+                }
+            }
+            else if (ch == '"' && escape)
+            {
+                // Backslash-escaped quote, keep it
+                currentArg.Append(ch);
+                escape = false;
+            }
+            else if (char.IsWhiteSpace(ch) && !inQuote)
+            {
+                if (escape)
+                {
+                    // Add pending escape char
+                    currentArg.Append('\\');
+                    escape = false;
+                }
+                // Accept empty arguments only if they are quoted
+                if (currentArg.Length > 0 || hadQuote)
+                {
+                    args.Add(currentArg.ToString());
+                }
+                // Reset for next argument
+                currentArg.Clear();
+                hadQuote = false;
+            }
+            else
+            {
+                if (escape)
+                {
+                    // Add pending escape char
+                    currentArg.Append('\\');
+                    escape = false;
+                }
+                // Copy character from input, no special meaning
+                currentArg.Append(ch);
+            }
+            prevCh = ch;
         }
-
-        var toReturn = translatedArguments.ToString().Split(new[] { CUSTOM_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries);
-        for (var i = 0; i < toReturn.Length; i++)
+        // Save last argument
+        if (currentArg.Length > 0 || hadQuote)
         {
-            toReturn[i] = RemoveMatchingQuotes(toReturn[i]);
+            args.Add(currentArg.ToString());
         }
-        return toReturn;
-    }
-
-    public static string RemoveMatchingQuotes(string stringToTrim)
-    {
-        var firstQuoteIndex = stringToTrim.IndexOf('"');
-        var lastQuoteIndex = stringToTrim.LastIndexOf('"');
-        while (firstQuoteIndex != lastQuoteIndex)
-        {
-            stringToTrim = stringToTrim.Remove(firstQuoteIndex, 1);
-            stringToTrim = stringToTrim.Remove(lastQuoteIndex - 1, 1);
-            firstQuoteIndex = stringToTrim.IndexOf('"');
-            lastQuoteIndex = stringToTrim.LastIndexOf('"');
-        }
-
-        return stringToTrim;
+        return [.. args];
     }
 }
