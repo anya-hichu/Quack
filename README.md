@@ -32,7 +32,9 @@ Published PDF versions are available on the release pages.
 
 - `/quack main`
 - `/quack config`
-- `/quack eval ([Line] )+` (double quoting support)
-- `/quack exec [Macro Name or Path]( [Formatting (false/true/format)])?( [Argument Value])*` (double quoting support)
-- `[Macro Command]( [Argument Value])*` (double quoting support)
+- `/quack eval ([Line] )+`
+- `/quack exec [Macro Name or Path]( [Formatting (false/true/format)])?( [Argument Value])*` 
+- `[Macro Command]( [Argument Value])*`
 - `/quack cancel` - Cancel all executing macros (/macrocancel is scoped)
+
+Supports single/double quoting with escaping using backslash or doubling character for arguments
