@@ -12,9 +12,10 @@ namespace Quack.Macros;
 
 public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroSharedLock, IPluginLog pluginLog) : IDisposable
 {
-    public static readonly int DEFAULT_SLEEP_INTERVAL_MS = 60;
-    public const string DEFAULT_FORMAT = "{0}";
+    private static readonly int DEFAULT_SLEEP_INTERVAL_MS = 60;
     private static readonly string COMMENT_PREFIX = "//";
+    public const string DEFAULT_FORMAT = "{0}";
+    
 
     [GeneratedRegexAttribute(@"<wait\.(?<wait>\d+(\.\d+)?|macro|cancel)>")]
     private static partial Regex WaitPlaceholderGeneratedRegex();
@@ -54,13 +55,13 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
         var formattedContent = macro.Content.Format(args);
         PluginLog.Verbose($"Executing macro content inside task #{taskId}:\n{formattedContent}");
 
-        var lines = formattedContent.Split("\n");
+        var lines = formattedContent.Split("\n", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         for (var i = 0; i < lines.Length && MacroSharedLock.IsAcquired(taskId); i++)
         {
             var line = lines[i];
-            if (line.IsNullOrWhitespace() || line.StartsWith(COMMENT_PREFIX))
+            if (line.StartsWith(COMMENT_PREFIX))
             {
-                break;
+                continue;
             }
 
             var waitPlaceholderMatches = WaitPlaceholderGeneratedRegex().Matches(line);
@@ -75,7 +76,7 @@ public partial class MacroExecutor(ChatSender chatSender, MacroSharedLock macroS
                 var secs = value.IsNullOrEmpty() ? 1 : float.Parse(value, CultureInfo.InvariantCulture);
                 Wait(taskId, secs, macro, i);
             }
-            else
+            else if (!message.IsNullOrWhitespace())
             {
                 Task.WaitAny(ChatSender.SendOnFrameworkThread(message, taskId));
             }

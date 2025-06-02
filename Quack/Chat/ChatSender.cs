@@ -51,8 +51,8 @@ public class ChatSender: IDisposable
             var completion = payload.Completion;
             if (MacroSharedLock.IsAcquired(payload.LockId))
             {
+                PluginLog.Verbose($"Sending chat message: '{payload.Message}' (lock #{payload.LockId})");
                 ChatServer.SendMessage(payload.Message);
-                PluginLog.Verbose($"Sent chat message: '{payload.Message}' (lock #{payload.LockId})");
                 completion.SetResult(true);
             } 
             else

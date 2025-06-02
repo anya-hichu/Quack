@@ -21,7 +21,6 @@ using Quack.Utils;
 using SQLite;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace Quack;
 

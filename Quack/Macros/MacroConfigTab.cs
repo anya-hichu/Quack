@@ -37,7 +37,6 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
     private MacroTableQueue MacroTableQueue { get; init; }
     private MacroConfigTabState MacroConfigTabState { get; init; }
     private IPluginLog PluginLog { get; init; }
-    private UIEvents UiEvents { get; init; }
 
     public MacroConfigTab(HashSet<Macro> cachedMacros, Config config, ICommandManager commandManager, Debouncers debouncers, 
                           FileDialogManager fileDialogManager, IKeyState keyState, MacroExecutionState macroExecutionState, MacroExecutor macroExecutor, MacroTable macroTable, 
