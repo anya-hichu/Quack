@@ -1,9 +1,9 @@
 // Requires "DeterministicPose" and "ModSettingCommands" plugins to be installed
-
-// Recommended to use ModAutoTagger plugin to define the mod bulk tags for the conflict resolution
 // Chat filters plugin like for example NoSoliciting can help reduce noise when running commands
 
-var COLLECTION = 'Self';
+const COLLECTION = 'Self';
+const PRIORITY = 9999;
+const KEY = -4242;
 
 const IDLE_PSEUDO_EMOTE = {
     command: '/idle',
@@ -33,16 +33,16 @@ function main(modsJson, emotesJson) {
             const emoteCommands = buildCommands(command, poseIndex);
             const contentLines = [
                 `${RESET_POSITION_MACRO.command} <wait.macro>`,
-                `/msc assert -c "${escape(COLLECTION)}" -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -e -sc /macrocancel -sc ${emoteCommands.map(escape).map(escapeCommand).join(' -sc ')}`,
-                `/penumbra bulktag disable ${COLLECTION} | ${command}`,
-                `/msc set -c "${escape(COLLECTION)}" -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -e`,
+                `/msc tmp assert -c "${escape(COLLECTION)}" -e -p ${PRIORITY} -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -k ${KEY} -sc /macrocancel -sc ${emoteCommands.map(escape).map(escapeCommand).join(' -sc ')}`,
+                `/msc tmp revert -c "${escape(COLLECTION)}" -k ${KEY}`,
+                `/msc tmp set -c "${escape(COLLECTION)}" -e -p ${PRIORITY} -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -s Quack -k ${KEY}`,
                 '/penumbra redraw <me> <wait.2>'
             ].concat(emoteCommands);
             const commandPath = buildCommandPath(command, poseIndex);
             return {
-                name: `Custom Emote [${mod.name}] [${commandPath}]`,
-                path: `Mods/${normalize(mod.path)}/Emotes${commandPath}`,
-                tags: tags.concat([command]),
+                name: `Custom Emote [${mod.name}] [${commandPath}] [Temporary]`,
+                path: `Mods/${normalize(mod.path)}/Temporary/Emotes${commandPath}`,
+                tags: tags.concat(['temporary', command]),
                 content: contentLines.join("\n")
             };
         });
@@ -56,16 +56,16 @@ function main(modsJson, emotesJson) {
                     const emoteCommands = buildCommands(command, poseIndex);
                     const contentLines = [
                         `${RESET_POSITION_MACRO.command} <wait.macro>`,
-                        `/msc assert -e -c "${escape(COLLECTION)}" -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -g "${escape(setting.name)}" -o "${escape(option.name)}" -sc /macrocancel -sc ${emoteCommands.map(escape).map(escapeCommand).join(' -sc ')}`,
-                        `/penumbra bulktag disable ${COLLECTION} | ${command}`,
-                        `/msc set -e -c "${escape(COLLECTION)}" -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -g "${escape(setting.name)}" -o "${escape(option.name)}"`,
+                        `/msc tmp assert -c "${escape(COLLECTION)}" -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -e -p ${PRIORITY} -g "${escape(setting.name)}" -o "${escape(option.name)}" -k ${KEY} -sc /macrocancel -sc ${emoteCommands.map(escape).map(escapeCommand).join(' -sc ')}`,
+                        `/msc tmp revert -c "${escape(COLLECTION)}" -k ${KEY}`,
+                        `/msc tmp set -c "${escape(COLLECTION)}" -m "${escape(mod.dir)}" -n "${escape(mod.name)}" -e -p ${PRIORITY} -g "${escape(setting.name)}" -o "${escape(option.name)}" -s Quack -k ${KEY}`,
                         '/penumbra redraw <me> <wait.1>'
                     ].concat(emoteCommands);
                     const commandPath = buildCommandPath(command, poseIndex); 
                     return {
-                        name: `Custom Emote [${option.name}] [${commandPath}]`,
-                        path: `Mods/${normalize(mod.path)}/Settings/${escapePath(setting.name)}/Options/${escapePath(option.name)}/Emotes${commandPath}`,
-                        tags: tags.concat(['option', command]),
+                        name: `Custom Emote [${option.name}] [${commandPath}] [Temporary]`,
+                        path: `Mods/${normalize(mod.path)}/Temporary/Settings/${escapePath(setting.name)}/Options/${escapePath(option.name)}/Emotes${commandPath}`,
+                        tags: tags.concat(['option', 'temporary', command]),
                         content: contentLines.join("\n")
                     };
                 });

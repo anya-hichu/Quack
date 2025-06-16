@@ -8,7 +8,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 11;
+    public static readonly int DEFAULTS_VERSION = 12;
     private static readonly List<GeneratorConfig> DEFAULTS = [
         new() {
             Name = $"Addresses (V{DEFAULTS_VERSION})",
@@ -24,6 +24,11 @@ public class GeneratorConfig
             Name = $"Custom Emotes (V{DEFAULTS_VERSION})", 
             IpcConfigs = [new() { Name = PenumbraIpc.MOD_LIST_WITH_SETTINGS }, new() { Name = EmotesIpc.LIST }], 
             Script = Properties.Resources.CustomEmotesJsContent
+        },
+        new() {
+            Name = $"Custom Tmp Emotes (V{DEFAULTS_VERSION})",
+            IpcConfigs = [new() { Name = PenumbraIpc.MOD_LIST_WITH_SETTINGS }, new() { Name = EmotesIpc.LIST }],
+            Script = Properties.Resources.CustomTmpEmotesJsContent
         },
         new() {
             Name = $"Emotes (V{DEFAULTS_VERSION})",
@@ -78,7 +83,7 @@ public class GeneratorConfig
 
     public static List<GeneratorConfig> GetDefaults()
     {
-        return new(DEFAULTS.Select(c => c.Clone()));
+        return [.. DEFAULTS.Select(c => c.Clone())];
     }
 
     public string Name { get; set; } = string.Empty;

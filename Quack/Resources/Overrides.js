@@ -16,18 +16,23 @@ const TRANSFORMERS = [
         mutate: m => m.content = m.content.replaceAll(new RegExp('(?<!\\| ?)/(sit|doze)(?=\\W|$)', 'gm'), '/x$1')
     },
 
-    // Support for Nightlife 2 and 3+
+    // Support for Nightlife 3+
     {
         match: m => m.path.includes('Nightlife') && m.tags.includes('emote'),
         mutate: (macro, macros, mods) => {
             // Disable other emote groups to avoid internal conflicts in modpack
-            const matches = [...macro.content.matchAll(new RegExp('\n/modset .*? "([^"]*?)" =.*?\n', 'mg'))]
+            const matches = [...macro.content.matchAll(new RegExp('\n/msc (tmp )?(?:set|clear) -c "([^"]*?)" .*? -g "([^"]*?)".*?\n', 'mg'))]
             if (matches.length == 1) {
                 const match = matches[0];
+
+                const tmp = match[1];
+                const collection = match[2];
+                const groupName = match[3];
+
                 const mod = mods.find(m => m.name.includes('Nightlife') && macro.path.includes(m.name));
-                const otherEmoteGroupNames = mod.settings.groupSettings.map(s => s.name).filter(name => ['Default', 'Audio-Animations', 'Miscellaneous', 'Signboard (Turn 9 On)', 'Breed Expressions (Turn 7 On)', 'Chain Leash VFX (Imperial Salute)', match[1]].indexOf(name) === -1);
-                const disableOtherEmoteGroupsLines = otherEmoteGroupNames.map(name => `/modset {0} "${mod.dir}" "${mod.name}" "${name}" =`);
-                macro.content = `${macro.content.slice(0, match.index)}\n${disableOtherEmoteGroupsLines.join("\n")}${macro.content.slice(match.index)}`;
+                const otherGroupNames = mod.settings.groupSettings.map(s => s.name).filter(name => ['Default', 'Audio-Animations', 'Miscellaneous', 'Signboard (Turn 9 On)', 'Breed Expressions (Turn 7 On)', 'Chain Leash VFX (Imperial Salute)', groupName].indexOf(name) === -1);
+                const disableOtherGroupsLines = otherGroupNames.map(name => `/msc ${tmp || ''}clear -c "${collection}" -m "${mod.dir}" -n "${mod.name}" -g "${name}" ${(tmp ? '-s Quack -k -4242' : '')}`);
+                macro.content = `${macro.content.slice(0, match.index)}\n${disableOtherGroupsLines.join("\n")}${macro.content.slice(match.index)}`;
             }
 
             // Abort instead of /resetposition for emotes "in that position"
