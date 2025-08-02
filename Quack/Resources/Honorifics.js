@@ -1,19 +1,13 @@
-// Second IPC argument value (WorldId) can be found as key in %appdata%\xivlauncher\pluginConfigs\Honorific.json
+function main() {
+    const infoJson = IPC.call('Quack.LocalPlayer.GetInfo');
+    const info = JSON.parse(infoJson);
 
-function main(titlesJson) {
+    const titlesJson = IPC.call("Honorific.GetCharacterTitleList", info.name, info.homeWorldId);
     const titles = JSON.parse(titlesJson);
 
-    const disableHonorificsMacro = {
-        name: `Disable Honorifics`,
-        path: 'Macros/Customs/Disable Honorifics',
-        tags: ['honorifics', 'titles', 'disable'],
-        command: '/disablehonorifics',
-        content: titles.map(t => `/honorific title disable ${t.Title}`).join("\n")
-    };
-
-    const titleMacros = titles.map(t => {
+    const macros = titles.map(t => {
         const contentLines = [
-            `${disableHonorificsMacro.command} <wait.macro>`,
+            `/honorific title disable meta:all`,
             `/honorific title enable ${t.Title}`
         ];
         return {
@@ -23,8 +17,6 @@ function main(titlesJson) {
             content: contentLines.join("\n")
         };
     });
-
-    const macros = [disableHonorificsMacro].concat(titleMacros);
 
     return JSON.stringify(macros);
 }

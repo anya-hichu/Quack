@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace Quack.Generators;
 
-public class GeneratorConfigTabState(CallGate callGate, GeneratorConfig generatorConfig, IPluginLog pluginLog)
+public class GeneratorConfigTabState(GeneratorConfig generatorConfig, IPluginLog pluginLog)
 {
-    public Generator Generator { get; set; } = new(callGate, generatorConfig, pluginLog);
+    public Generator Generator { get; set; } = new(generatorConfig, pluginLog);
     public GeneratorException? MaybeGeneratorException { get; set; }
     public HashSet<Macro> GeneratedMacros { get; set; } = new(0, MacroComparer.INSTANCE);
 

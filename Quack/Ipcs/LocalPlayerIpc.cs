@@ -36,9 +36,11 @@ public class LocalPlayerIpc : IDisposable
             var localPlayer = ClientState.LocalPlayer;
             if (localPlayer != null)
             {
+                var homeWorld = localPlayer.HomeWorld.Value;
                 return new() {
                     { "name", localPlayer.Name.TextValue },
-                    { "homeWorld", localPlayer.HomeWorld.Value.Name.ToString() }
+                    { "homeWorld", homeWorld.Name.ToString() },
+                    { "homeWorldId", homeWorld.RowId }
                 };
             }
             else

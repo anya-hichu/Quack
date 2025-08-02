@@ -11,27 +11,21 @@ using System.Linq;
 
 namespace Quack.Generators;
 
-public class Generator
+public class Generator(GeneratorConfig generatorConfig, IPluginLog pluginLog)
 {
     private static readonly string ENTRY_POINT = "main";
 
-    private CallGate CallGate { get; init; }
-    private GeneratorConfig GeneratorConfig { get; init; }
-    private IPluginLog PluginLog { get; init; }
+    private GeneratorConfig GeneratorConfig { get; init; } = generatorConfig;
+    private IPluginLog PluginLog { get; init; } = pluginLog;
     private V8JsEngine? MaybeEngine { get; set; }
-
-    public Generator(CallGate callGate, GeneratorConfig generatorConfig, IPluginLog pluginLog)
-    {
-        CallGate = callGate;
-        GeneratorConfig = generatorConfig;
-        PluginLog = pluginLog;
-    }
 
     public HashSet<Macro> GenerateMacros()
     {
         try
         {
             MaybeEngine = new V8JsEngine(GetEngineSettings());
+            MaybeEngine.EmbedHostType("IPC", typeof(GeneratorIpcCaller));
+
             var args = CallIpcs();
             var macros = CallFunction<Macro>(ENTRY_POINT, args);
             return new(macros, MacroComparer.INSTANCE);
@@ -49,22 +43,16 @@ public class Generator
 
     private object[] CallIpcs()
     {
-        return GeneratorConfig.IpcConfigs.Select(ipcConfig =>
+        return [.. GeneratorConfig.IpcConfigs.Select(ipcConfig =>
         {
             if (IsStopped())
             {
                 throw new JsInterruptedException("Cancelled manually while calling IPCs");
             }
 
-            if (!CallGate.Gates.TryGetValue(ipcConfig.Name, out var channel))
-            {
-                throw new GeneratorException($"Could not find generator {GeneratorConfig.Name} IPC channel: {ipcConfig.Name}");
-            }
-
             var args = JsonConvert.DeserializeObject<object[]>(ipcConfig.Args);
-            var returnValue = channel.InvokeFunc<object>(args);
-            return returnValue.GetType().IsGenericType ? returnValue : returnValue.ToString()!;
-        }).ToArray();
+            return GeneratorIpcCaller.call(ipcConfig.Name, args!);
+        })];
     }
 
     private T[] CallFunction<T>(string name, object[] args)

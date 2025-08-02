@@ -23,7 +23,8 @@ function main(modsJson, emotesJson) {
     const mods = JSON.parse(modsJson);
     const emotes = JSON.parse(emotesJson);
 
-    const customEmoteMacros = mods.flatMap(mod => {
+    // Exclude "hidden mods" with starting dot
+    const customEmoteMacros = mods.filter(m => !m.path.startsWith('.') && !m.path.includes('/.')).flatMap(mod => {
         const tags = ['mod', 'emote'].concat(mod.favorite ? ['favorite'] : []);
 
         const modGamePaths = Object.keys(mod.settings.files || {});
