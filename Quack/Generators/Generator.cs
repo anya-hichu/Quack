@@ -1,5 +1,3 @@
-using Dalamud;
-using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.V8;

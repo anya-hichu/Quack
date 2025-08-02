@@ -8,7 +8,7 @@ namespace Quack.Generators;
 [Serializable]
 public class GeneratorConfig
 {
-    public static readonly int DEFAULTS_VERSION = 13;
+    public static readonly int DEFAULTS_VERSION = 14;
     private static readonly List<GeneratorConfig> DEFAULTS = [
         new() {
             Name = $"Addresses (V{DEFAULTS_VERSION})",
@@ -42,7 +42,6 @@ public class GeneratorConfig
         },
         new() {
             Name = $"Honorifics (V{DEFAULTS_VERSION})",
-            IpcConfigs = [new() { Name = "Honorific.GetCharacterTitleList", Args = """["Character Name", WorldId]""" }],
             Script = Properties.Resources.HonorificsJsContent
         },
         new() {
