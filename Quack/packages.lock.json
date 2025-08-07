@@ -4,9 +4,9 @@
     "net9.0-windows7.0": {
       "Cronos": {
         "type": "Direct",
-        "requested": "[0.9.0, )",
-        "resolved": "0.9.0",
-        "contentHash": "NBEeEWzI1bNiq2NMxoQh54qPbMtsIoJSO4cswRzNlB5iq7l21zEgCMFT86OzvVZc2eD1ArQ7kBo4FzjrNbM5Rw=="
+        "requested": "[0.11.0, )",
+        "resolved": "0.11.0",
+        "contentHash": "ovNrFIuKTbeNYx+1Tne8DkY/nJ+bRoS0/bTrCBzeAuMvLbX2nJprwcdRqZIwwLRsaghqBU932QvJ6mryTycc/A=="
       },
       "DalamudPackager": {
         "type": "Direct",
