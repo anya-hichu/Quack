@@ -4,7 +4,7 @@ using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Quack.Configs;
 using Quack.Macros;
 using Quack.UI;
@@ -119,7 +119,7 @@ public class MainWindow : Window, IDisposable
                 ImGui.TableSetupScrollFreeze(0, 1);
                 ImGui.TableHeadersRow();
 
-                var clipper = UIListClipper.Build();
+                var clipper = ImGui.ImGuiListClipper();
                 clipper.Begin(state.FilteredMacros.Count, 27);
                 while (clipper.Step())
                 {

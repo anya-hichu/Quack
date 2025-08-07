@@ -1,4 +1,5 @@
 using Dalamud;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
@@ -7,7 +8,6 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
-using ImGuiNET;
 using Lumina.Excel.Sheets;
 using Quack.Chat;
 using Quack.Configs;

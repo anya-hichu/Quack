@@ -1,7 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Quack.Macros;
 using Quack.UI;
 using System.Collections.Generic;
@@ -65,7 +65,7 @@ public class ConfigInfoTab
                         ImGui.TableSetupScrollFreeze(0, 1);
                         ImGui.TableHeadersRow();
 
-                        var clipper = UIListClipper.Build();
+                        var clipper = ImGui.ImGuiListClipper();
                         clipper.Begin(filteredMacroWithCommands.Count, 27);
                         while (clipper.Step())
                         {

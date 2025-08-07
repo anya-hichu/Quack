@@ -6,7 +6,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Humanizer;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using Quack.Chat;
 using Quack.Configs;
@@ -93,7 +93,7 @@ public class SchedulerConfigTab : ConfigEntityTab
         }
 
         var schedulerConfigs = Config.SchedulerConfigs;
-        using (ImRaii.TabBar($"{schedulerConfigsId}{string.Join("-", schedulerConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
+        using (ImRaii.TabBar($"{schedulerConfigsId}{string.Join("-", schedulerConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.ListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
         {
             
             for (var i = 0; i < schedulerConfigs.Count; i++)
@@ -378,7 +378,7 @@ public class SchedulerConfigTab : ConfigEntityTab
                             ImGui.TableSetupColumn($"Command###{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
                             ImGui.TableHeadersRow();
 
-                            var clipper = UIListClipper.Build();
+                            var clipper = ImGui.ImGuiListClipper();
                             var entries = schedulerConfig.TriggerConfigs.SelectMany(TriggerConfig =>
                             {
                                 return TriggerConfig.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(Occurrence =>

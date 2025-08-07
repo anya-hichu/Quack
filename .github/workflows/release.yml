@@ -9,7 +9,8 @@ jobs:
   Build:
     runs-on: ubuntu-latest
     env:
-        DALAMUD_HOME: /tmp/dalamud
+      DALAMUD_HOME: /tmp/dalamud
+      DALAMUD_ARCHIVE_URL: ${{ vars.DALAMUD_ARCHIVE_URL || 'https://goatcorp.github.io/dalamud-distrib/latest.zip' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -21,7 +22,7 @@ jobs:
           
       - name: Download Dalamud Latest
         run: |
-          wget https://goatcorp.github.io/dalamud-distrib/latest.zip -O ${{ env.DALAMUD_HOME }}.zip
+          wget ${{ env.DALAMUD_ARCHIVE_URL }} -O ${{ env.DALAMUD_HOME }}.zip
           unzip ${{ env.DALAMUD_HOME }}.zip -d ${{ env.DALAMUD_HOME }}
 
       - name: Restore Project

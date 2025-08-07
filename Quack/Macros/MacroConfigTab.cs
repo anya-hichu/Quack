@@ -5,7 +5,7 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using Quack.Configs;
 using Quack.Exports;

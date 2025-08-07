@@ -3,7 +3,7 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Humanizer;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using Quack.Exports;
 using Quack.Utils;

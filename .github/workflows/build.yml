@@ -10,7 +10,8 @@ jobs:
   Build:
     runs-on: ubuntu-latest
     env:
-        DALAMUD_HOME: /tmp/dalamud
+      DALAMUD_HOME: /tmp/dalamud
+      DALAMUD_ARCHIVE_URL: ${{ vars.DALAMUD_ARCHIVE_URL || 'https://goatcorp.github.io/dalamud-distrib/latest.zip' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -18,11 +19,11 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 8.0.x
           
       - name: Download Dalamud Latest
         run: |
-          wget https://goatcorp.github.io/dalamud-distrib/latest.zip -O ${{ env.DALAMUD_HOME }}.zip
+          wget ${{ env.DALAMUD_ARCHIVE_URL }} -O ${{ env.DALAMUD_HOME }}.zip
           unzip ${{ env.DALAMUD_HOME }}.zip -d ${{ env.DALAMUD_HOME }}
 
       - name: Restore Project
@@ -31,12 +32,6 @@ jobs:
       - name: Build Project
         run: dotnet build --configuration Release Quack/Quack.csproj
 
-      - name: Publish Document
-        uses: shrink/actions-document-publish@v1
-        id: publish-document
-        with:
-           sources: TUTORIAL.md
-
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -44,9 +39,3 @@ jobs:
           path: |
              Quack/bin/Release/*
              !Quack/bin/Release/Quack/*
-
-      - name: Upload Document
-        uses: actions/upload-artifact@v4
-        with:
-          name: Tutorial.pdf
-          path: ${{ steps.publish-document.outputs.pdf }}

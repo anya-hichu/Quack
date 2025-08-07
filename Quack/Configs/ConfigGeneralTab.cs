@@ -8,7 +8,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using Humanizer.Configuration;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Quack.Generators;
 using Quack.UI;
 using Quack.Utils;
@@ -74,7 +74,7 @@ public class ConfigGeneralTab : ConfigEntityTab
             ImGui.SameLine();
             using (ImRaii.PushIndent())
             {
-                using (ImRaii.TabBar($"{collectionConfigsId}{string.Join("-", collectionConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
+                using (ImRaii.TabBar($"{collectionConfigsId}{string.Join("-", collectionConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.ListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
                 {
                     for (var i = 0; i < collectionConfigs.Count; i++)
                     {

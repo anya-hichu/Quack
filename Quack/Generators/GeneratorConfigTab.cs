@@ -5,7 +5,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using JavaScriptEngineSwitcher.Core;
 using Newtonsoft.Json;
 using Quack.Configs;
@@ -104,7 +104,7 @@ public class GeneratorConfigTab : ConfigEntityTab
         var funcChannels = CallGate.Gates.Values.Where(g => g.Func != null);
 
         var generatorConfigsId = "generatorConfigs";
-        using (ImRaii.TabBar($"{generatorConfigsId}{string.Join("-", generatorConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
+        using (ImRaii.TabBar($"{generatorConfigsId}{string.Join("-", generatorConfigs.Select(c => c.GetHashCode()))}Tabs", ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.ListPopupButton | ImGuiTabBarFlags.FittingPolicyScroll))
         {
             for (var i = 0; i < generatorConfigs.Count; i++)
             {
@@ -479,7 +479,7 @@ public class GeneratorConfigTab : ConfigEntityTab
 
                             var visibleFilteredGeneratedMacros = showSelectedOnly ? state.FilteredGeneratedMacros.Intersect(state.SelectedGeneratedMacros, MacroComparer.INSTANCE) : state.FilteredGeneratedMacros;
 
-                            var clipper = UIListClipper.Build();
+                            var clipper = ImGui.ImGuiListClipper();
                             clipper.Begin(visibleFilteredGeneratedMacros.Count(), 27);
 
                             var updatedSelectedGeneratedMacros = state.SelectedGeneratedMacros.ToHashSet(MacroComparer.INSTANCE);

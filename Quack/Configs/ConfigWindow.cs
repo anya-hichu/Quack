@@ -3,7 +3,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Ipc.Internal;
 using Dalamud.Plugin.Services;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Quack.Chat;
 using Quack.Generators;
 using Quack.Macros;
