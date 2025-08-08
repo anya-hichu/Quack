@@ -4,12 +4,6 @@ Generate and run macro actions quickly using a spotlight inspired interface.
 
 Installable using my custom repository (instructions here: https://github.com/anya-hichu/DalamudPluginRepo) or from compiled archives.
 
-## Tutorial
-
-Markdown version: [click here](TUTORIAL.md)
-
-Published PDF versions are available on the release pages.
-
 ## Screenshots
 
 ### Main (search)
