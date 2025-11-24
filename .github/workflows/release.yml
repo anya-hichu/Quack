@@ -13,8 +13,10 @@ jobs:
       DALAMUD_ARCHIVE_URL: ${{ vars.DALAMUD_ARCHIVE_URL || 'https://goatcorp.github.io/dalamud-distrib/latest.zip' }}
     steps:
       - name: Checkout Repository
+        uses: actions/checkout@v6
 
       - name: Set up .NET
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 9.0.x
           
@@ -28,13 +30,7 @@ jobs:
 
       - name: Build Project
         run: dotnet build --configuration Release Quack/Quack.csproj -p:AssemblyVersion=${{ github.ref_name }}
-
-      - name: Publish Document
-        uses: shrink/actions-document-publish@v1
-        id: publish-document
-        with:
-           sources: TUTORIAL.md
-
+        
       - name: Create Release
         uses: actions/create-release@v1
         id: create_release
@@ -53,15 +49,5 @@ jobs:
           asset_path: Quack/bin/Release/Quack/latest.zip
           asset_name: Quack.zip
           asset_content_type: application/zip
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload Release Document
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.publish-document.outputs.pdf }}
-          asset_name: Tutorial.pdf
-          asset_content_type: application/pdf
         env:
           GITHUB_TOKEN: ${{ github.token }}
