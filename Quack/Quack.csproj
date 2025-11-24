@@ -42,6 +42,11 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="DalamudPackager" Version="13.1.0" />
+    <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />
+  </ItemGroup>
+
   <Target Name="DeleteUnusedRuntimes" AfterTargets="Build;Release">
     <ItemGroup>
         <FoldersToDelete Include="$(OutDir)ru-RU" />
