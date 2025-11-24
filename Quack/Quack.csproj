@@ -21,8 +21,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="ThrottleDebounce" Version="2.0.1" />
-    <PackageReference Update="DalamudPackager" Version="13.1.0" />
-    <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />  
+    <PackageReference Include="DalamudPackager" Version="13.1.0" />
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.39" />  
   </ItemGroup>
 
   <ItemGroup>
