@@ -59,7 +59,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
     {
         var records = DbConnection.Query<MacroRecord>(LIST_QUERY);
         LogQuery(LIST_QUERY, records.Count);
-        return toEntities(records);
+        return ToEntities(records);
     }
 
     public Macro? FindBy(string column, string value)
@@ -84,7 +84,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
         object[] args = [expression];
         var records = DbConnection.Query<MacroRecord>(SEARCH_QUERY, args);
         LogQuery(SEARCH_QUERY, records.Count, args);
-        return toEntities(records);
+        return ToEntities(records);
     }
 
     public int Insert(Macro macro)
@@ -207,7 +207,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
         ];
     }
 
-    public static HashSet<Macro> toEntities(IEnumerable<MacroRecord> records)
+    public static HashSet<Macro> ToEntities(IEnumerable<MacroRecord> records)
     {
         return new(records.Select(ToEntity), MacroComparer.INSTANCE);
     }
@@ -218,7 +218,7 @@ public class MacroTable(SQLiteConnection dbConnection, IPluginLog pluginLog)
         {
             Name = macroRecord.Name!,
             Path = macroRecord.Path!,
-            Tags = new(macroRecord.Tags!.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)),
+            Tags = [.. macroRecord.Tags!.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)],
             Command = macroRecord.Command!,
             Args = macroRecord.Args!,
             Content = macroRecord.Content!,

@@ -58,6 +58,6 @@ public class MacroTableQueue(MacroTable macroTable, ActionQueue actionQueue)
 
     private static List<Macro> Clone(IEnumerable<Macro> macros)
     {
-        return new(macros.Select(Clone));
+        return [.. macros.Select(Clone)];
     }
 }

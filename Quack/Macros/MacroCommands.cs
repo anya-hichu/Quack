@@ -115,6 +115,6 @@ public class MacroCommands: IDisposable
 
     private List<Macro> GetMacroWithCommands()
     {
-        return new(CachedMacros.Where(m => !m.Command.IsNullOrWhitespace()));
+        return [.. CachedMacros.Where(m => !m.Command.IsNullOrWhitespace())];
     }
 }

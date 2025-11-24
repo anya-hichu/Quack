@@ -81,7 +81,7 @@ public class PenumbraIpc : IDisposable
             var sortOrderConfig = JsonConvert.DeserializeObject<SortOrderConfig>(sortOrderConfigJson)!;
             PluginLog.Debug($"Retrieved {sortOrderConfig.Data.Count} penumbra path infos from {Path.GetRelativePath(PluginConfigsDirectory, SortOrderConfigPath)}");
 
-            return modList.Select(d => {
+            return [.. modList.Select(d => {
                 var modDataConfigPath = string.Format(ModDataConfigPathTemplate, d.Key);
 
                 if (Path.Exists(modDataConfigPath))
@@ -103,7 +103,7 @@ public class PenumbraIpc : IDisposable
                 {
                     throw new FileNotFoundException($"Failed to find penumbra local tag infos file at {Path.GetRelativePath(PluginConfigsDirectory, SortOrderConfigPath)}");
                 }
-            }).ToArray();
+            })];
         }
         else
         {
@@ -115,12 +115,10 @@ public class PenumbraIpc : IDisposable
     {
         var modRootDirectoryPath = BaseGetModDirectory.InvokeFunc();
 
-        return GetModList().Select(mod =>
+        return [.. GetModList().Select(mod =>
         {
             var modDirectoryPath = Path.Combine(modRootDirectoryPath, (string)mod["dir"]);
             var defaultSettingsPath = Path.Combine(modDirectoryPath, "default_mod.json");
-
-            PluginLog.Debug(defaultSettingsPath);
             if (Path.Exists(defaultSettingsPath))
             {
                 using StreamReader defaultSettingsReader = new(defaultSettingsPath);
@@ -150,7 +148,7 @@ public class PenumbraIpc : IDisposable
             {
                 throw new FileNotFoundException($"Failed to find penumbra settings file at {defaultSettingsPath}");
             }
-        }).ToArray();
+        })];
     }
 
     private static Dictionary<string, object> CamelCaseDictionnary(Dictionary<string, object> dictionnary)

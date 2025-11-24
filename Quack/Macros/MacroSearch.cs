@@ -11,10 +11,10 @@ public class MacroSearch
 
     public static List<Macro> Lookup(IEnumerable<Macro> macros, string filter)
     {
-        return new(filter.IsNullOrWhitespace()? macros : macros.Where(m => tokenMatches(m, filter)).OrderBy(m => matchLengthRatio(m, filter)));
+        return [.. filter.IsNullOrWhitespace()? macros : macros.Where(m => MatchTokens(m, filter)).OrderBy(m => MatchLengthRatio(m, filter))];
     }
 
-    private static bool tokenMatches(Macro macro, string filter)
+    private static bool MatchTokens(Macro macro, string filter)
     {
         var tokens = filter.ToLowerInvariant().Split(" ").Where(t => !t.IsNullOrWhitespace());
         return tokens.All(t => macro.Name.Contains(t, MATCH_FLAGS) ||
@@ -23,7 +23,7 @@ public class MacroSearch
                                macro.Tags.Any(tag => tag.Contains(t, MATCH_FLAGS)));
     }
 
-    private static double matchLengthRatio(Macro macro, string filter)
+    private static double MatchLengthRatio(Macro macro, string filter)
     {
         var length = macro.Name.Length + macro.Path.Length + macro.Command.Length + string.Join("", macro.Tags).Length;
         var ratio = (double)length / filter.Length;
