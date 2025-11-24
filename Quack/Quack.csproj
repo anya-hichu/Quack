@@ -18,8 +18,11 @@
     <PackageReference Include="JavaScriptEngineSwitcher.Core" Version="3.24.1" />
     <PackageReference Include="JavaScriptEngineSwitcher.V8" Version="3.29.1" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.5.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <PackageReference Include="ThrottleDebounce" Version="2.0.1" />
   </ItemGroup>
 
@@ -40,11 +43,6 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="DalamudPackager" Version="13.1.0" />
-    <PackageReference Update="DotNet.ReproducibleBuilds" Version="1.2.39" />
   </ItemGroup>
 
   <Target Name="DeleteUnusedRuntimes" AfterTargets="Build;Release">
