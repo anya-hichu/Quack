@@ -369,83 +369,86 @@ public class SchedulerConfigTab : ConfigEntityTab
                     if (ImGui.GetCursorPosY() < ImGui.GetWindowHeight())
                     {
                         var scheduleConfigTableId = $"{nextOccurrencesId}Table";
-                        using (ImRaii.Table(scheduleConfigTableId, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
+                        using (var table = ImRaii.Table(scheduleConfigTableId, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Resizable))
                         {
-                            ImGui.TableSetupColumn($"Remaining###{scheduleConfigTableId}RemainingTime", ImGuiTableColumnFlags.None, 0.1f);
-                            ImGui.TableSetupColumn($"Time###{scheduleConfigTableId}Time", ImGuiTableColumnFlags.None, 0.2f);
-                            ImGui.TableSetupColumn($"UTC Time###{scheduleConfigTableId}UtcTime", ImGuiTableColumnFlags.None, 0.1f);
-                            ImGui.TableSetupColumn($"Local Time {TimeZoneInfo.Local}###{scheduleConfigTableId}LocalTime", ImGuiTableColumnFlags.None, 0.1f);
-                            ImGui.TableSetupColumn($"Command###{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
-                            ImGui.TableHeadersRow();
-
-                            var clipper = ImGui.ImGuiListClipper();
-                            var entries = schedulerConfig.TriggerConfigs.SelectMany(TriggerConfig =>
+                            if (table)
                             {
-                                return TriggerConfig.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(Occurrence =>
+                                ImGui.TableSetupColumn($"Remaining###{scheduleConfigTableId}RemainingTime", ImGuiTableColumnFlags.None, 0.1f);
+                                ImGui.TableSetupColumn($"Time###{scheduleConfigTableId}Time", ImGuiTableColumnFlags.None, 0.2f);
+                                ImGui.TableSetupColumn($"UTC Time###{scheduleConfigTableId}UtcTime", ImGuiTableColumnFlags.None, 0.1f);
+                                ImGui.TableSetupColumn($"Local Time {TimeZoneInfo.Local}###{scheduleConfigTableId}LocalTime", ImGuiTableColumnFlags.None, 0.1f);
+                                ImGui.TableSetupColumn($"Command###{scheduleConfigTableId}Command", ImGuiTableColumnFlags.None, 0.6f);
+                                ImGui.TableHeadersRow();
+
+                                var clipper = ImGui.ImGuiListClipper();
+                                var entries = schedulerConfig.TriggerConfigs.SelectMany(TriggerConfig =>
                                 {
-                                    var RemainingTime = Occurrence - nowUtc;
-                                    return (TriggerConfig, RemainingTime, Occurrence);
-                                });
-                            }).OrderBy(p => p.RemainingTime);
+                                    return TriggerConfig.GetOccurrences(nowUtc, nowUtc.AddDays(maxDays)).Select(Occurrence =>
+                                    {
+                                        var RemainingTime = Occurrence - nowUtc;
+                                        return (TriggerConfig, RemainingTime, Occurrence);
+                                    });
+                                }).OrderBy(p => p.RemainingTime);
 
-                            clipper.Begin(entries.Count(), ImGui.GetTextLineHeightWithSpacing());
-                            while (clipper.Step())
-                            {
-                                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                                clipper.Begin(entries.Count(), ImGui.GetTextLineHeightWithSpacing());
+                                while (clipper.Step())
                                 {
-                                    var entry = entries.ElementAt(i);
-                                    if (ImGui.TableNextColumn())
+                                    for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                                     {
-                                        ImGui.Text(entry.RemainingTime.Humanize());
-                                        if (ImGui.IsItemHovered())
+                                        var entry = entries.ElementAt(i);
+                                        if (ImGui.TableNextColumn())
                                         {
-                                            ImGui.SetTooltip(entry.RemainingTime.ToString());
+                                            ImGui.Text(entry.RemainingTime.Humanize());
+                                            if (ImGui.IsItemHovered())
+                                            {
+                                                ImGui.SetTooltip(entry.RemainingTime.ToString());
+                                            }
                                         }
-                                    }
-                                    if (ImGui.TableNextColumn())
-                                    {
-                                        var timeZone = entry.TriggerConfig.TimeZone;
-                                        var timeText = $"{TimeZoneInfo.ConvertTimeFromUtc(entry.Occurrence, timeZone)} {timeZone}";
-                                        ImGui.Text(timeText);
-                                        if (ImGui.IsItemHovered())
+                                        if (ImGui.TableNextColumn())
                                         {
-                                            ImGui.SetTooltip(timeText);
+                                            var timeZone = entry.TriggerConfig.TimeZone;
+                                            var timeText = $"{TimeZoneInfo.ConvertTimeFromUtc(entry.Occurrence, timeZone)} {timeZone}";
+                                            ImGui.Text(timeText);
+                                            if (ImGui.IsItemHovered())
+                                            {
+                                                ImGui.SetTooltip(timeText);
+                                            }
                                         }
-                                    }
 
-                                    if (ImGui.TableNextColumn())
-                                    {
-                                        var utcTimeText = entry.Occurrence.ToString();
-                                        ImGui.Text(utcTimeText);
-                                        if (ImGui.IsItemHovered())
+                                        if (ImGui.TableNextColumn())
                                         {
-                                            ImGui.SetTooltip(utcTimeText);
+                                            var utcTimeText = entry.Occurrence.ToString();
+                                            ImGui.Text(utcTimeText);
+                                            if (ImGui.IsItemHovered())
+                                            {
+                                                ImGui.SetTooltip(utcTimeText);
+                                            }
                                         }
-                                    }
 
-                                    if (ImGui.TableNextColumn())
-                                    {
-                                        var localTimeText = entry.Occurrence.ToLocalTime().ToString();
-                                        ImGui.Text(localTimeText);
-                                        if (ImGui.IsItemHovered())
+                                        if (ImGui.TableNextColumn())
                                         {
-                                            ImGui.SetTooltip(localTimeText);
+                                            var localTimeText = entry.Occurrence.ToLocalTime().ToString();
+                                            ImGui.Text(localTimeText);
+                                            if (ImGui.IsItemHovered())
+                                            {
+                                                ImGui.SetTooltip(localTimeText);
+                                            }
                                         }
-                                    }
 
-                                    if (ImGui.TableNextColumn())
-                                    {
-                                        var commandText = entry.TriggerConfig.Command;
-                                        ImGui.Text(commandText);
-                                        if (ImGui.IsItemHovered())
+                                        if (ImGui.TableNextColumn())
                                         {
-                                            ImGui.SetTooltip(commandText);
+                                            var commandText = entry.TriggerConfig.Command;
+                                            ImGui.Text(commandText);
+                                            if (ImGui.IsItemHovered())
+                                            {
+                                                ImGui.SetTooltip(commandText);
+                                            }
                                         }
                                     }
                                 }
+                                clipper.Destroy();
                             }
-                            clipper.Destroy();
-                        }
+                        }  
                     }
                 }
             }

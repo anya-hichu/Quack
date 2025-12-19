@@ -41,7 +41,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IKeyState KeyState { get; private set; } = null!;
-    [PluginService] internal static IClientState ClientState { get; private set; } = null!;
+    [PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
     [PluginService] internal static INotificationManager NotificationManager { get; private set; } = null!;
 
     public readonly WindowSystem WindowSystem = new("Quack");
@@ -128,7 +128,7 @@ public sealed class Plugin : IDalamudPlugin
         EmotesIpc = new(PluginInterface, DataManager.GetExcelSheet<Emote>()!);
         DalamudIpc = new(PluginInterface);
         GlamourerIpc = new(PluginInterface, PluginLog);
-        LocalPlayerIpc = new(PluginInterface, ClientState, Framework);
+        LocalPlayerIpc = new(PluginInterface, PlayerState, Framework);
         MacrosIpc = new(PluginInterface);
         PenumbraIpc = new(PluginInterface, PluginLog);
         LifestreamIpc = new(PluginInterface, DataManager.GetExcelSheet<World>()!);

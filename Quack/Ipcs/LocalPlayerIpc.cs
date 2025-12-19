@@ -10,14 +10,14 @@ public class LocalPlayerIpc : IDisposable
 {
     public static readonly string INFO = "Quack.LocalPlayer.GetInfo";
 
-    private IClientState ClientState { get; init; }
+    private IPlayerState PlayerState { get; init; }
     private IFramework Framework { get; init; }
 
     private ICallGateProvider<Dictionary<string, object>> GetInfoProvider { get; init; }
 
-    public LocalPlayerIpc(IDalamudPluginInterface pluginInterface, IClientState clientState, IFramework framework)
+    public LocalPlayerIpc(IDalamudPluginInterface pluginInterface, IPlayerState playerState, IFramework framework)
     {
-        ClientState = clientState;
+        PlayerState = playerState;
         Framework = framework;
 
         GetInfoProvider = pluginInterface.GetIpcProvider<Dictionary<string, object>>(INFO);
@@ -33,12 +33,11 @@ public class LocalPlayerIpc : IDisposable
     {
         return Framework.RunOnFrameworkThread<Dictionary<string, object>>(() =>
         {
-            var localPlayer = ClientState.LocalPlayer;
-            if (localPlayer != null)
+            if (PlayerState.IsLoaded)
             {
-                var homeWorld = localPlayer.HomeWorld.Value;
+                var homeWorld = PlayerState.HomeWorld.Value;
                 return new() {
-                    { "name", localPlayer.Name.TextValue },
+                    { "name", PlayerState.CharacterName },
                     { "homeWorld", homeWorld.Name.ToString() },
                     { "homeWorldId", homeWorld.RowId }
                 };

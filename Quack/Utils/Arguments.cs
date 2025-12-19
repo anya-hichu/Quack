@@ -31,7 +31,7 @@ public class Arguments
             {
                 escape = true;
             }
-            else if ((ch == '"' || ch == '\''))
+            else if (ch == '"' || ch == '\'')
             {
                 if (quoteContext == null)
                 {

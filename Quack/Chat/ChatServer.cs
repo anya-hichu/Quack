@@ -1,6 +1,6 @@
 // Source: https://git.anna.lgbt/anna/XivCommon/src/branch/main/XivCommon/Functions/Chat.cs
 
-using Dalamud.Game;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using System;
