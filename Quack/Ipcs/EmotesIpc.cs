@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Quack.Ipcs; 
+namespace Quack.Ipcs;
 
 public class EmotesIpc: IDisposable
 {
@@ -38,19 +38,20 @@ public class EmotesIpc: IDisposable
     public Dictionary<string, object>[] GetList()
     {
         return EmoteSheet.SelectMany<Emote, Dictionary<string, object>>(e => {
-            if (e.EmoteCategory.IsValid && e.TextCommand.IsValid)
+            var textCommand = e.TextCommand.Value.Command.ToString();
+            if (e.EmoteCategory.IsValid && !textCommand.IsNullOrEmpty())
             {
                 var actionTimelineKeys = e.ActionTimeline.SelectMany<RowRef<ActionTimeline>, string>(t => !t.IsValid || t.Value.Key.IsEmpty ? [] : [t.Value.Key.ToString()]).ToArray();
 
                 var textCommandValue = e.TextCommand.Value;
                 var shortCommand = textCommandValue.ShortCommand.ToString();
-                var command = shortCommand.IsNullOrEmpty() ? textCommandValue.Command.ToString() : shortCommand;
+                var command = shortCommand.IsNullOrEmpty() ? textCommand : shortCommand;
 
                 var poseKeys = POSE_KEYS_BY_TEXT_COMMAND.GetValueOrDefault(command, []);
 
                 return [new() {
                     { "name", e.Name.ToString() },
-                    { "category",  e.EmoteCategory.Value.Name.ToString() },
+                    { "category", e.EmoteCategory.Value.Name.ToString() },
                     { "command", command },
                     { "actionTimelineKeys", actionTimelineKeys },
                     { "poseKeys", poseKeys }
