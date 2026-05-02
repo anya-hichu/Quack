@@ -97,7 +97,7 @@ public class MainWindow : Window, IDisposable
         if (MacroExecutor.HasRunningTasks())
         {
             ImGui.SameLine();
-            using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
+            using (ImRaii.ColorDisposable? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
             {
                 if (ImGui.Button($"Cancel All###macrosCancelAll"))
                 {
@@ -107,87 +107,87 @@ public class MainWindow : Window, IDisposable
         }
 
         var queriedMacrosId = "queriedMacros";
-        using (var table = ImRaii.Table($"{queriedMacrosId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY))
+        using var table = ImRaii.Table($"{queriedMacrosId}Table", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY);
+        if (table)
         {
-            if (table)
+            ImGui.TableSetupColumn($"Name###{queriedMacrosId}Name", ImGuiTableColumnFlags.None, 3);
+            ImGui.TableSetupColumn($"Path###{queriedMacrosId}Path", ImGuiTableColumnFlags.None, 2);
+            ImGui.TableSetupColumn($"Tags###{queriedMacrosId}Tags", ImGuiTableColumnFlags.None, 1);
+            ImGui.TableSetupColumn($"Actions###{queriedMacrosId}Actions", ImGuiTableColumnFlags.None, 2);
+
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableHeadersRow();
+
+            var filteredMacros = state.FilteredMacros.ToList();
+
+            var clipper = ImGui.ImGuiListClipper();
+            clipper.Begin(filteredMacros.Count, 27);
+            while (clipper.Step())
             {
-                ImGui.TableSetupColumn($"Name###{queriedMacrosId}Name", ImGuiTableColumnFlags.None, 3);
-                ImGui.TableSetupColumn($"Path###{queriedMacrosId}Path", ImGuiTableColumnFlags.None, 2);
-                ImGui.TableSetupColumn($"Tags###{queriedMacrosId}Tags", ImGuiTableColumnFlags.None, 1);
-                ImGui.TableSetupColumn($"Actions###{queriedMacrosId}Actions", ImGuiTableColumnFlags.None, 2);
-
-                ImGui.TableSetupScrollFreeze(0, 1);
-                ImGui.TableHeadersRow();
-
-                var clipper = ImGui.ImGuiListClipper();
-                clipper.Begin(state.FilteredMacros.Count, 27);
-                while (clipper.Step())
+                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
-                    for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                    var macro = filteredMacros.ElementAt(i);
+                    if (ImGui.TableNextColumn())
                     {
-                        var macro = state.FilteredMacros.ElementAt(i);
-                        if (ImGui.TableNextColumn())
+                        using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(collection => collection.Matches(macro), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
                         {
-                            using (ImRaii.PushColor(ImGuiCol.Text, Config.CollectionConfigs.FindFirst(collection => collection.Matches(macro), out var collectionConfig) ? collectionConfig.Color : ImGuiColors.DalamudWhite))
-                            {
-                                ImGui.Text(macro.Name);
-                            }
-                            if (ImGui.IsItemHovered())
-                            {
-                                ImGui.SetTooltip(macro.Name);
-                            }
-                            if (ImGui.IsItemClicked())
-                            {
-                                UIEvents.RequestExecution(macro);
-                            }
+                            ImGui.Text(macro.Name);
                         }
-
-                        if (ImGui.TableNextColumn())
+                        if (ImGui.IsItemHovered())
                         {
-                            ImGui.Text(macro.Path);
-                            if (ImGui.IsItemHovered())
-                            {
-                                ImGui.SetTooltip(macro.Path);
-                            }
-                            if (ImGui.IsItemClicked())
-                            {
-                                UIEvents.RequestExecution(macro);
-                            }
+                            ImGui.SetTooltip(macro.Name);
                         }
-
-                        if (ImGui.TableNextColumn())
+                        if (ImGui.IsItemClicked())
                         {
-                            var joinedTags = string.Join(", ", macro.Tags);
-                            ImGui.Text(joinedTags);
-                            if (ImGui.IsItemHovered())
-                            {
-                                ImGui.SetTooltip(joinedTags);
-                            }
-                            if (ImGui.IsItemClicked())
-                            {
-                                UIEvents.RequestExecution(macro);
-                            }
+                            UIEvents.RequestExecution(macro);
                         }
-
-                        if (ImGui.TableNextColumn())
-                        {
-                            MacroExecutionState.Button($"{queriedMacrosId}{i}Execute", macro);
-                            ImGui.SameLine();
-                            if (ImGuiComponents.IconButton($"{queriedMacrosId}{i}Edit", FontAwesomeIcon.Edit))
-                            {
-                                UIEvents.RequestEdit(macro);
-                            }
-                            if (ImGui.IsItemHovered())
-                            {
-                                ImGui.SetTooltip($"Edit macro [{macro.Name}]");
-                            }
-                        }
-
-                        ImGui.TableNextRow();
                     }
+
+                    if (ImGui.TableNextColumn())
+                    {
+                        ImGui.Text(macro.Path);
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip(macro.Path);
+                        }
+                        if (ImGui.IsItemClicked())
+                        {
+                            UIEvents.RequestExecution(macro);
+                        }
+                    }
+
+                    if (ImGui.TableNextColumn())
+                    {
+                        var joinedTags = string.Join(", ", macro.Tags);
+                        ImGui.Text(joinedTags);
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip(joinedTags);
+                        }
+                        if (ImGui.IsItemClicked())
+                        {
+                            UIEvents.RequestExecution(macro);
+                        }
+                    }
+
+                    if (ImGui.TableNextColumn())
+                    {
+                        MacroExecutionState.Button($"{queriedMacrosId}{i}Execute", macro);
+                        ImGui.SameLine();
+                        if (ImGuiComponents.IconButton($"{queriedMacrosId}{i}Edit", FontAwesomeIcon.Edit))
+                        {
+                            UIEvents.RequestEdit(macro);
+                        }
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.SetTooltip($"Edit macro [{macro.Name}]");
+                        }
+                    }
+
+                    ImGui.TableNextRow();
                 }
-                clipper.Destroy();
             }
+            clipper.Destroy();
         }
     }
 }

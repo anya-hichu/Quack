@@ -107,7 +107,7 @@ public partial class MacroConfigTab : ConfigEntityTab, IDisposable
         ImGui.SameLine(ImGui.GetWindowWidth() - 288);
         if (MacroExecutor.HasRunningTasks())
         {
-            using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
+            using (ImRaii.ColorDisposable? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
             {
                 if (ImGui.Button($"Cancel All###macrosCancelAll"))
                 {

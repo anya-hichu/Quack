@@ -337,7 +337,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                 }
                 else
                 {
-                    using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
+                    using (ImRaii.ColorDisposable? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DalamudOrange), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
                     {
                         if (ImGui.Button($"Cancel###{generateMacrosId}Cancel"))
                         {
@@ -392,7 +392,7 @@ public class GeneratorConfigTab : ConfigEntityTab
                     }
                 }
 
-                using (ImRaii.Color? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.HealerGreen), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
+                using (ImRaii.ColorDisposable? _ = ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.HealerGreen), __ = ImRaii.PushColor(ImGuiCol.Text, new Vector4(0, 0, 0, 1)))
                 {
                     if (ImGui.Button($"Save Selected###{generatedMacrosId}SaveSelected"))
                     {

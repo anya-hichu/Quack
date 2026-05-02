@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Dalamud.NET.Sdk/14.0.1">
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
     <Description>Generate and run macro actions quickly using a spotlight inspired interface.</Description>
     <PackageProjectUrl>https://github.com/anya-hichu/Quack</PackageProjectUrl>
@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Cronos" Version="0.11.1" />
+    <PackageReference Include="Glamourer.Api" Version="2.8.1" />
     <PackageReference Include="Humanizer.Core" Version="3.0.1" />
     <PackageReference Include="IgnoresAccessChecksToGenerator" Version="0.8.0">
       <PrivateAssets>all</PrivateAssets>
@@ -18,6 +19,7 @@
     <PackageReference Include="JavaScriptEngineSwitcher.V8" Version="3.29.1" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Penumbra.Api" Version="5.15.1" />
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
     <PackageReference Include="ThrottleDebounce" Version="2.0.1" />
   </ItemGroup>

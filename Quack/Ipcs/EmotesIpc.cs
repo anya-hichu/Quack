@@ -37,7 +37,7 @@ public class EmotesIpc: IDisposable
 
     public Dictionary<string, object>[] GetList()
     {
-        return EmoteSheet.SelectMany<Emote, Dictionary<string, object>>(e => {
+        return [.. EmoteSheet.SelectMany<Emote, Dictionary<string, object>>(e => {
             var textCommand = e.TextCommand.Value.Command.ToString();
             if (e.EmoteCategory.IsValid && !textCommand.IsNullOrEmpty())
             {
@@ -61,6 +61,6 @@ public class EmotesIpc: IDisposable
             {
                 return [];
             }
-        }).ToArray();
+        })];
     }
 }
