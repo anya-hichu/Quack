@@ -34,9 +34,9 @@
       },
       "IgnoresAccessChecksToGenerator": {
         "type": "Direct",
-        "requested": "[0.8.0, )",
-        "resolved": "0.8.0",
-        "contentHash": "LvZGHzbfdRkjzVGAcJYdU3+cvld5EHqRkNRreNSolDpRcPPUmbCr6jLfwgku+Y8ugVKUz7hx4lOLzqj9ASc+qg=="
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "UDhFW6CDox6MYYSjSn7mEk6LK9UFmddWNeGxPaRWck9Fih5Qq9nTtekUFcQrpwb05ylHECOVRgS2ctjEAFz+Og=="
       },
       "JavaScriptEngineSwitcher.Core": {
         "type": "Direct",
