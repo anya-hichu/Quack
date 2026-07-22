@@ -77,11 +77,13 @@
       },
       "sqlite-net-pcl": {
         "type": "Direct",
-        "requested": "[1.9.172, )",
-        "resolved": "1.9.172",
-        "contentHash": "go533+huyvg5bOMmCpX+DyvLrcVRiEBIpqEiDHgXRijWIBBNkWnyMr/w+5ZzrUArKY+4ApucsbBnFtP3QITrJg==",
+        "requested": "[1.11.285, )",
+        "resolved": "1.11.285",
+        "contentHash": "6xmGBGgjD0s84PNSbUm5Ojk61TTWahayIHylq0eTk0InHRx1ZQnBlXM+UOVzl2cNEwDpdpNhVoK2y0Yg6XO4sg==",
         "dependencies": {
-          "SQLitePCLRaw.bundle_green": "2.1.2"
+          "SQLitePCLRaw.core": "3.0.3",
+          "SQLitePCLRaw.provider.e_sqlite3": "3.0.3",
+          "SourceGear.sqlite3": "3.53.3"
         }
       },
       "ThrottleDebounce": {
@@ -115,31 +117,22 @@
         "resolved": "7.5.1",
         "contentHash": "QuyrzwPU54Np1zxF8NVKQjPghCGs3WEaEsgYWfdCwBHKWLjprtkKH1dl0+lE0gf8hkGalAOH5B5wOctrZ6jEoA=="
       },
-      "SQLitePCLRaw.bundle_green": {
+      "SourceGear.sqlite3": {
         "type": "Transitive",
-        "resolved": "2.1.2",
-        "contentHash": "e2FRX87YHoSer+tLFX9P/povHLK0uH7UcdimHRPnfTSam+NZChVVXjBxe1MYnyBGlwX5dSs5sTlDg/yZBM7iVw==",
-        "dependencies": {
-          "SQLitePCLRaw.lib.e_sqlite3": "2.1.2",
-          "SQLitePCLRaw.provider.e_sqlite3": "2.1.2"
-        }
+        "resolved": "3.53.3",
+        "contentHash": "PaDT7JwQ00HmXZT1xSGSC0c24A5lVpJYHMrXBuJATdpB2t0nf4Kq9HyPaZhxVW0elPq4XI1s5BLh7qLuObmzFA=="
       },
       "SQLitePCLRaw.core": {
         "type": "Transitive",
-        "resolved": "2.1.2",
-        "contentHash": "A8EBepVqY2lnAp3a8jnhbgzF2tlj2S3HcJQGANTYg/TbYbKa8Z5cM1h74An/vy0svhfzT7tVY0sFmUglLgv+2g=="
-      },
-      "SQLitePCLRaw.lib.e_sqlite3": {
-        "type": "Transitive",
-        "resolved": "2.1.2",
-        "contentHash": "zibGtku8M4Eea1R3ZCAxc86QbNvyEN17mAcQkvWKBuHvRpMiK2g5anG4R5Be7cWKSd1i6baYz8y4dMMAKcXKPg=="
+        "resolved": "3.0.3",
+        "contentHash": "bjm6FY4lZyP+t7GmiuvSM0QXpFihAvyE0Y9O2yibm3g95AAWJPNnHOKVNJGyPTGIKuK7Pr4Wh8Rd8/aOtAclQw=="
       },
       "SQLitePCLRaw.provider.e_sqlite3": {
         "type": "Transitive",
-        "resolved": "2.1.2",
-        "contentHash": "lxCZarZdvAsMl2zw9bXHrXK6RxVhB4b23iTFhCOdHFhxfbsxLxWf+ocvswJwR/9Wh/E//ddMi+wJGqUKV7VwoA==",
+        "resolved": "3.0.3",
+        "contentHash": "wd+fGvZTrr3BJNe48opSczmC176Okd61ZgoZNQcdvZwkek6to978ccdpcFmNo5GHxCnk29KwT+f+lAZYgfLVZg==",
         "dependencies": {
-          "SQLitePCLRaw.core": "2.1.2"
+          "SQLitePCLRaw.core": "3.0.3"
         }
       }
     }
