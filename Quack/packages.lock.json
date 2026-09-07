@@ -59,9 +59,9 @@
       },
       "Microsoft.ClearScript.V8.Native.win-x64": {
         "type": "Direct",
-        "requested": "[7.5.1, )",
-        "resolved": "7.5.1",
-        "contentHash": "fkCJta+xF2W3+L6NwRzqIV0VYD/WVcrZHyxgbOe5iTl321Td0w5loBWGVXlgG5fsuv2FEcba1GLE1CbeJrzMRw=="
+        "requested": "[7.5.1.1, )",
+        "resolved": "7.5.1.1",
+        "contentHash": "N79bR+RG7FD8wv/tdXZuOLDx3YAQ+mSB5P0gcUNMGEFO4DljRSPlJcEzHLrPvrlPzNnc3aV6Rx2v5V3qordPJg=="
       },
       "Newtonsoft.Json": {
         "type": "Direct",
