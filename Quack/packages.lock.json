@@ -49,12 +49,12 @@
       },
       "JavaScriptEngineSwitcher.V8": {
         "type": "Direct",
-        "requested": "[3.34.1, )",
-        "resolved": "3.34.1",
-        "contentHash": "DnlhjlzVz04FydOvtfXIOdTma2IHs0n1/kyG9iThYjAJCSeglgxnnFFnRDJ5K5nlXYVYNdgEMZp2EblDNiX7RQ==",
+        "requested": "[3.35.2, )",
+        "resolved": "3.35.2",
+        "contentHash": "LM86wQcfiGtNwCZLxv44zjsMXpc/6LUnrWX7y/jPyjDyvxVfqL4Q6+1zm9jADr4fSpwaEA6cGecngKFEPFmmkQ==",
         "dependencies": {
           "JavaScriptEngineSwitcher.Core": "3.31.0",
-          "Microsoft.ClearScript.V8": "7.5.1"
+          "Microsoft.ClearScript.V8": "7.5.1.1"
         }
       },
       "Microsoft.ClearScript.V8.Native.win-x64": {
@@ -99,23 +99,23 @@
       },
       "Microsoft.ClearScript.Core": {
         "type": "Transitive",
-        "resolved": "7.5.1",
-        "contentHash": "GuCo9rODubVJGR/cTS4+PIfLsXBz2JUtrUg3II3i+vb1GI0WWO4SLGZfnixtALeKhgBP+5hiKRE3pdmkC4pgFg=="
+        "resolved": "7.5.1.1",
+        "contentHash": "H3R4OaqQPfwxewnZcvTU6qUFyzJ05FchBD4IlO6Z0WO3iWh8PyAWHDcnt4FUmo/t0m40o8rkgnJ7g9pDT7pwJQ=="
       },
       "Microsoft.ClearScript.V8": {
         "type": "Transitive",
-        "resolved": "7.5.1",
-        "contentHash": "RflEJEMkidCKIOKALPwjvZXjjIUrIjgyXhgiyfrb8Ybnd2yxmNct7DOX3eWQYuHCyDe+wuTYBZaj3XaAlDMNDg==",
+        "resolved": "7.5.1.1",
+        "contentHash": "oEJxEMqzzC8XYE9kA1ajmfmloAuSlNIzNyrIfwROXkKjfeePptvUT22MqHfV6rRV4//B7XShlq7VM6o2ZM1eZQ==",
         "dependencies": {
-          "Microsoft.ClearScript.Core": "7.5.1",
-          "Microsoft.ClearScript.V8.ICUData": "7.5.1",
+          "Microsoft.ClearScript.Core": "7.5.1.1",
+          "Microsoft.ClearScript.V8.ICUData": "7.5.1.1",
           "Newtonsoft.Json": "13.0.3"
         }
       },
       "Microsoft.ClearScript.V8.ICUData": {
         "type": "Transitive",
-        "resolved": "7.5.1",
-        "contentHash": "QuyrzwPU54Np1zxF8NVKQjPghCGs3WEaEsgYWfdCwBHKWLjprtkKH1dl0+lE0gf8hkGalAOH5B5wOctrZ6jEoA=="
+        "resolved": "7.5.1.1",
+        "contentHash": "Jg3yFIWPkfsjOHzVUTbA0VgnxXBtX9BwSL00E8HIljFm3f203e+mlJYO0tTHnqetA0xZyLKbRjRuPotUP/47Nw=="
       },
       "SourceGear.sqlite3": {
         "type": "Transitive",
