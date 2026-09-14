@@ -19,7 +19,7 @@
     <PackageReference Include="JavaScriptEngineSwitcher.V8" Version="3.35.2" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.5.1.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Penumbra.Api" Version="5.15.1" />
+    <PackageReference Include="Penumbra.Api" Version="5.19.1" />
     <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
     <PackageReference Include="ThrottleDebounce" Version="2.0.2" />
   </ItemGroup>

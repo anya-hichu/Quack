@@ -71,9 +71,9 @@
       },
       "Penumbra.Api": {
         "type": "Direct",
-        "requested": "[5.15.1, )",
-        "resolved": "5.15.1",
-        "contentHash": "3ikk0zIOaLm2n3nZRQpW3xaRQ2cq/TOOEApNUjYXolqbyvCrZVGXhdQulcssNUbo0AMQ81l+cf7OfqRceeRBcg=="
+        "requested": "[5.19.1, )",
+        "resolved": "5.19.1",
+        "contentHash": "QPoOajzNZJblbaKegp5XsFS+1MsU7QiOlH5lljykr5kepVdCQBFh5RB5pR7gXFGy3MzziIKo5hnh1KHqQrfeTg=="
       },
       "sqlite-net-pcl": {
         "type": "Direct",
