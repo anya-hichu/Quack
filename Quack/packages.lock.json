@@ -88,9 +88,9 @@
       },
       "ThrottleDebounce": {
         "type": "Direct",
-        "requested": "[2.0.2, )",
-        "resolved": "2.0.2",
-        "contentHash": "SqGyo1Ihv/3Wvq4bjIhjQjFNZ+/6SUvxNIIvdXcDzdP9QRDfySneXtAt9+rkGrFvizjosJAN1jyl2f2vCcR30Q=="
+        "requested": "[3.0.0, )",
+        "resolved": "3.0.0",
+        "contentHash": "TOzvjaCJ3GVUGceYm1uvvibDCOiXyj4f2kUAr9RPdWG8xpgd0jtVqgX8nNEj+zWg/AFR4lRNh28sMefm5qI6Tg=="
       },
       "AdvancedStringBuilder": {
         "type": "Transitive",
